@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "TRILLIONS START",
+      "type": "shell",
+      "command": "npm start",
+      "problemMatcher": []
+    }
+  ]
+}

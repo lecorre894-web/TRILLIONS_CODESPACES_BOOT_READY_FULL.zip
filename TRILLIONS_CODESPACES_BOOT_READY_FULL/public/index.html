@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TRILLIONS BBB GENESIS</title>
+  <link rel="stylesheet" href="/cockpit.css" />
+</head>
+<body>
+  <canvas id="matrix"></canvas>
+
+  <main class="wrap">
+    <header class="hero">
+      <div class="badge">CODESPACES BOOT READY FULL</div>
+      <h1>BBB GENESIS TRILLIONS MASTER</h1>
+      <p>SUPREME BRAIN • NODE HOST • AI • HONESTY GUARD</p>
+    </header>
+
+    <section class="grid">
+      <article class="card"><span>STATUS</span><strong id="status">WAITING</strong></article>
+      <article class="card"><span>KERNEL</span><strong id="kernel">STANDBY</strong></article>
+      <article class="card"><span>PROFILE</span><strong id="profile">EXPERT</strong></article>
+      <article class="card"><span>HONESTY</span><strong>LOCKED</strong></article>
+    </section>
+
+    <section class="panel">
+      <h2>Runtime central</h2>
+      <div class="kv"><span>Mode</span><b id="mode">-</b></div>
+      <div class="kv"><span>Uptime</span><b id="uptime">-</b></div>
+      <div class="kv"><span>Hardware</span><b>EMULATED</b></div>
+      <div class="kv"><span>Data</span><b>REAL ONLY WHEN CONNECTED</b></div>
+    </section>
+
+    <section class="panel">
+      <h2>Terminal central</h2>
+      <pre id="terminal"></pre>
+    </section>
+
+    <section class="controls">
+      <button onclick="startRuntime()">START RUNTIME</button>
+      <button onclick="rescan()">RESCAN</button>
+      <button onclick="clearTerminal()">CLEAR</button>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/runtime.js"></script>
+</body>
+</html>
