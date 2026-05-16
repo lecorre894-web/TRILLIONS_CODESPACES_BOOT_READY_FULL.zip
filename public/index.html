@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Ω TRILLIONS</title>
+
+<style>
+
+body{
+background:black;
+color:lime;
+font-family:monospace;
+padding:20px;
+}
+
+.box{
+border:1px solid lime;
+padding:20px;
+margin-top:20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Ω TRILLIONS SERVER ACTIVE</h1>
+
+<div class="box" id="runtime">
+LOADING...
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+
+const socket=io();
+
+socket.on('runtime',data=>{
+
+document.getElementById('runtime').innerHTML=
+`
+CPU : ${data.cpu}<br>
+RAM : ${data.ram}<br>
+UPTIME : ${data.uptime}
+`;
+
+});
+
+</script>
+
+</body>
+</html>
