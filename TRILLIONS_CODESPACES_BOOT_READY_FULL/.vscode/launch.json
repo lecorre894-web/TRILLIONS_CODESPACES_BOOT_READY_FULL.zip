@@ -1,0 +1,88 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "TRILLIONS: Launch app.js",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/app.js",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "node",
+      "env": {
+        "PORT": "3000",
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "restart": true,
+      "runtimeArgs": [
+        "--inspect=0.0.0.0:9229"
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/**/*.js"
+      ],
+      "sourceMaps": true
+    },
+    {
+      "name": "TRILLIONS: Attach Remote 9229",
+      "type": "node",
+      "request": "attach",
+      "address": "localhost",
+      "port": 9229,
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "${workspaceFolder}",
+      "restart": true,
+      "protocol": "inspector",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "TRILLIONS: Launch Current File",
+      "type": "node",
+      "request": "launch",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "TRILLIONS: Nodemon app.js",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "nodemon",
+        "--inspect=0.0.0.0:9229",
+        "app.js"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "restart": true,
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "TRILLIONS: PM2 start app.js",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npx pm2 start app.js --name TRILLIONS --time && npx pm2 logs TRILLIONS --lines 80"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "TRILLIONS: Launch + Attach",
+      "configurations": [
+        "TRILLIONS: Launch app.js"
+      ],
+      "stopAll": true
+    }
+  ]
+}
