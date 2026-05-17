@@ -3875,9 +3875,9 @@ app.get("/api/dict-sha256/bench",(req,res)=>{
     honesty:
       "local runtime SHA256 benchmark only"
 
-  });
+  })
 
-});
+}
 /* ============================================================
    TRILLIONS MEMORY / CACHE / STORAGE FABRIC
    SOFTWARE PROCESSOR MEMORY LAYER
