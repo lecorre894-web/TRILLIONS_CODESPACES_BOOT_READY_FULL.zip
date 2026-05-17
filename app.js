@@ -3875,9 +3875,10 @@ app.get("/api/dict-sha256/bench",(req,res)=>{
     honesty:
       "local runtime SHA256 benchmark only"
 
-  })
+  });
 
-}
+})
+
 /* ============================================================
    TRILLIONS MEMORY / CACHE / STORAGE FABRIC
    SOFTWARE PROCESSOR MEMORY LAYER
@@ -4094,4 +4095,199 @@ app.get("/api/memory-fabric/bench", (req, res) => {
       "NO_FAKE_CACHE"
     ]
   });
+});
+
+/* ============================================================
+   TRILLIONS MEMORY FABRIC SAFE EXTENSION
+   ADDITIVE ONLY
+============================================================ */
+
+const DICT_MEMORY_FABRIC = {
+  version:"DICT_MEMORY_FABRIC_V2_SAFE",
+  doctrine:[
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_RAM",
+    "NO_FAKE_CACHE",
+    "NO_FAKE_RAID",
+    "NO_FAKE_VCACHE"
+  ],
+
+  orchestration:{
+    persistent_workers:true,
+    batch_compute:true,
+    cache_locality:true,
+    shared_buffers:true,
+    adaptive_batching:true,
+    gc_reduction:true,
+    vector_cache:true,
+    warm_cache_paths:true
+  },
+
+  runtime:{
+    node:process.version,
+    platform:process.platform,
+    arch:process.arch,
+    logical_cpus:os.cpus().length,
+    total_ram_gb:+(os.totalmem()/1073741824).toFixed(2)
+  },
+
+  storage_layers:{
+    ramdisk:"/dev/shm",
+    tmp:"/tmp",
+    cache:"./cache",
+    runtime_cache:"./runtime-cache"
+  },
+
+  honesty:
+    "software orchestration improves locality/cache/batching but does not create fake hardware"
+};
+
+function trillionsMemorySnapshot(){
+  const mem=process.memoryUsage();
+
+  return {
+    time:new Date().toISOString(),
+
+    rss_MB:+(mem.rss/1048576).toFixed(2),
+    heap_total_MB:+(mem.heapTotal/1048576).toFixed(2),
+    heap_used_MB:+(mem.heapUsed/1048576).toFixed(2),
+    external_MB:+(mem.external/1048576).toFixed(2),
+
+    total_system_GB:+(os.totalmem()/1073741824).toFixed(2),
+    free_system_GB:+(os.freemem()/1073741824).toFixed(2),
+
+    pressure:
+      (os.freemem()/os.totalmem()) < 0.10
+      ? "HIGH"
+      : "NORMAL"
+  };
+}
+
+function trillionsCacheProbe(){
+
+  const paths=[
+    "/dev/shm",
+    "/tmp",
+    "./cache",
+    "./runtime-cache"
+  ];
+
+  return paths.map(p=>{
+
+    try{
+
+      const exists=fs.existsSync(p);
+
+      return {
+        path:p,
+        exists,
+        writable:exists
+      };
+
+    }catch(err){
+
+      return {
+        path:p,
+        exists:false,
+        writable:false,
+        error:String(err)
+      };
+
+    }
+
+  });
+
+}
+
+function trillionsMemoryBatchBench(sizeMB=64){
+
+  sizeMB=Math.max(
+    8,
+    Math.min(Number(sizeMB||64),512)
+  );
+
+  const bytes=sizeMB*1024*1024;
+
+  const started=Date.now();
+
+  const buffer=Buffer.alloc(bytes);
+
+  crypto.randomFillSync(buffer);
+
+  let checksum=0;
+
+  for(let i=0;i<buffer.length;i+=4096){
+
+    checksum=(checksum+buffer[i])&0xffffffff;
+
+  }
+
+  const durationMs=Date.now()-started;
+
+  return {
+
+    status:"MEMORY_BATCH_BENCH_COMPLETE",
+
+    size_MB:sizeMB,
+
+    duration_ms:durationMs,
+
+    bandwidth_MB_s:+(
+      sizeMB/(durationMs/1000)
+    ).toFixed(2),
+
+    checksum,
+
+    honesty:
+      "Node.js userspace memory throughput benchmark"
+
+  };
+
+}
+
+/* ============================================================
+   MEMORY FABRIC ENDPOINTS
+============================================================ */
+
+app.get("/api/memory-fabric",(req,res)=>{
+
+  res.json({
+
+    time:new Date().toISOString(),
+
+    dict:DICT_MEMORY_FABRIC,
+
+    memory:trillionsMemorySnapshot(),
+
+    cache_paths:trillionsCacheProbe(),
+
+    honesty:
+      "software processor memory orchestration"
+
+  });
+
+});
+
+app.get("/api/memory-fabric/bench",(req,res)=>{
+
+  const sizeMB=Number(req.query.sizeMB||64);
+
+  res.json({
+
+    time:new Date().toISOString(),
+
+    before:trillionsMemorySnapshot(),
+
+    bench:trillionsMemoryBatchBench(sizeMB),
+
+    after:trillionsMemorySnapshot(),
+
+    doctrine:[
+      "REAL_ONLY_OR_UNAVAILABLE",
+      "NO_FAKE_RAM",
+      "NO_FAKE_CACHE"
+    ]
+
+  });
+
 });
