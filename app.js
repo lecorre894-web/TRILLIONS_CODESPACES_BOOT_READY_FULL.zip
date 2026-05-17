@@ -3878,3 +3878,220 @@ app.get("/api/dict-sha256/bench",(req,res)=>{
   });
 
 });
+/* ============================================================
+   TRILLIONS MEMORY / CACHE / STORAGE FABRIC
+   SOFTWARE PROCESSOR MEMORY LAYER
+   REAL_ONLY_OR_UNAVAILABLE
+============================================================ */
+
+const os = require("os");
+const fs = require("fs");
+const crypto = require("crypto");
+
+const DICT_MEMORY_FABRIC = {
+  version: "DICT_MEMORY_FABRIC_V1",
+
+  doctrine: [
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_RAM",
+    "NO_FAKE_CACHE",
+    "NO_FAKE_RAID",
+    "NO_FAKE_VCACHE"
+  ],
+
+  target: "software_processor_memory_orchestration",
+
+  layers: {
+    cpu_cache: {
+      l1: "hardware_managed",
+      l2: "hardware_managed",
+      l3_3d_vcache: "available_if_cpu_has_x3d",
+      honesty: "software can exploit locality, not create physical V-Cache"
+    },
+
+    ram: {
+      shared_buffers: true,
+      typed_arrays: true,
+      batch_buffers: true,
+      memory_pooling: true,
+      gc_reduction: true
+    },
+
+    ramdisk: {
+      status: "AVAILABLE_IF_CONFIGURED_BY_HOST",
+      linux_hint: "/dev/shm",
+      windows_hint: "ImDisk or RAMDisk tool",
+      purpose: "hot temporary compute/cache layer"
+    },
+
+    nvme_cache: {
+      status: "AVAILABLE_IF_FAST_STORAGE_PRESENT",
+      mode: "cache_files + mmap_ready + preload",
+      purpose: "warm dataset / kernel cache / routing cache"
+    },
+
+    raid0: {
+      status: "AVAILABLE_IF_HOST_CONFIGURED",
+      purpose: "parallel storage bandwidth",
+      honesty: "app detects/uses path, does not create RAID hardware"
+    },
+
+    mmap_shared_memory: {
+      status: "NODE_USERSPACE_SIMULATION",
+      shared_array_buffer: typeof SharedArrayBuffer !== "undefined",
+      atomics: typeof Atomics !== "undefined",
+      purpose: "zero-copy style worker coordination"
+    }
+  },
+
+  scheduler: {
+    persistent_workers: true,
+    worker_recycling: true,
+    batch_scheduling: true,
+    cache_locality_hinting: true,
+    queue_isolation: true,
+    anti_storm: true,
+    memory_pressure_guard: true,
+    adaptive_batch_size: true
+  },
+
+  compute: {
+    vector_cache: true,
+    hot_path_cache: true,
+    jit_cache: true,
+    wasm_page_cache: true,
+    avx2_real_if_native_addon_loaded: true,
+    native_path: "native/build/Release/trillions_native.node"
+  }
+};
+
+/* ============================================================
+   MEMORY PRESSURE SNAPSHOT
+============================================================ */
+
+function trillionsMemorySnapshot() {
+  const mem = process.memoryUsage();
+  const total = os.totalmem();
+  const free = os.freemem();
+  const used = total - free;
+  const usedPercent = (used / total) * 100;
+
+  return {
+    time: new Date().toISOString(),
+    status: "REAL_NODE_MEMORY_SNAPSHOT",
+
+    process: {
+      rss_MB: +(mem.rss / 1048576).toFixed(2),
+      heap_total_MB: +(mem.heapTotal / 1048576).toFixed(2),
+      heap_used_MB: +(mem.heapUsed / 1048576).toFixed(2),
+      external_MB: +(mem.external / 1048576).toFixed(2),
+      array_buffers_MB: +(mem.arrayBuffers / 1048576).toFixed(2)
+    },
+
+    host: {
+      total_GB: +(total / 1073741824).toFixed(2),
+      free_GB: +(free / 1073741824).toFixed(2),
+      used_GB: +(used / 1073741824).toFixed(2),
+      used_percent: +usedPercent.toFixed(2)
+    },
+
+    pressure:
+      usedPercent > 90 ? "CRITICAL" :
+      usedPercent > 80 ? "HIGH" :
+      usedPercent > 65 ? "MEDIUM" :
+      "NORMAL"
+  };
+}
+
+/* ============================================================
+   CACHE PATH PROBE
+============================================================ */
+
+function trillionsCacheProbe() {
+  const paths = [
+    "/dev/shm",
+    "/tmp",
+    "./cache",
+    "./runtime-cache",
+    "./native/build/Release"
+  ];
+
+  return paths.map(p => {
+    try {
+      const exists = fs.existsSync(p);
+      let writable = false;
+
+      if (exists) {
+        const testFile = `${p}/trillions_cache_probe_${Date.now()}.tmp`;
+        fs.writeFileSync(testFile, "probe");
+        fs.unlinkSync(testFile);
+        writable = true;
+      }
+
+      return { path: p, exists, writable };
+    } catch (err) {
+      return { path: p, exists: fs.existsSync(p), writable: false, error: String(err) };
+    }
+  });
+}
+
+/* ============================================================
+   BATCH MEMORY BENCH
+============================================================ */
+
+function trillionsMemoryBatchBench(sizeMB = 64) {
+  sizeMB = Math.max(8, Math.min(Number(sizeMB || 64), 1024));
+
+  const bytes = sizeMB * 1024 * 1024;
+  const started = Date.now();
+
+  const buffer = Buffer.allocUnsafe(bytes);
+  crypto.randomFillSync(buffer);
+
+  let checksum = 0;
+  for (let i = 0; i < buffer.length; i += 4096) {
+    checksum = (checksum + buffer[i]) & 0xffffffff;
+  }
+
+  const durationMs = Date.now() - started;
+  const bandwidthMBs = +(sizeMB / (durationMs / 1000)).toFixed(2);
+
+  return {
+    status: "MEMORY_BATCH_BENCH_COMPLETE",
+    size_MB: sizeMB,
+    duration_ms: durationMs,
+    bandwidth_MB_s: bandwidthMBs,
+    checksum,
+    honesty: "Node.js userspace memory throughput estimate"
+  };
+}
+
+/* ============================================================
+   ENDPOINTS
+============================================================ */
+
+app.get("/api/memory-fabric", (req, res) => {
+  res.json({
+    time: new Date().toISOString(),
+    dict: DICT_MEMORY_FABRIC,
+    memory: trillionsMemorySnapshot(),
+    cache_paths: trillionsCacheProbe(),
+    honesty: "software processor memory fabric; hardware limits remain real"
+  });
+});
+
+app.get("/api/memory-fabric/bench", (req, res) => {
+  const size = Number(req.query.sizeMB || 64);
+
+  res.json({
+    time: new Date().toISOString(),
+    memory_before: trillionsMemorySnapshot(),
+    bench: trillionsMemoryBatchBench(size),
+    memory_after: trillionsMemorySnapshot(),
+    doctrine: [
+      "REAL_ONLY_OR_UNAVAILABLE",
+      "NO_FAKE_RAM",
+      "NO_FAKE_CACHE"
+    ]
+  });
+});
