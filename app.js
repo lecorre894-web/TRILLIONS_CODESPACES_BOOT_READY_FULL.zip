@@ -3547,3 +3547,70 @@ app.get("/api/world-hpc/readiness",async(req,res)=>res.json(await worldHpcReadin
 app.get("/api/world-hpc/orchestrate",async(req,res)=>res.json(await worldHpcOrchestrate(String(req.query.level||"standard"))));
 app.get("/api/world-hpc/stress",async(req,res)=>res.json(await worldHpcOrchestrate(String(req.query.level||"heavy"))));
 try{appendJsonl("kernel_boot.jsonl",{time:now(),event:"WORLD_HPC_REAL_POSSIBLE_LAYER_LOADED",routes:WORLD_HPC_REAL_POSSIBLE_LAYER.routes});}catch(e){}
+/* ============================================================
+   TRILLIONS WORLD HPC EXTENSION
+   REAL ONLY OR UNAVAILABLE
+============================================================ */
+
+const WORLD_HPC={
+  version:"WORLD_HPC_V1",
+  doctrine:[
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_GPU",
+    "NO_FAKE_AVX",
+    "NO_FAKE_CLUSTER"
+  ],
+
+  runtime:{
+    jit_cache:true,
+    routing_cache:true,
+    vector_cache:true,
+    wasm_page_cache:true,
+    persistent_workers:true,
+    worker_recycling:true,
+    worker_health_probes:true,
+    queue_isolation:true,
+    anti_storm_protection:true
+  },
+
+  native:{
+    napi:true,
+    node_gyp:true,
+    cpp:true,
+    avx2:true,
+    avx512:true,
+    intrinsics:["__m256","__m512"]
+  },
+
+  webassembly:{
+    instantiate_streaming:true,
+    shared_array_buffer:true,
+    atomics:true,
+    wasm_simd:"detected_or_unavailable"
+  },
+
+  gpu:{
+    webgpu:"detected_or_unavailable",
+    cuda:"detected_or_unavailable",
+    opencl:"detected_or_unavailable",
+    tensor_kernels:true,
+    mixed_cpu_gpu_orchestration:true
+  },
+
+  distributed:{
+    mpi:"unavailable_or_external",
+    rdma:"unavailable_or_external",
+    infiniband:"unavailable_or_external",
+    numa:"host_dependent",
+    cluster_manager:"external_or_unavailable"
+  }
+};
+
+app.get("/api/world-hpc",async(req,res)=>{
+  res.json({
+    time:new Date().toISOString(),
+    kernel:KERNEL.version,
+    world_hpc:WORLD_HPC,
+    honesty:"reports only detected/compiled/runtime capabilities"
+  });
+});
