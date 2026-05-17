@@ -3614,3 +3614,267 @@ app.get("/api/world-hpc",async(req,res)=>{
     honesty:"reports only detected/compiled/runtime capabilities"
   });
 });
+/* ============================================================
+   DICT SHA256 COMPUTE PIPELINES
+   TRILLIONS / OMNIQ
+   REAL_ONLY_OR_UNAVAILABLE
+============================================================ */
+
+const DICT_SHA256={
+
+  version:"DICT_SHA256_V1",
+
+  doctrine:[
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_HASHRATE",
+    "NO_FAKE_GPU",
+    "NO_FAKE_CLUSTER"
+  ],
+
+  pipelines:{
+
+    js_basic:{
+      status:"ACTIVE",
+      type:"pure_javascript_runtime",
+      priority:1,
+      description:"baseline JS compute path"
+    },
+
+    node_crypto:{
+      status:"ACTIVE",
+      type:"openssl_native_bridge",
+      priority:2,
+      description:"Node.js crypto/OpenSSL pipeline"
+    },
+
+    wasm_sha:{
+      status:
+        typeof WebAssembly!=="undefined"
+          ? "AVAILABLE"
+          : "UNAVAILABLE",
+
+      type:"webassembly_pipeline",
+      priority:3,
+
+      description:
+        "WASM SHA compute path"
+    },
+
+    wasm_simd:{
+      status:
+        typeof WebAssembly!=="undefined"
+          ? "AVAILABLE_IF_SIMD_SUPPORTED"
+          : "UNAVAILABLE",
+
+      type:"wasm_simd_pipeline",
+      priority:4,
+
+      description:
+        "SIMD accelerated WASM pipeline"
+    },
+
+    native_avx2:{
+      status:
+        typeof nativeAddon!=="undefined" &&
+        nativeAddon
+          ? "AVAILABLE"
+          : "UNAVAILABLE",
+
+      type:"NAPI_CPP_AVX2",
+
+      priority:5,
+
+      description:
+        "compiled AVX2 native addon"
+    },
+
+    native_avx512:{
+      status:"HOST_DEPENDENT",
+
+      type:"NAPI_CPP_AVX512",
+
+      priority:6,
+
+      description:
+        "compiled AVX512 path if supported"
+    },
+
+    gpu_cuda:{
+      status:"UNAVAILABLE_OR_EXTERNAL",
+
+      type:"CUDA_PIPELINE",
+
+      priority:7,
+
+      description:
+        "real CUDA backend required"
+    },
+
+    gpu_opencl:{
+      status:"UNAVAILABLE_OR_EXTERNAL",
+
+      type:"OPENCL_PIPELINE",
+
+      priority:8,
+
+      description:
+        "real OpenCL backend required"
+    },
+
+    gpu_webgpu:{
+      status:"UNAVAILABLE_OR_BROWSER_DEPENDENT",
+
+      type:"WEBGPU_PIPELINE",
+
+      priority:9,
+
+      description:
+        "WebGPU compute runtime"
+    },
+
+    distributed_batch:{
+      status:"UNAVAILABLE_OR_EXTERNAL",
+
+      type:"CLUSTER_BATCH_RUNTIME",
+
+      priority:10,
+
+      description:
+        "distributed orchestration path"
+    }
+
+  },
+
+  scheduler:{
+
+    smart_selection:true,
+
+    adaptive_batching:true,
+
+    worker_affinity:true,
+
+    dynamic_work_stealing:true,
+
+    queue_isolation:true,
+
+    thermal_awareness:true,
+
+    memory_pressure_guard:true,
+
+    hot_path_cache:true,
+
+    jit_cache:true,
+
+    vector_pipeline_cache:true
+
+  },
+
+  runtime:{
+
+    workers:
+      require("os").cpus().length,
+
+    node:process.version,
+
+    platform:process.platform,
+
+    arch:process.arch
+
+  },
+
+  honesty:
+    "only detected or compiled compute paths are marked available"
+
+};
+
+/* ============================================================
+   DICT SHA256 ENDPOINT
+============================================================ */
+
+app.get("/api/dict-sha256",(req,res)=>{
+
+  res.json({
+
+    time:new Date().toISOString(),
+
+    kernel:
+      KERNEL.version,
+
+    dict_sha256:
+      DICT_SHA256,
+
+    doctrine:[
+      "REAL_ONLY_OR_UNAVAILABLE",
+      "NO_FAKE_HASHRATE",
+      "NO_FAKE_GPU"
+    ]
+
+  });
+
+});
+
+/* ============================================================
+   SIMPLE SHA256 BENCH
+============================================================ */
+
+app.get("/api/dict-sha256/bench",(req,res)=>{
+
+  const crypto=require("crypto");
+
+  const durationMs=
+    Math.max(
+      1000,
+      Math.min(
+        Number(req.query.duration||5000),
+        30000
+      )
+    );
+
+  let hashes=0;
+  let nonce=0;
+
+  const start=Date.now();
+
+  while(Date.now()-start<durationMs){
+
+    crypto
+      .createHash("sha256")
+      .update("TRILLIONS-"+nonce++)
+      .digest("hex");
+
+    hashes++;
+  }
+
+  const sec=(Date.now()-start)/1000;
+
+  const hps=
+    Math.round(hashes/sec);
+
+  res.json({
+
+    time:new Date().toISOString(),
+
+    status:"DICT_SHA256_BENCH_COMPLETE",
+
+    hashes,
+
+    duration_sec:
+      +sec.toFixed(2),
+
+    hash_per_sec:hps,
+
+    selected_pipeline:
+      DICT_SHA256.pipelines.node_crypto,
+
+    runtime:{
+      node:process.version,
+      arch:process.arch,
+      platform:process.platform
+    },
+
+    honesty:
+      "local runtime SHA256 benchmark only"
+
+  });
+
+});
