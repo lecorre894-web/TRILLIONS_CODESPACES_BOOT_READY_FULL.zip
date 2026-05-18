@@ -5984,3 +5984,390 @@ const TRILLIONS_MEMORY_DDR7_9600_CAS6_BLOCK = {
 if (typeof global !== "undefined") {
   global.TRILLIONS_MEMORY_DDR7_9600_CAS6_BLOCK = TRILLIONS_MEMORY_DDR7_9600_CAS6_BLOCK;
 }
+
+/* ============================================================
+   TRILLIONS MEMORY PIPELINE PERFORMANCE EXTENSION
+   DDR7_9600_CAS6 software profile + real measured auto-tuning
+   Paste at END of app.js
+============================================================ */
+
+(function TRILLIONS_MEMORY_PIPELINE_EXTENSION() {
+  "use strict";
+
+  const os = require("os");
+  const { performance, monitorEventLoopDelay } = require("perf_hooks");
+
+  const MB = 1024 * 1024;
+
+  const MEMORY_PIPELINE_STATE = {
+    module: "TRILLIONS_MEMORY_PIPELINE",
+    version: "1.0.0",
+    status: "ACTIVE",
+    profile_label: "DDR7_9600_CAS6_SOFTWARE_PROFILE",
+    selected_profile: null,
+    last_tune: null,
+    last_run: null,
+    policy: {
+      allocation: "PREALLOCATE_AND_REUSE_BUFFERS",
+      copy: "BUFFER_COPY_CONTIGUOUS",
+      block_sizes_mb: [4, 8, 16, 32, 64],
+      lanes: [1, 2, 4, 8],
+      reuse_buffers: true,
+      warmup_cache: true,
+      pressure_guard: true,
+      reject_event_loop_p95_above_ms: 25,
+      reject_rss_delta_above_mb: 512,
+      select_best_by: "effective_score",
+      honesty: {
+        ddr7_9600_cas6_is_profile_label: true,
+        real_metric_is_memory_MB_sec: true,
+        no_fake_ram_speed: true
+      }
+    }
+  };
+
+  function now() {
+    return performance.now();
+  }
+
+  function f(n, d = 2) {
+    return Number.isFinite(n) ? Number(n.toFixed(d)) : 0;
+  }
+
+  function memMB() {
+    const m = process.memoryUsage();
+    return {
+      rss_mb: f(m.rss / MB),
+      heap_used_mb: f(m.heapUsed / MB),
+      heap_total_mb: f(m.heapTotal / MB),
+      external_mb: f(m.external / MB),
+      array_buffers_mb: f((m.arrayBuffers || 0) / MB)
+    };
+  }
+
+  function pressureStatus() {
+    const total = os.totalmem();
+    const free = os.freemem();
+    const usedRatio = total > 0 ? 1 - free / total : 0;
+
+    return {
+      total_ram_gb: f(total / 1073741824),
+      free_ram_gb: f(free / 1073741824),
+      used_ratio_percent: f(usedRatio * 100),
+      pressure: usedRatio > 0.9 ? "HIGH" : usedRatio > 0.75 ? "MEDIUM" : "LOW"
+    };
+  }
+
+  function createBuffers(lanes, sizeMB) {
+    const size = Math.max(1, sizeMB) * MB;
+    const src = [];
+    const dst = [];
+
+    for (let i = 0; i < lanes; i++) {
+      src.push(Buffer.allocUnsafe(size));
+      dst.push(Buffer.allocUnsafe(size));
+      src[i].fill((17 + i) & 255);
+    }
+
+    return { src, dst, size };
+  }
+
+  function warmupBuffers(src, dst, lanes) {
+    for (let i = 0; i < lanes; i++) {
+      src[i].copy(dst[i]);
+    }
+  }
+
+  async function measureEventLoop(ms) {
+    const h = monitorEventLoopDelay({ resolution: 10 });
+    h.enable();
+
+    const start = now();
+    let ticks = 0;
+
+    while (now() - start < ms) {
+      await new Promise(resolve => setImmediate(resolve));
+      ticks++;
+    }
+
+    h.disable();
+
+    const sec = (now() - start) / 1000;
+
+    return {
+      ticks_sec: Math.round(ticks / Math.max(sec, 0.001)),
+      mean_ms: f(h.mean / 1e6, 4),
+      p95_ms: f(h.percentile(95) / 1e6, 4),
+      p99_ms: f(h.percentile(99) / 1e6, 4),
+      max_ms: f(h.max / 1e6, 4)
+    };
+  }
+
+  async function runMemoryProfile(profile, ms) {
+    const lanes = Math.max(1, Number(profile.lanes || 1));
+    const sizeMB = Math.max(1, Number(profile.sizeMB || 16));
+    const durationMs = Math.max(100, Math.min(Number(ms || 1000), 10000));
+
+    const before = memMB();
+    const pressureBefore = pressureStatus();
+
+    const { src, dst, size } = createBuffers(lanes, sizeMB);
+
+    if (MEMORY_PIPELINE_STATE.policy.warmup_cache) {
+      warmupBuffers(src, dst, lanes);
+    }
+
+    const loopProbePromise = measureEventLoop(Math.max(120, Math.floor(durationMs / 3)));
+
+    const start = now();
+    let bytes = 0;
+    let copies = 0;
+    let k = 0;
+
+    while (now() - start < durationMs) {
+      const lane = k % lanes;
+      src[lane].copy(dst[lane]);
+      bytes += size;
+      copies++;
+      k++;
+    }
+
+    const elapsedSec = (now() - start) / 1000;
+    const loop = await loopProbePromise;
+
+    const after = memMB();
+    const pressureAfter = pressureStatus();
+
+    const memoryMBs = (bytes / MB) / Math.max(elapsedSec, 0.001);
+    const rssDelta = after.rss_mb - before.rss_mb;
+
+    const loopPenalty = Math.min(loop.p95_ms * 3, 200);
+    const pressurePenalty = pressureAfter.pressure === "HIGH" ? 150 : pressureAfter.pressure === "MEDIUM" ? 50 : 0;
+    const rssPenalty = Math.max(0, rssDelta - 64) * 0.15;
+
+    const effectiveScore = Math.max(
+      0,
+      Math.log10(Math.max(memoryMBs, 1)) * 250 - loopPenalty - pressurePenalty - rssPenalty
+    );
+
+    const rejected =
+      loop.p95_ms > MEMORY_PIPELINE_STATE.policy.reject_event_loop_p95_above_ms ||
+      rssDelta > MEMORY_PIPELINE_STATE.policy.reject_rss_delta_above_mb ||
+      pressureAfter.pressure === "HIGH";
+
+    return {
+      profile: `DDR7_9600_CAS6_${lanes}x${sizeMB}MB`,
+      lanes,
+      sizeMB,
+      duration_ms: durationMs,
+      copies,
+      bytes_copied_mb: f(bytes / MB),
+      memory_MB_sec: f(memoryMBs),
+      event_loop: loop,
+      memory_before: before,
+      memory_after: after,
+      rss_delta_mb: f(rssDelta),
+      pressure_before: pressureBefore,
+      pressure_after: pressureAfter,
+      effective_score: f(effectiveScore),
+      rejected,
+      reject_reason: rejected
+        ? {
+            event_loop_too_high: loop.p95_ms > MEMORY_PIPELINE_STATE.policy.reject_event_loop_p95_above_ms,
+            rss_delta_too_high: rssDelta > MEMORY_PIPELINE_STATE.policy.reject_rss_delta_above_mb,
+            pressure_high: pressureAfter.pressure === "HIGH"
+          }
+        : null,
+      honesty: "Measured memory_MB_sec is real for this runtime; DDR7_9600_CAS6 is a software profile label."
+    };
+  }
+
+  async function tuneMemoryPipeline(ms) {
+    const durationMs = Math.max(500, Math.min(Number(ms || 1500), 10000));
+    const candidates = [];
+
+    for (const lanes of MEMORY_PIPELINE_STATE.policy.lanes) {
+      for (const sizeMB of MEMORY_PIPELINE_STATE.policy.block_sizes_mb) {
+        const totalMB = lanes * sizeMB * 2;
+
+        if (totalMB > 512) continue;
+
+        candidates.push({ lanes, sizeMB });
+      }
+    }
+
+    const results = [];
+
+    for (const c of candidates) {
+      const r = await runMemoryProfile(c, Math.max(120, Math.floor(durationMs / candidates.length)));
+      results.push(r);
+    }
+
+    const accepted = results.filter(r => !r.rejected);
+    const pool = accepted.length ? accepted : results;
+
+    pool.sort((a, b) => {
+      if (b.effective_score !== a.effective_score) return b.effective_score - a.effective_score;
+      return b.memory_MB_sec - a.memory_MB_sec;
+    });
+
+    const best = pool[0] || null;
+
+    MEMORY_PIPELINE_STATE.selected_profile = best
+      ? {
+          profile: best.profile,
+          lanes: best.lanes,
+          sizeMB: best.sizeMB,
+          memory_MB_sec: best.memory_MB_sec,
+          event_loop_p95_ms: best.event_loop.p95_ms,
+          effective_score: best.effective_score
+        }
+      : null;
+
+    MEMORY_PIPELINE_STATE.last_tune = {
+      tuned_at: new Date().toISOString(),
+      duration_ms: durationMs,
+      candidates_tested: results.length,
+      accepted_count: accepted.length,
+      best: MEMORY_PIPELINE_STATE.selected_profile,
+      results
+    };
+
+    return {
+      ok: true,
+      module: "TRILLIONS_MEMORY_PIPELINE_TUNE",
+      profile_label: MEMORY_PIPELINE_STATE.profile_label,
+      selected_profile: MEMORY_PIPELINE_STATE.selected_profile,
+      accepted_count: accepted.length,
+      candidates_tested: results.length,
+      results,
+      honesty: {
+        ddr7_9600_cas6_is_profile_label: true,
+        real_metric: "memory_MB_sec",
+        no_fake_bandwidth: true
+      }
+    };
+  }
+
+  async function runSelectedMemoryPipeline(ms) {
+    if (!MEMORY_PIPELINE_STATE.selected_profile) {
+      await tuneMemoryPipeline(1200);
+    }
+
+    const p = MEMORY_PIPELINE_STATE.selected_profile || { lanes: 1, sizeMB: 16 };
+    const result = await runMemoryProfile(p, ms || 1000);
+
+    MEMORY_PIPELINE_STATE.last_run = {
+      ran_at: new Date().toISOString(),
+      selected_profile: p,
+      result
+    };
+
+    return {
+      ok: true,
+      module: "TRILLIONS_MEMORY_PIPELINE_RUN",
+      selected_profile: p,
+      result
+    };
+  }
+
+  function attachRoute(method, path, handler) {
+    if (typeof app !== "undefined" && app && typeof app[method] === "function") {
+      app[method](path, handler);
+      return true;
+    }
+
+    if (typeof global !== "undefined" && global.app && typeof global.app[method] === "function") {
+      global.app[method](path, handler);
+      return true;
+    }
+
+    return false;
+  }
+
+  const mounted =
+    attachRoute("get", "/api/memory-pipeline/status", (req, res) => {
+      res.json({
+        ok: true,
+        state: MEMORY_PIPELINE_STATE,
+        runtime: {
+          node: process.version,
+          platform: os.platform(),
+          arch: os.arch(),
+          logical_cpus: os.cpus().length,
+          cpu_model: os.cpus()[0]?.model || "UNAVAILABLE",
+          memory: memMB(),
+          pressure: pressureStatus()
+        }
+      });
+    }) &&
+    attachRoute("get", "/api/memory-pipeline/tune", async (req, res) => {
+      try {
+        const ms = Number(req.query.ms || 1500);
+        res.json(await tuneMemoryPipeline(ms));
+      } catch (err) {
+        res.status(500).json({ ok: false, error: err.message });
+      }
+    }) &&
+    attachRoute("get", "/api/memory-pipeline/run", async (req, res) => {
+      try {
+        const ms = Number(req.query.ms || 1000);
+        res.json(await runSelectedMemoryPipeline(ms));
+      } catch (err) {
+        res.status(500).json({ ok: false, error: err.message });
+      }
+    }) &&
+    attachRoute("get", "/api/memory-pipeline/profile", (req, res) => {
+      res.json({
+        ok: true,
+        selected_profile: MEMORY_PIPELINE_STATE.selected_profile,
+        policy: MEMORY_PIPELINE_STATE.policy
+      });
+    }) &&
+    attachRoute("post", "/api/memory-pipeline/profile", (req, res) => {
+      try {
+        const body = req.body || {};
+        const lanes = Number(body.lanes);
+        const sizeMB = Number(body.sizeMB);
+
+        if (!Number.isFinite(lanes) || !Number.isFinite(sizeMB)) {
+          return res.status(400).json({
+            ok: false,
+            error: "lanes and sizeMB must be numbers"
+          });
+        }
+
+        MEMORY_PIPELINE_STATE.selected_profile = {
+          profile: `DDR7_9600_CAS6_MANUAL_${lanes}x${sizeMB}MB`,
+          lanes,
+          sizeMB,
+          manual: true
+        };
+
+        res.json({
+          ok: true,
+          selected_profile: MEMORY_PIPELINE_STATE.selected_profile
+        });
+      } catch (err) {
+        res.status(500).json({ ok: false, error: err.message });
+      }
+    });
+
+  if (mounted) {
+    console.log("[TRILLIONS] Memory Pipeline routes mounted:");
+    console.log("  GET  /api/memory-pipeline/status");
+    console.log("  GET  /api/memory-pipeline/tune?ms=1500");
+    console.log("  GET  /api/memory-pipeline/run?ms=1000");
+    console.log("  GET  /api/memory-pipeline/profile");
+    console.log("  POST /api/memory-pipeline/profile");
+  } else {
+    console.warn("[TRILLIONS] Memory Pipeline loaded but Express app was not found.");
+    console.warn("[TRILLIONS] Add global.app = app after const app = express();");
+  }
+
+  if (typeof global !== "undefined") {
+    global.TRILLIONS_MEMORY_PIPELINE_STATE = MEMORY_PIPELINE_STATE;
+    global.TRILLIONS_MEMORY_PIPELINE_TUNE = tuneMemoryPipeline;
+    global.TRILLIONS_MEMORY_PIPELINE_RUN = runSelectedMemoryPipeline;
+  }
+})();
