@@ -12443,3 +12443,881 @@ try {
 <button onclick="load('/api/qn-coprocessor/backend')">QN BACKEND</button>
 <button onclick="load('/api/qn-coprocessor/memory-reality')">QN MEMORY REAL</button>
 */
+
+/* ============================================================
+   TRILLIONS ADDITIVE HARDWARE_DIE_3DNAND_PROCESSOR_FIELD
+   Hardware-first kernel processor field.
+   Prepares die/dye layers for 3D NAND-style processor/coprocessor
+   topology. Additive only. No fake silicon. No fake memory.
+============================================================ */
+
+const HARDWARE_DIE_3DNAND_PROCESSOR_FIELD = {
+  name: "HARDWARE_DIE_3DNAND_PROCESSOR_FIELD",
+  version: "V1_DIE_LAYER_3DNAND_PROCESSOR_COPROCESSOR_TOPOLOGY",
+  additive_only: true,
+  identity: "HARDWARE_FIRST_KERNEL_PROCESSOR",
+  role: "prepare die-layer topology for processor/coprocessor over 3D NAND style memory field",
+  not_app: true,
+  not_logicware_only: true,
+  silicon_claim: "NO_FAKE_SILICON",
+  memory_claim: "NO_FAKE_PHYSICAL_3DNAND_CAPACITY",
+  relies_on_existing_guards: [
+    "LOGIC_GUARD",
+    "REAL_OR_UNAVAILABLE",
+    "NO_FAKE_METRICS",
+    "NO_FAKE_POWER",
+    "NO_FAKE_QPU",
+    "HUMAN_OVER_AI"
+  ],
+  doctrine: [
+    "MATERIAL_FIRST",
+    "KERNEL_AS_PROCESSOR",
+    "DIE_LAYERS_BEFORE_SOFTWARE_FUNCTIONS",
+    "3DNAND_TOPOLOGY_AS_STRUCTURE",
+    "PROCESSOR_AND_COPROCESSOR_SUPPORT",
+    "REAL_DEVICE_OR_UNAVAILABLE",
+    "NO_FAKE_NAND",
+    "NO_FAKE_DIE_STACK",
+    "NO_FAKE_ECC",
+    "NO_FAKE_BANDWIDTH"
+  ],
+  structures: [
+    "DIE",
+    "DYE_LAYER",
+    "STACK",
+    "CHANNEL",
+    "PACKAGE",
+    "CONTROLLER",
+    "PLANE",
+    "BLOCK",
+    "PAGE",
+    "CELL",
+    "ECC",
+    "WEAR_LEVELING",
+    "CACHE",
+    "LATENCY",
+    "PROCESSOR",
+    "COPROCESSOR",
+    "QN_FIELD",
+    "HASH_FIELD",
+    "MEMORY_FIELD",
+    "IO_FIELD"
+  ]
+};
+
+const DICT_DIE_3DNAND_PROCESSOR = {
+  version: "DICT_DIE_3DNAND_PROCESSOR_V1",
+  mode: "HARDWARE_FIRST_REAL_OR_UNAVAILABLE",
+  families: {
+    DIE_LAYER_CORE: {
+      keys: [
+        "die",
+        "dye",
+        "dye layer",
+        "die layer",
+        "silicon die",
+        "chip die",
+        "wafer",
+        "package",
+        "stacked die",
+        "multi die",
+        "chiplet",
+        "interposer",
+        "through silicon via",
+        "tsv",
+        "micro bump",
+        "substrate",
+        "3d stack"
+      ],
+      routes: [
+        "/api/die-3dnand",
+        "/api/die-3dnand/dict",
+        "/api/die-3dnand/topology"
+      ],
+      solvers: [
+        "die_layer_mapper",
+        "stack_topology_descriptor",
+        "silicon_claim_guard"
+      ]
+    },
+
+    NAND_3D_CORE: {
+      keys: [
+        "3d nand",
+        "3dnand",
+        "nand",
+        "flash",
+        "tlc",
+        "qlc",
+        "slc",
+        "mlc",
+        "cell",
+        "wordline",
+        "bitline",
+        "page",
+        "block",
+        "plane",
+        "lun",
+        "channel",
+        "ce",
+        "die stack",
+        "erase block",
+        "program page",
+        "read disturb",
+        "program disturb",
+        "retention",
+        "endurance"
+      ],
+      routes: [
+        "/api/die-3dnand/nand",
+        "/api/die-3dnand/probe"
+      ],
+      solvers: [
+        "nand_vocabulary_router",
+        "block_page_plane_mapper",
+        "real_device_probe"
+      ]
+    },
+
+    NAND_CONTROLLER: {
+      keys: [
+        "controller",
+        "flash controller",
+        "ftl",
+        "flash translation layer",
+        "wear leveling",
+        "garbage collection",
+        "trim",
+        "over provisioning",
+        "bad block",
+        "ecc",
+        "ldpc",
+        "bch",
+        "raid inside ssd",
+        "dram cache",
+        "slc cache",
+        "write amplification",
+        "read amplification",
+        "queue depth",
+        "nvme controller"
+      ],
+      routes: [
+        "/api/die-3dnand/controller",
+        "/api/die-3dnand/ecc"
+      ],
+      solvers: [
+        "ftl_descriptor",
+        "ecc_descriptor",
+        "wear_leveling_descriptor"
+      ]
+    },
+
+    PROCESSOR_COPROCESSOR: {
+      keys: [
+        "processor",
+        "coprocessor",
+        "co processor",
+        "kernel processor",
+        "memory processor",
+        "near memory compute",
+        "processing in memory",
+        "pim",
+        "computational storage",
+        "storage processor",
+        "dma engine",
+        "crypto engine",
+        "hash engine",
+        "qn coprocessor",
+        "ai accelerator",
+        "npu",
+        "fpga",
+        "asic"
+      ],
+      routes: [
+        "/api/die-3dnand/processor",
+        "/api/die-3dnand/coprocessor"
+      ],
+      solvers: [
+        "processor_coprocessor_mapper",
+        "near_memory_compute_router",
+        "backend_or_unavailable"
+      ]
+    }
+  }
+};
+
+function dieNum(x, d = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
+
+function dieRound(x, d = 3) {
+  const n = Number(x);
+  return Number.isFinite(n) ? +n.toFixed(d) : null;
+}
+
+function dieClassifyText(input) {
+  const text = String(input || "").toLowerCase();
+  const hits = [];
+
+  for (const [family, cfg] of Object.entries(DICT_DIE_3DNAND_PROCESSOR.families)) {
+    let score = 0;
+    const matched = [];
+
+    for (const key of cfg.keys || []) {
+      if (text.includes(String(key).toLowerCase())) {
+        score++;
+        matched.push(key);
+      }
+    }
+
+    if (score > 0) {
+      hits.push({
+        family,
+        score,
+        matched,
+        routes: cfg.routes,
+        solvers: cfg.solvers
+      });
+    }
+  }
+
+  return hits.sort((a, b) => b.score - a.score);
+}
+
+/* ============================================================
+   DIE / 3DNAND DICT EXTENSIONS
+============================================================ */
+
+DICT_DIE_3DNAND_PROCESSOR.families.DIE_CACHE_MEMORY = {
+  keys: [
+    "cache die",
+    "cache layer",
+    "3d vcache",
+    "3d v-cache",
+    "sram cache",
+    "dram cache",
+    "hbm cache",
+    "nand cache",
+    "slc cache",
+    "page cache",
+    "buffer cache",
+    "write cache",
+    "read cache",
+    "metadata cache",
+    "mapping table",
+    "l2p table",
+    "p2l table",
+    "hot data",
+    "cold data",
+    "cache line",
+    "cache coherence"
+  ],
+  routes: [
+    "/api/die-3dnand/cache",
+    "/api/die-3dnand/topology"
+  ],
+  solvers: [
+    "die_cache_mapper",
+    "hot_cold_cache_layout",
+    "coherence_descriptor"
+  ]
+};
+
+DICT_DIE_3DNAND_PROCESSOR.families.ECC_RELIABILITY = {
+  keys: [
+    "ecc",
+    "error correction",
+    "error correcting code",
+    "bch",
+    "ldpc",
+    "parity",
+    "checksum",
+    "crc",
+    "scrubbing",
+    "patrol scrub",
+    "bit error rate",
+    "uber",
+    "raw bit error rate",
+    "rber",
+    "uncorrectable error",
+    "correctable error",
+    "retention error",
+    "read disturb",
+    "program disturb",
+    "raid parity",
+    "3d vcache ecc"
+  ],
+  routes: [
+    "/api/die-3dnand/ecc",
+    "/api/die-3dnand/raid"
+  ],
+  solvers: [
+    "ecc_layer_descriptor",
+    "logical_parity_checker",
+    "no_fake_physical_ecc"
+  ]
+};
+
+DICT_DIE_3DNAND_PROCESSOR.families.LATENCY_CHANNELS = {
+  keys: [
+    "latency",
+    "read latency",
+    "write latency",
+    "erase latency",
+    "program latency",
+    "channel latency",
+    "queue latency",
+    "nvme latency",
+    "pcie latency",
+    "controller latency",
+    "bus latency",
+    "interconnect latency",
+    "die to die latency",
+    "stack latency",
+    "plane parallelism",
+    "channel parallelism",
+    "queue depth",
+    "iodepth"
+  ],
+  routes: [
+    "/api/die-3dnand/latency",
+    "/api/latency-min/probe"
+  ],
+  solvers: [
+    "die_latency_descriptor",
+    "io_latency_probe_router",
+    "channel_parallelism_mapper"
+  ]
+};
+
+DICT_DIE_3DNAND_PROCESSOR.families.BUS_INTERCONNECT = {
+  keys: [
+    "pcie",
+    "pcie gen3",
+    "pcie gen4",
+    "pcie gen5",
+    "pcie gen6",
+    "nvme",
+    "sata",
+    "ufs",
+    "onfi",
+    "toggle nand",
+    "cxl",
+    "cxl.mem",
+    "cxl.cache",
+    "infinity fabric",
+    "nvlink",
+    "ucie",
+    "die to die",
+    "chiplet interconnect",
+    "serdes",
+    "dma",
+    "bar",
+    "resizable bar"
+  ],
+  routes: [
+    "/api/die-3dnand/bus",
+    "/api/die-3dnand/probe"
+  ],
+  solvers: [
+    "bus_interconnect_detector",
+    "pcie_nvme_probe",
+    "cxl_unavailable_guard"
+  ]
+};
+
+DICT_DIE_3DNAND_PROCESSOR.families.QN_DIE_COPROCESSOR = {
+  keys: [
+    "qn",
+    "quantum neural",
+    "quantique neuronal",
+    "qn coprocessor",
+    "qpu",
+    "qasm",
+    "tensor network",
+    "statevector",
+    "l1 8096",
+    "l6 raw",
+    "l6 raid",
+    "software raid",
+    "3d vcache ecc",
+    "coprocessor field",
+    "quantum backend"
+  ],
+  routes: [
+    "/api/die-3dnand/qn",
+    "/api/qn-coprocessor/probe"
+  ],
+  solvers: [
+    "qn_die_bridge",
+    "logical_coprocessor_not_fake_qpu",
+    "cache_layer_bridge"
+  ]
+};
+
+const DIE_3DNAND_TOPOLOGY_DEFAULT = {
+  version: "DIE_3DNAND_TOPOLOGY_DEFAULT_V1",
+  physical_claim: false,
+  topology_type: "LOGICAL_PREPARED_TOPOLOGY",
+  package: {
+    role: "outer hardware package descriptor",
+    contains: ["controller", "die_stack", "cache_layers", "coprocessor_interfaces"]
+  },
+  die_stack: {
+    role: "3D NAND style stacked memory structure",
+    layers: ["L0_CONTROLLER", "L1_CACHE", "L2_MAPPING", "L3_PLANES", "L4_BLOCKS", "L5_PAGES", "L6_RAW_STACK_FIELD"]
+  },
+  processor_plane: {
+    role: "kernel processor plane",
+    units: ["hash_unit", "latency_unit", "cache_unit", "memory_unit", "io_unit", "qn_bridge"]
+  },
+  coprocessor_plane: {
+    role: "optional real-or-unavailable coprocessor plane",
+    units: ["qn_logical", "gpu_if_detected", "npu_if_detected", "fpga_if_detected", "randomx_if_binary_detected"]
+  }
+};
+
+/* ============================================================
+   DIE / 3DNAND TOPOLOGY BUILDERS
+============================================================ */
+
+function die3dNandTopology(config = {}) {
+  const channels = Math.min(Math.max(dieNum(config.channels, 4), 1), 32);
+  const diesPerChannel = Math.min(Math.max(dieNum(config.diesPerChannel, 2), 1), 32);
+  const planesPerDie = Math.min(Math.max(dieNum(config.planesPerDie, 2), 1), 16);
+  const blocksPerPlane = Math.min(Math.max(dieNum(config.blocksPerPlane, 1024), 1), 1000000);
+  const pagesPerBlock = Math.min(Math.max(dieNum(config.pagesPerBlock, 256), 1), 100000);
+  const pageKB = Math.min(Math.max(dieNum(config.pageKB, 16), 1), 1024);
+
+  const totalDies = channels * diesPerChannel;
+  const totalPlanes = totalDies * planesPerDie;
+  const totalBlocks = totalPlanes * blocksPerPlane;
+  const totalPages = totalBlocks * pagesPerBlock;
+  const logicalBytes = totalPages * pageKB * 1024;
+
+  return {
+    time: now(),
+    field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD.name,
+    topology_type: "LOGICAL_3DNAND_PROCESSOR_TOPOLOGY",
+    physical_claim: false,
+    config: {
+      channels,
+      diesPerChannel,
+      planesPerDie,
+      blocksPerPlane,
+      pagesPerBlock,
+      pageKB
+    },
+    derived_logical_geometry: {
+      totalDies,
+      totalPlanes,
+      totalBlocks,
+      totalPages,
+      logicalBytes,
+      logicalGB: dieRound(logicalBytes / 1073741824, 6)
+    },
+    layers: {
+      L0_CONTROLLER: "FTL / scheduler / ECC / DMA / IO queue",
+      L1_DIE_CACHE: "hot cache / metadata / small low latency working set",
+      L2_MAPPING: "logical-to-physical map / page table / cache index",
+      L3_PLANES: "parallel plane access descriptor",
+      L4_BLOCKS: "erase/program block descriptor",
+      L5_PAGES: "read/write page descriptor",
+      L6_RAW_STACK_FIELD: "raw structural expansion descriptor, not allocated memory"
+    },
+    processor_support: {
+      processor_plane: DIE_3DNAND_TOPOLOGY_DEFAULT.processor_plane,
+      coprocessor_plane: DIE_3DNAND_TOPOLOGY_DEFAULT.coprocessor_plane
+    },
+    honesty:
+      "This is a prepared logical topology. It does not claim that a physical 3D NAND processor exists locally."
+  };
+}
+
+function die3dNandCoprocessorBridge() {
+  return {
+    time: now(),
+    field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD.name,
+    bridge: "PROCESSOR_COPROCESSOR_DIE_BRIDGE",
+    processor_units: {
+      HASH: {
+        source: "HASH_MULTI_FIELD / Node OpenSSL / external binary if detected",
+        role: "crypto/hash execution unit"
+      },
+      LATENCY: {
+        source: "LATENCY_MIN_FIELD",
+        role: "p50/p95/p99 propagation timing"
+      },
+      MEMORY: {
+        source: "MEMORY_TERMS / CACHE_MEMORY",
+        role: "cache/RAM/virtual/storage memory signals"
+      },
+      QN: {
+        source: "QN_QUANTUM_COPROCESSOR_FIELD",
+        role: "logical QN coprocessor field, not fake QPU"
+      },
+      IO: {
+        source: "filesystem/NVMe/OS probes",
+        role: "device and bus surface"
+      }
+    },
+    die_planes: {
+      control_plane: "controller / scheduler / FTL / ECC",
+      memory_plane: "3D NAND style channel/die/plane/block/page",
+      compute_plane: "hash/QN/solver/latency units",
+      cache_plane: "3D_VCACHE_ECC logical cache",
+      external_plane: "GPU/NPU/FPGA/QPU/RandomX only if real backend exists"
+    },
+    meaning:
+      "The kernel behaves as a hardware-first processor surface; software routes only expose these units."
+  };
+}
+
+function die3dNandEccMap(data = {}) {
+  const payload = JSON.stringify(data || {});
+  const sha256 = crypto.createHash("sha256").update(payload).digest("hex");
+  const sha512 = crypto.createHash("sha512").update(payload).digest("hex");
+
+  const parity = crypto
+    .createHash("sha256")
+    .update(sha256 + "|" + sha512)
+    .digest("hex");
+
+  return {
+    time: now(),
+    field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD.name,
+    ecc_map: "LOGICAL_3D_VCACHE_ECC_MAP",
+    physical_ecc_claim: false,
+    payload_bytes: Buffer.byteLength(payload, "utf8"),
+    checksum: {
+      sha256,
+      sha512,
+      parity
+    },
+    ecc_layers: {
+      L1_FAST_CHECK: "sha256 metadata checksum",
+      L2_DEEP_CHECK: "sha512 metadata checksum",
+      L3_PARITY: "combined parity over checksums",
+      L4_LEDGER: "optional append-only trace if integrated"
+    },
+    meaning:
+      "Logical ECC/checksum map over metadata, not physical ECC RAM validation."
+  };
+}
+
+function die3dNandRaidMap(shards = []) {
+  const list = Array.isArray(shards) ? shards : [];
+  const mapped = list.map((x, i) => {
+    const payload = typeof x === "string" ? x : JSON.stringify(x || {});
+    return {
+      index: i,
+      bytes: Buffer.byteLength(payload, "utf8"),
+      sha256: crypto.createHash("sha256").update(payload).digest("hex"),
+      preview: safeText(payload, 300)
+    };
+  });
+
+  const parity = crypto
+    .createHash("sha256")
+    .update(mapped.map(x => x.sha256).join("|"))
+    .digest("hex");
+
+  return {
+    time: now(),
+    field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD.name,
+    raid_map: "LOGICAL_DIE_LAYER_SOFTWARE_RAID",
+    physical_raid_claim: false,
+    shards_count: mapped.length,
+    shards: mapped,
+    parity_sha256: parity,
+    raid_shape: {
+      stripe: "cache shards across die layers",
+      parity: "sha256 parity over shard checksums",
+      mirror: "possible via duplicate shard metadata",
+      ecc: "3D_VCACHE_ECC logical map"
+    }
+  };
+}
+
+/* ============================================================
+   HARDWARE PROBES FOR DIE / 3DNAND / PROCESSOR FIELD
+============================================================ */
+
+async function die3dNandHardwareProbe() {
+  const cmds = [
+    "lsblk -o NAME,TYPE,SIZE,MODEL,SERIAL,ROTA,DISC-MAX,DISC-GRAN,FSTYPE,MOUNTPOINT 2>/dev/null || echo lsblk_unavailable",
+    "nvme list 2>/dev/null || echo nvme_cli_unavailable",
+    "lspci 2>/dev/null | grep -Ei 'non-volatile|nvme|ssd|sata|raid|cxl|memory|accelerator|vga|3d' || true",
+    "cat /sys/block/*/queue/read_ahead_kb 2>/dev/null | head -50 || true",
+    "cat /sys/block/*/queue/rotational 2>/dev/null | head -50 || true",
+    "df -hT 2>/dev/null || echo df_unavailable",
+    "mount 2>/dev/null | grep -Ei 'tmpfs|ext4|xfs|btrfs|zfs|nfs|ceph|lustre|gpfs' || true"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 12000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD.name,
+    device_status: {
+      block_devices_visible: !/lsblk_unavailable/.test(raw),
+      nvme_cli_visible: !/nvme_cli_unavailable/.test(raw),
+      nvme_hint: /nvme|non-volatile/.test(raw),
+      ssd_hint: /ssd|nvme|non-volatile/.test(raw),
+      cxl_hint: /cxl/.test(raw),
+      accelerator_hint: /accelerator|vga|3d|nvidia|amd|intel/.test(raw)
+    },
+    raw: {
+      lsblk: safeText(out[0].out, 16000),
+      nvme: safeText(out[1].out, 12000),
+      lspci: safeText(out[2].out, 12000),
+      readahead: safeText(out[3].out, 4000),
+      rotational: safeText(out[4].out, 4000),
+      filesystems: safeText(out[5].out, 12000),
+      mounts: safeText(out[6].out, 12000)
+    },
+    meaning:
+      "Detects exposed storage/bus hints only. It does not reveal internal NAND die geometry unless device/tool exposes it."
+  };
+}
+
+async function die3dNandProcessorProbe() {
+  const cmds = [
+    "lscpu 2>/dev/null | head -120 || echo lscpu_unavailable",
+    "cat /proc/cpuinfo 2>/dev/null | grep -m1 -Ei 'model name|flags|features' || true",
+    "node -e \"console.log(JSON.stringify(process.versions))\"",
+    "nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || echo nvidia_smi_unavailable",
+    "which xmrig 2>/dev/null || echo xmrig_unavailable",
+    "python3 - <<'PY'\nimport importlib.util,json\nmods=['numpy','scipy','torch','qiskit','cirq','pennylane']\nprint(json.dumps({m:importlib.util.find_spec(m) is not None for m in mods}))\nPY"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 12000)));
+
+  let py = {};
+  try {
+    py = JSON.parse(String(out[5].out || "{}").trim());
+  } catch (e) {
+    py = {};
+  }
+
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD.name,
+    processor_status: {
+      cpu_visible: !/lscpu_unavailable/.test(raw),
+      avx2: /\bavx2\b/.test(raw),
+      avx512: /\bavx512/.test(raw),
+      sha_extensions: /\bsha_ni\b|\bsha\b/.test(raw),
+      nvidia_gpu_tool: !/nvidia_smi_unavailable/.test(raw),
+      randomx_tool: !/xmrig_unavailable/.test(raw),
+      python_modules: py
+    },
+    raw: {
+      lscpu: safeText(out[0].out, 12000),
+      cpuinfo: safeText(out[1].out, 12000),
+      node_versions: safeText(out[2].out, 4000),
+      nvidia: safeText(out[3].out, 4000),
+      xmrig: safeText(out[4].out, 1000),
+      python_modules: py
+    }
+  };
+}
+
+async function die3dNandFullProbe() {
+  const [hardware, processor] = await Promise.all([
+    die3dNandHardwareProbe(),
+    die3dNandProcessorProbe()
+  ]);
+
+  return {
+    time: now(),
+    field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD,
+    dict: DICT_DIE_3DNAND_PROCESSOR,
+    topology_default: DIE_3DNAND_TOPOLOGY_DEFAULT,
+    hardware,
+    processor,
+    bridge: die3dNandCoprocessorBridge(),
+    reading:
+      "Hardware-first kernel processor probe. Real devices are shown only if exposed by OS/tools."
+  };
+}
+
+/* ============================================================
+   DIE / 3DNAND PROCESSOR API ROUTES
+============================================================ */
+
+app.get("/api/die-3dnand", async (req, res) => {
+  res.json({
+    time: now(),
+    field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD,
+    dict: DICT_DIE_3DNAND_PROCESSOR,
+    topology_default: DIE_3DNAND_TOPOLOGY_DEFAULT
+  });
+});
+
+app.get("/api/die-3dnand/dict", async (req, res) => {
+  res.json(DICT_DIE_3DNAND_PROCESSOR);
+});
+
+app.get("/api/die-3dnand/probe", async (req, res) => {
+  res.json(await die3dNandFullProbe());
+});
+
+app.get("/api/die-3dnand/hardware", async (req, res) => {
+  res.json(await die3dNandHardwareProbe());
+});
+
+app.get("/api/die-3dnand/processor", async (req, res) => {
+  res.json(await die3dNandProcessorProbe());
+});
+
+app.get("/api/die-3dnand/topology", async (req, res) => {
+  res.json(die3dNandTopology({
+    channels: req.query.channels || 4,
+    diesPerChannel: req.query.dies || 2,
+    planesPerDie: req.query.planes || 2,
+    blocksPerPlane: req.query.blocks || 1024,
+    pagesPerBlock: req.query.pages || 256,
+    pageKB: req.query.pageKB || 16
+  }));
+});
+
+app.get("/api/die-3dnand/nand", async (req, res) => {
+  res.json(die3dNandTopology(req.query || {}));
+});
+
+app.get("/api/die-3dnand/coprocessor", async (req, res) => {
+  res.json(die3dNandCoprocessorBridge());
+});
+
+app.get("/api/die-3dnand/cache", async (req, res) => {
+  res.json({
+    time: now(),
+    field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD.name,
+    cache_die_layers: {
+      L1: "hot cache / metadata",
+      L2: "mapping cache / L2P table",
+      L3: "plane/block/page cache",
+      L4: "hash/latency cache",
+      L5: "memory/cache bridge",
+      L6: "raw stack field + software RAID"
+    },
+    relation: [
+      "CACHE_MEMORY_SOLVER",
+      "QN_QUANTUM_COPROCESSOR_FIELD",
+      "LATENCY_MIN_FIELD",
+      "HASH_MULTI_FIELD"
+    ]
+  });
+});
+
+app.post("/api/die-3dnand/ecc", async (req, res) => {
+  res.json(die3dNandEccMap(req.body || {}));
+});
+
+app.post("/api/die-3dnand/raid", async (req, res) => {
+  res.json(die3dNandRaidMap(req.body && req.body.shards || []));
+});
+
+app.get("/api/die-3dnand/latency", async (req, res) => {
+  res.json({
+    time: now(),
+    field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD.name,
+    route: "latency bridge",
+    latency_min_available: typeof latencyMinProbe === "function",
+    suggested_probe: "/api/latency-min/probe",
+    meaning:
+      "Die latency is bridged to real latency probes where available; internal NAND die latency is unavailable unless hardware exposes it."
+  });
+});
+
+app.get("/api/die-3dnand/bus", async (req, res) => {
+  res.json(await die3dNandHardwareProbe());
+});
+
+app.get("/api/die-3dnand/qn", async (req, res) => {
+  if (typeof qnCoprocessorProbe === "function") {
+    res.json(await qnCoprocessorProbe());
+  } else {
+    res.json({
+      ok: false,
+      status: "QN_COPROCESSOR_FIELD_UNAVAILABLE",
+      hint: "Compile QN_QUANTUM_COPROCESSOR_FIELD first."
+    });
+  }
+});
+
+app.get("/api/die-3dnand/classify", async (req, res) => {
+  const text = req.query.q || req.query.text || "";
+  res.json({
+    time: now(),
+    input: safeText(text, 4000),
+    classification: dieClassifyText(text),
+    dict_version: DICT_DIE_3DNAND_PROCESSOR.version
+  });
+});
+
+app.post("/api/die-3dnand/classify", async (req, res) => {
+  const text = req.body && (req.body.q || req.body.text) || "";
+  res.json({
+    time: now(),
+    input: safeText(text, 4000),
+    classification: dieClassifyText(text),
+    dict_version: DICT_DIE_3DNAND_PROCESSOR.version
+  });
+});
+
+/* Optional registry hook */
+try {
+  if (typeof moduleRegistry === "function") {
+    const __moduleRegistryOriginal_DIE_3DNAND = moduleRegistry;
+
+    moduleRegistry = function moduleRegistryWithDie3DNand() {
+      const base = __moduleRegistryOriginal_DIE_3DNAND();
+
+      return {
+        ...base,
+        hardware_die_3dnand_processor_field: {
+          field: HARDWARE_DIE_3DNAND_PROCESSOR_FIELD,
+          dict: DICT_DIE_3DNAND_PROCESSOR,
+          topology_default: DIE_3DNAND_TOPOLOGY_DEFAULT,
+          routes: [
+            "/api/die-3dnand",
+            "/api/die-3dnand/dict",
+            "/api/die-3dnand/probe",
+            "/api/die-3dnand/hardware",
+            "/api/die-3dnand/processor",
+            "/api/die-3dnand/topology",
+            "/api/die-3dnand/nand",
+            "/api/die-3dnand/coprocessor",
+            "/api/die-3dnand/cache",
+            "/api/die-3dnand/ecc",
+            "/api/die-3dnand/raid",
+            "/api/die-3dnand/latency",
+            "/api/die-3dnand/bus",
+            "/api/die-3dnand/qn",
+            "/api/die-3dnand/classify"
+          ]
+        }
+      };
+    };
+  }
+} catch (e) {
+  console.warn("DIE_3DNAND registry hook unavailable:", e.message);
+}
+
+/* Optional UI buttons */
+/*
+<button onclick="load('/api/die-3dnand')">DIE 3DNAND</button>
+<button onclick="load('/api/die-3dnand/probe')">DIE PROBE</button>
+<button onclick="load('/api/die-3dnand/hardware')">NAND HW</button>
+<button onclick="load('/api/die-3dnand/processor')">DIE CPU</button>
+<button onclick="load('/api/die-3dnand/topology')">3DNAND TOPO</button>
+<button onclick="load('/api/die-3dnand/coprocessor')">COPROCESSOR</button>
+<button onclick="load('/api/die-3dnand/cache')">DIE CACHE</button>
+<button onclick="load('/api/die-3dnand/latency')">DIE LATENCY</button>
+*/
