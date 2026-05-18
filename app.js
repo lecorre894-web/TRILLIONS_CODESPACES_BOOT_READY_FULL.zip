@@ -10310,3 +10310,760 @@ try {
 <button onclick="load('/api/latency-min/io')">IO LAT</button>
 <button onclick="load('/api/latency-min/shell')">SHELL LAT</button>
 */
+
+/* ============================================================
+   TRILLIONS ADDITIVE SHA256_SHA512_FIELD
+   Purpose: SHA256 and SHA512 only. No SHA256d. No other algos.
+   Additive only. No new police. No rally score.
+   Uses existing LOGIC_GUARD / REAL_OR_UNAVAILABLE.
+============================================================ */
+
+const SHA256_SHA512_FIELD = {
+  name: "SHA256_SHA512_FIELD",
+  version: "V1_SHA256_SHA512_ONLY_DICT_PROCESSOR_FIELD",
+  additive_only: true,
+  role: "processor field for SHA256 and SHA512 only",
+  algorithm_scope: ["SHA256", "SHA512"],
+  explicitly_excluded: [
+    "SHA256D",
+    "DOUBLE_SHA256",
+    "SHA1",
+    "SHA224",
+    "SHA384",
+    "SHA3",
+    "KECCAK",
+    "MD5",
+    "BLAKE2",
+    "BLAKE3",
+    "RIPEMD160",
+    "SCRYPT",
+    "ARGON2",
+    "RANDOMX"
+  ],
+  relies_on_existing_guards: [
+    "LOGIC_GUARD",
+    "REAL_OR_UNAVAILABLE",
+    "NO_FAKE_METRICS",
+    "NO_FAKE_POWER"
+  ],
+  doctrine: [
+    "SHA256_SHA512_ONLY",
+    "HASH_AS_REAL_PROCESSOR_SIGNAL",
+    "NO_SHA256D",
+    "NO_OTHER_HASH_ALGO",
+    "NO_RALLY_SCORE",
+    "NO_NEW_POLICE_LAYER",
+    "REAL_NODE_CRYPTO_OR_UNAVAILABLE",
+    "OPENSSL_CPU_PATH_IF_AVAILABLE"
+  ],
+  structures: [
+    "NODE_CRYPTO",
+    "OPENSSL",
+    "CPU_FLAGS",
+    "BUFFER",
+    "STREAM",
+    "FILE_HASH",
+    "MESSAGE_HASH",
+    "BENCH_LOCAL",
+    "LATENCY",
+    "DICT"
+  ]
+};
+
+const DICT_SHA256_SHA512 = {
+  version: "DICT_SHA256_SHA512_ONLY_V1",
+  mode: "SHA256_SHA512_REAL_OR_UNAVAILABLE",
+  families: {
+    SHA256_CORE: {
+      keys: [
+        "sha256",
+        "sha-256",
+        "secure hash algorithm 256",
+        "digest sha256",
+        "hash sha256",
+        "sha256 hex",
+        "sha256 base64",
+        "sha256 buffer",
+        "sha256 file",
+        "sha256 stream",
+        "sha256 hmac",
+        "sha256 openssl",
+        "sha256 node crypto",
+        "sha256 cpu"
+      ],
+      routes: [
+        "/api/sha-field/sha256",
+        "/api/sha-field/hash",
+        "/api/sha-field/bench"
+      ],
+      solvers: [
+        "sha256_node_crypto_digest",
+        "sha256_stream_file_digest",
+        "sha256_local_benchmark"
+      ]
+    },
+
+    SHA512_CORE: {
+      keys: [
+        "sha512",
+        "sha-512",
+        "secure hash algorithm 512",
+        "digest sha512",
+        "hash sha512",
+        "sha512 hex",
+        "sha512 base64",
+        "sha512 buffer",
+        "sha512 file",
+        "sha512 stream",
+        "sha512 hmac",
+        "sha512 openssl",
+        "sha512 node crypto",
+        "sha512 cpu"
+      ],
+      routes: [
+        "/api/sha-field/sha512",
+        "/api/sha-field/hash",
+        "/api/sha-field/bench"
+      ],
+      solvers: [
+        "sha512_node_crypto_digest",
+        "sha512_stream_file_digest",
+        "sha512_local_benchmark"
+      ]
+    },
+
+    SHA_BUFFER_STREAM: {
+      keys: [
+        "buffer hash",
+        "stream hash",
+        "file hash",
+        "chunk hash",
+        "chunked hashing",
+        "hash stream",
+        "hash file",
+        "createHash",
+        "update digest",
+        "digest hex",
+        "digest base64",
+        "input bytes",
+        "message digest"
+      ],
+      routes: [
+        "/api/sha-field/hash",
+        "/api/sha-field/file",
+        "/api/sha-field/probe"
+      ],
+      solvers: [
+        "buffer_hash_router",
+        "stream_hash_router",
+        "file_hash_router"
+      ]
+    },
+
+    SHA_HMAC: {
+      keys: [
+        "hmac sha256",
+        "hmac sha512",
+        "sha256 hmac",
+        "sha512 hmac",
+        "createHmac",
+        "secret key",
+        "message authentication",
+        "mac",
+        "auth digest"
+      ],
+      routes: [
+        "/api/sha-field/hmac",
+        "/api/sha-field/classify"
+      ],
+      solvers: [
+        "hmac_sha256_sha512_router",
+        "secret_input_guard_existing"
+      ]
+    },
+
+    SHA_LATENCY: {
+      keys: [
+        "sha latency",
+        "sha256 latency",
+        "sha512 latency",
+        "hash latency",
+        "digest latency",
+        "throughput latency",
+        "p50 hash",
+        "p95 hash",
+        "p99 hash",
+        "hash jitter"
+      ],
+      routes: [
+        "/api/sha-field/latency",
+        "/api/sha-field/bench"
+      ],
+      solvers: [
+        "sha_digest_latency_probe",
+        "sha_p50_p95_p99_probe"
+      ]
+    }
+  },
+  guards_reference_only: {
+    existing_guards_apply: true,
+    no_new_police_layer: true,
+    scope_limited_to_sha256_sha512: true,
+    sha256d_excluded: true,
+    no_other_algorithms: true
+  }
+};
+
+function shaFieldNum(x, d = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
+
+function shaFieldRound(x, d = 3) {
+  const n = Number(x);
+  return Number.isFinite(n) ? +n.toFixed(d) : null;
+}
+
+function shaFieldRate(hps) {
+  hps = shaFieldNum(hps, 0);
+  if (hps >= 1e12) return shaFieldRound(hps / 1e12, 6) + " TH/s";
+  if (hps >= 1e9) return shaFieldRound(hps / 1e9, 6) + " GH/s";
+  if (hps >= 1e6) return shaFieldRound(hps / 1e6, 6) + " MH/s";
+  if (hps >= 1e3) return shaFieldRound(hps / 1e3, 6) + " KH/s";
+  return shaFieldRound(hps, 3) + " H/s";
+}
+
+function shaFieldAlgo(algo) {
+  const a = String(algo || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (a === "sha256") return "sha256";
+  if (a === "sha512") return "sha512";
+  return null;
+}
+
+function shaFieldClassify(input) {
+  const text = String(input || "").toLowerCase();
+  const hits = [];
+
+  for (const [family, cfg] of Object.entries(DICT_SHA256_SHA512.families)) {
+    let score = 0;
+    const matched = [];
+
+    for (const key of cfg.keys || []) {
+      if (text.includes(String(key).toLowerCase())) {
+        score++;
+        matched.push(key);
+      }
+    }
+
+    if (score > 0) {
+      hits.push({
+        family,
+        score,
+        matched,
+        routes: cfg.routes,
+        solvers: cfg.solvers
+      });
+    }
+  }
+
+  if (/sha256d|double sha/.test(text)) {
+    hits.unshift({
+      family: "EXCLUDED_ALGORITHM",
+      score: 999,
+      matched: ["sha256d/double_sha256"],
+      routes: [],
+      solvers: [],
+      status: "EXCLUDED_BY_SCOPE_SHA256_SHA512_ONLY"
+    });
+  }
+
+  return hits.sort((a, b) => b.score - a.score);
+}
+
+/* ============================================================
+   SHA256 / SHA512 REAL PROBES
+============================================================ */
+
+async function shaFieldNodeProbe() {
+  let hashes = [];
+  let ciphers = [];
+
+  try {
+    hashes = crypto.getHashes();
+  } catch (e) {
+    hashes = [];
+  }
+
+  try {
+    ciphers = crypto.getCiphers();
+  } catch (e) {
+    ciphers = [];
+  }
+
+  return {
+    time: now(),
+    field: SHA256_SHA512_FIELD.name,
+    node_crypto_status:
+      hashes.includes("sha256") && hashes.includes("sha512")
+        ? "REAL_SHA256_SHA512_AVAILABLE"
+        : "UNAVAILABLE_OR_PARTIAL",
+    node: process.version,
+    openssl: process.versions && process.versions.openssl,
+    available: {
+      sha256: hashes.includes("sha256"),
+      sha512: hashes.includes("sha512")
+    },
+    explicitly_not_used: SHA256_SHA512_FIELD.explicitly_excluded,
+    hashes_count: hashes.length,
+    hashes_preview_scope: hashes.filter(x => x === "sha256" || x === "sha512"),
+    ciphers_count: ciphers.length,
+    note:
+      "Only sha256 and sha512 are used by this field. Other available crypto algorithms are ignored."
+  };
+}
+
+async function shaFieldCpuFlagsProbe() {
+  const cmds = [
+    "lscpu 2>/dev/null | grep -Ei 'sha|avx|sse|aes|flags' | head -80 || true",
+    "cat /proc/cpuinfo 2>/dev/null | grep -m1 -Ei 'flags|features' || true",
+    "openssl version 2>/dev/null || echo openssl_unavailable",
+    "openssl speed sha256 sha512 2>/dev/null | tail -30 || echo openssl_speed_unavailable"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 20000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    field: SHA256_SHA512_FIELD.name,
+    cpu_crypto_hints: {
+      sha_extensions_hint: /\bsha_ni\b|\bsha\b/.test(raw),
+      avx2_hint: /\bavx2\b/.test(raw),
+      avx512_hint: /\bavx512/.test(raw),
+      aes_hint: /\baes\b/.test(raw)
+    },
+    openssl_status:
+      /openssl_unavailable/.test(raw)
+        ? "UNAVAILABLE_OPENSSL_CLI"
+        : "REAL_OPENSSL_CLI_AVAILABLE_OR_PARTIAL",
+    raw_cpu_flags_preview: safeText(out[0].out + "\n" + out[1].out, 12000),
+    openssl_version: safeText(out[2].out, 4000),
+    openssl_speed_preview: safeText(out[3].out, 16000),
+    note:
+      "CPU flags/OpenSSL are hints. Actual digest path is Node crypto/OpenSSL unless unavailable."
+  };
+}
+
+async function shaFieldProbe() {
+  const [nodeProbe, cpuProbe] = await Promise.all([
+    shaFieldNodeProbe(),
+    shaFieldCpuFlagsProbe()
+  ]);
+
+  return {
+    time: now(),
+    field: SHA256_SHA512_FIELD,
+    dict: DICT_SHA256_SHA512,
+    probes: {
+      node_crypto: nodeProbe,
+      cpu_flags_openssl: cpuProbe
+    },
+    runtime: {
+      node: process.version,
+      v8: process.versions && process.versions.v8,
+      openssl: process.versions && process.versions.openssl,
+      platform: process.platform,
+      arch: process.arch,
+      logical_cpus: os.cpus().length || null
+    },
+    scope:
+      "SHA256 and SHA512 only. SHA256d and all other hash algorithms are excluded."
+  };
+}
+
+/* ============================================================
+   SHA256 / SHA512 HASHING + BENCHMARKS
+============================================================ */
+
+function shaFieldHashMessage(algo, message, encoding = "hex") {
+  const a = shaFieldAlgo(algo);
+
+  if (!a) {
+    return {
+      ok: false,
+      error: "UNSUPPORTED_ALGORITHM",
+      supported: ["sha256", "sha512"],
+      excluded: SHA256_SHA512_FIELD.explicitly_excluded
+    };
+  }
+
+  const enc = encoding === "base64" ? "base64" : "hex";
+  const input = Buffer.from(String(message || ""), "utf8");
+  const started = Date.now();
+  const digest = crypto.createHash(a).update(input).digest(enc);
+  const ms = Date.now() - started;
+
+  return {
+    ok: true,
+    time: now(),
+    algorithm: a,
+    encoding: enc,
+    input_bytes: input.length,
+    duration_ms: ms,
+    digest,
+    note: "Single message digest through Node crypto."
+  };
+}
+
+function shaFieldHmac(algo, key, message, encoding = "hex") {
+  const a = shaFieldAlgo(algo);
+
+  if (!a) {
+    return {
+      ok: false,
+      error: "UNSUPPORTED_ALGORITHM",
+      supported: ["sha256", "sha512"]
+    };
+  }
+
+  const enc = encoding === "base64" ? "base64" : "hex";
+  const k = Buffer.from(String(key || ""), "utf8");
+  const msg = Buffer.from(String(message || ""), "utf8");
+
+  const started = Date.now();
+  const digest = crypto.createHmac(a, k).update(msg).digest(enc);
+  const ms = Date.now() - started;
+
+  return {
+    ok: true,
+    time: now(),
+    algorithm: "hmac-" + a,
+    encoding: enc,
+    key_bytes: k.length,
+    input_bytes: msg.length,
+    duration_ms: ms,
+    digest,
+    note: "HMAC uses provided key in memory only. Do not expose secrets publicly."
+  };
+}
+
+async function shaFieldHashFile(algo, filePath, encoding = "hex") {
+  const a = shaFieldAlgo(algo);
+
+  if (!a) {
+    return {
+      ok: false,
+      error: "UNSUPPORTED_ALGORITHM",
+      supported: ["sha256", "sha512"]
+    };
+  }
+
+  const file = String(filePath || "");
+
+  if (!file || !fs.existsSync(file)) {
+    return {
+      ok: false,
+      error: "FILE_UNAVAILABLE",
+      file
+    };
+  }
+
+  const enc = encoding === "base64" ? "base64" : "hex";
+  const hash = crypto.createHash(a);
+  const started = Date.now();
+  let bytes = 0;
+
+  await new Promise((resolve, reject) => {
+    const rs = fs.createReadStream(file);
+    rs.on("data", chunk => {
+      bytes += chunk.length;
+      hash.update(chunk);
+    });
+    rs.on("end", resolve);
+    rs.on("error", reject);
+  });
+
+  const digest = hash.digest(enc);
+  const ms = Math.max(1, Date.now() - started);
+
+  return {
+    ok: true,
+    time: now(),
+    algorithm: a,
+    encoding: enc,
+    file,
+    bytes,
+    MB: shaFieldRound(bytes / 1048576, 6),
+    duration_ms: ms,
+    throughput_MB_s: shaFieldRound((bytes / 1048576) / (ms / 1000), 6),
+    digest,
+    note: "File digest via streaming Node crypto."
+  };
+}
+
+function shaFieldBenchOne(algo, iterations = 100000, bytes = 1024) {
+  const a = shaFieldAlgo(algo);
+
+  if (!a) {
+    return {
+      ok: false,
+      error: "UNSUPPORTED_ALGORITHM",
+      supported: ["sha256", "sha512"]
+    };
+  }
+
+  iterations = Math.min(Math.max(1000, shaFieldNum(iterations, 100000)), 5000000);
+  bytes = Math.min(Math.max(8, shaFieldNum(bytes, 1024)), 1048576);
+
+  const input = crypto.randomBytes(bytes);
+  let digest = null;
+
+  const t0 = process.hrtime.bigint();
+
+  for (let i = 0; i < iterations; i++) {
+    input.writeUInt32LE(i >>> 0, 0);
+    digest = crypto.createHash(a).update(input).digest();
+  }
+
+  const ns = Number(process.hrtime.bigint() - t0);
+  const sec = Math.max(ns / 1e9, 1e-12);
+  const hps = iterations / sec;
+  const bps = (iterations * bytes) / sec;
+
+  return {
+    ok: true,
+    time: now(),
+    algorithm: a,
+    iterations,
+    input_bytes_per_hash: bytes,
+    duration_ms: shaFieldRound(ns / 1e6, 6),
+    hashes_per_second: Math.round(hps),
+    formatted_hashrate: shaFieldRate(hps),
+    throughput_MB_s: shaFieldRound(bps / 1048576, 6),
+    digest_preview: digest ? digest.toString("hex").slice(0, 32) : null,
+    note:
+      "Local single-hash benchmark. SHA256 only means one SHA256 pass. SHA512 only means one SHA512 pass."
+  };
+}
+
+function shaFieldLatencyBench(algo, samples = 1000, bytes = 64) {
+  const a = shaFieldAlgo(algo);
+
+  if (!a) {
+    return {
+      ok: false,
+      error: "UNSUPPORTED_ALGORITHM",
+      supported: ["sha256", "sha512"]
+    };
+  }
+
+  samples = Math.min(Math.max(50, shaFieldNum(samples, 1000)), 100000);
+  bytes = Math.min(Math.max(1, shaFieldNum(bytes, 64)), 1048576);
+
+  const input = crypto.randomBytes(bytes);
+  const timings = [];
+  let digest = null;
+
+  for (let i = 0; i < samples; i++) {
+    input.writeUInt32LE(i >>> 0, 0);
+    const t0 = process.hrtime.bigint();
+    digest = crypto.createHash(a).update(input).digest();
+    const ns = Number(process.hrtime.bigint() - t0);
+    timings.push(ns / 1e6);
+  }
+
+  const p = typeof latPercentiles === "function"
+    ? latPercentiles(timings)
+    : (() => {
+        const sorted = timings.sort((x, y) => x - y);
+        const pick = q => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))];
+        return {
+          count: sorted.length,
+          min: shaFieldRound(sorted[0], 6),
+          p50: shaFieldRound(pick(0.50), 6),
+          p95: shaFieldRound(pick(0.95), 6),
+          p99: shaFieldRound(pick(0.99), 6),
+          max: shaFieldRound(sorted[sorted.length - 1], 6),
+          avg: shaFieldRound(sorted.reduce((s, x) => s + x, 0) / sorted.length, 6)
+        };
+      })();
+
+  return {
+    ok: true,
+    time: now(),
+    algorithm: a,
+    samples,
+    input_bytes: bytes,
+    latency_ms: p,
+    digest_preview: digest ? digest.toString("hex").slice(0, 32) : null,
+    note: "Per-digest latency p50/p95/p99 for SHA256/SHA512 only."
+  };
+}
+
+function shaFieldBench(iterations = 100000, bytes = 1024) {
+  return {
+    time: now(),
+    field: SHA256_SHA512_FIELD.name,
+    sha256: shaFieldBenchOne("sha256", iterations, bytes),
+    sha512: shaFieldBenchOne("sha512", iterations, bytes),
+    scope: "SHA256 and SHA512 only. No SHA256d."
+  };
+}
+
+/* ============================================================
+   SHA256 / SHA512 API ROUTES
+============================================================ */
+
+app.get("/api/sha-field", async (req, res) => {
+  res.json({
+    time: now(),
+    field: SHA256_SHA512_FIELD,
+    dict: DICT_SHA256_SHA512
+  });
+});
+
+app.get("/api/sha-field/dict", async (req, res) => {
+  res.json(DICT_SHA256_SHA512);
+});
+
+app.get("/api/sha-field/probe", async (req, res) => {
+  res.json(await shaFieldProbe());
+});
+
+app.get("/api/sha-field/sha256", async (req, res) => {
+  res.json(await shaFieldNodeProbe());
+});
+
+app.get("/api/sha-field/sha512", async (req, res) => {
+  res.json(await shaFieldNodeProbe());
+});
+
+app.get("/api/sha-field/cpu-flags", async (req, res) => {
+  res.json(await shaFieldCpuFlagsProbe());
+});
+
+app.get("/api/sha-field/hash", async (req, res) => {
+  res.json(
+    shaFieldHashMessage(
+      req.query.algo || "sha256",
+      req.query.message || "",
+      req.query.encoding || "hex"
+    )
+  );
+});
+
+app.post("/api/sha-field/hash", async (req, res) => {
+  res.json(
+    shaFieldHashMessage(
+      req.body && req.body.algo || "sha256",
+      req.body && req.body.message || "",
+      req.body && req.body.encoding || "hex"
+    )
+  );
+});
+
+app.post("/api/sha-field/hmac", async (req, res) => {
+  res.json(
+    shaFieldHmac(
+      req.body && req.body.algo || "sha256",
+      req.body && req.body.key || "",
+      req.body && req.body.message || "",
+      req.body && req.body.encoding || "hex"
+    )
+  );
+});
+
+app.get("/api/sha-field/file", async (req, res) => {
+  res.json(
+    await shaFieldHashFile(
+      req.query.algo || "sha256",
+      req.query.path || "",
+      req.query.encoding || "hex"
+    )
+  );
+});
+
+app.get("/api/sha-field/bench", async (req, res) => {
+  res.json(
+    shaFieldBench(
+      req.query.iterations || 100000,
+      req.query.bytes || 1024
+    )
+  );
+});
+
+app.get("/api/sha-field/latency", async (req, res) => {
+  res.json({
+    time: now(),
+    field: SHA256_SHA512_FIELD.name,
+    sha256: shaFieldLatencyBench("sha256", req.query.samples || 1000, req.query.bytes || 64),
+    sha512: shaFieldLatencyBench("sha512", req.query.samples || 1000, req.query.bytes || 64)
+  });
+});
+
+app.get("/api/sha-field/classify", async (req, res) => {
+  res.json({
+    time: now(),
+    input: safeText(req.query.q || req.query.text || "", 4000),
+    classification: shaFieldClassify(req.query.q || req.query.text || ""),
+    dict_version: DICT_SHA256_SHA512.version
+  });
+});
+
+app.post("/api/sha-field/classify", async (req, res) => {
+  const text = req.body && (req.body.q || req.body.text) || "";
+  res.json({
+    time: now(),
+    input: safeText(text, 4000),
+    classification: shaFieldClassify(text),
+    dict_version: DICT_SHA256_SHA512.version
+  });
+});
+
+/* Optional registry hook */
+try {
+  if (typeof moduleRegistry === "function") {
+    const __moduleRegistryOriginal_SHA_FIELD = moduleRegistry;
+
+    moduleRegistry = function moduleRegistryWithShaField() {
+      const base = __moduleRegistryOriginal_SHA_FIELD();
+
+      return {
+        ...base,
+        sha256_sha512_field: {
+          field: SHA256_SHA512_FIELD,
+          dict: DICT_SHA256_SHA512,
+          routes: [
+            "/api/sha-field",
+            "/api/sha-field/dict",
+            "/api/sha-field/probe",
+            "/api/sha-field/sha256",
+            "/api/sha-field/sha512",
+            "/api/sha-field/cpu-flags",
+            "/api/sha-field/hash",
+            "/api/sha-field/hmac",
+            "/api/sha-field/file",
+            "/api/sha-field/bench",
+            "/api/sha-field/latency",
+            "/api/sha-field/classify"
+          ]
+        }
+      };
+    };
+  }
+} catch (e) {
+  console.warn("SHA256_SHA512_FIELD registry hook unavailable:", e.message);
+}
+
+/* Optional UI buttons — add inside .tabs */
+
+/*
+<button onclick="load('/api/sha-field')">SHA FIELD</button>
+<button onclick="load('/api/sha-field/dict')">DICT SHA</button>
+<button onclick="load('/api/sha-field/probe')">SHA PROBE</button>
+<button onclick="load('/api/sha-field/cpu-flags')">SHA CPU</button>
+<button onclick="load('/api/sha-field/bench?iterations=100000&bytes=1024')">SHA BENCH</button>
+<button onclick="load('/api/sha-field/latency?samples=1000&bytes=64')">SHA LATENCY</button>
+<button onclick="load('/api/sha-field/hash?algo=sha256&message=test')">SHA256 TEST</button>
+<button onclick="load('/api/sha-field/hash?algo=sha512&message=test')">SHA512 TEST</button>
+*/
