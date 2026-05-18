@@ -6450,3 +6450,531 @@ function asicMemory(ms){
     }
   };
 }
+
+/* ============================================================
+   TRILLIONS STRATUM BTC BLOCK
+   Stratum v1 client: connect / subscribe / authorize / telemetry
+   Paste at END of app.js
+
+   Routes:
+   GET  /api/stratum/status
+   GET  /api/stratum/config
+   POST /api/stratum/config
+   POST /api/stratum/connect
+   POST /api/stratum/disconnect
+   POST /api/stratum/send
+   GET  /api/stratum/jobs
+   GET  /api/stratum/telemetry
+
+   Honesty:
+   - This is a Stratum client/control block.
+   - It does not create real EH/s by itself.
+   - Real hashrate requires ASIC/miner/pool telemetry.
+============================================================ */
+
+(function TRILLIONS_STRATUM_BTC_BLOCK() {
+  "use strict";
+
+  const net = require("net");
+  const crypto = require("crypto");
+  const EventEmitter = require("events");
+
+  const STRATUM_STATE = {
+    module: "TRILLIONS_STRATUM_BTC",
+    version: "1.0.0",
+    status: "IDLE",
+    connected: false,
+    authorized: false,
+    subscribed: false,
+    last_error: null,
+    last_message_at: null,
+    last_connect_at: null,
+    last_disconnect_at: null,
+
+    config: {
+      host: "stratum.example.com",
+      port: 3333,
+      worker: "wallet.worker",
+      password: "x",
+      tls: false,
+      auto_subscribe: true,
+      auto_authorize: true,
+      reconnect: false,
+      reconnect_delay_ms: 5000,
+      submit_enabled: false
+    },
+
+    counters: {
+      sent: 0,
+      received: 0,
+      jobs_received: 0,
+      submits_sent: 0,
+      accepted: 0,
+      rejected: 0,
+      reconnects: 0,
+      parse_errors: 0
+    },
+
+    session: {
+      extranonce1: null,
+      extranonce2_size: null,
+      subscription_id: null,
+      difficulty: null,
+      target: null
+    },
+
+    jobs: [],
+
+    telemetry: {
+      pool_latency_ms_last: null,
+      pool_latency_ms_avg: null,
+      local_software_hashrate_hps: null,
+      pool_reported_hashrate_hps: "UNAVAILABLE",
+      real_EHs: "UNAVAILABLE_UNTIL_POOL_TELEMETRY",
+      mode: "STRATUM_CONTROL_CLIENT"
+    },
+
+    honesty: {
+      stratum_client: true,
+      miner_engine: false,
+      real_EHs_claim: false,
+      no_fake_hashrate: true,
+      requires_external_pool_or_asic_for_real_hashrate: true
+    }
+  };
+
+  const bus = new EventEmitter();
+
+  let socket = null;
+  let recvBuffer = "";
+  let rpcId = 1;
+  const pending = new Map();
+  const latencySamples = [];
+
+  function nowIso() {
+    return new Date().toISOString();
+  }
+
+  function safePublicConfig() {
+    return {
+      ...STRATUM_STATE.config,
+      password: STRATUM_STATE.config.password ? "***" : ""
+    };
+  }
+
+  function sanitizeConfig(input) {
+    const next = { ...STRATUM_STATE.config };
+
+    if (typeof input.host === "string" && input.host.trim()) next.host = input.host.trim();
+    if (Number.isFinite(Number(input.port))) next.port = Number(input.port);
+    if (typeof input.worker === "string") next.worker = input.worker.trim();
+    if (typeof input.password === "string") next.password = input.password;
+    if (typeof input.tls === "boolean") next.tls = input.tls;
+    if (typeof input.auto_subscribe === "boolean") next.auto_subscribe = input.auto_subscribe;
+    if (typeof input.auto_authorize === "boolean") next.auto_authorize = input.auto_authorize;
+    if (typeof input.reconnect === "boolean") next.reconnect = input.reconnect;
+    if (Number.isFinite(Number(input.reconnect_delay_ms))) next.reconnect_delay_ms = Number(input.reconnect_delay_ms);
+    if (typeof input.submit_enabled === "boolean") next.submit_enabled = input.submit_enabled;
+
+    if (next.port < 1 || next.port > 65535) throw new Error("Invalid port");
+    if (!next.host || next.host.length > 255) throw new Error("Invalid host");
+
+    return next;
+  }
+
+  function stratumRequest(method, params = []) {
+    const id = rpcId++;
+    const payload = {
+      id,
+      method,
+      params
+    };
+
+    sendJson(payload);
+    pending.set(id, {
+      id,
+      method,
+      sent_at: Date.now()
+    });
+
+    return id;
+  }
+
+  function sendJson(obj) {
+    if (!socket || !STRATUM_STATE.connected) {
+      throw new Error("STRATUM_NOT_CONNECTED");
+    }
+
+    const line = JSON.stringify(obj) + "\n";
+    socket.write(line);
+    STRATUM_STATE.counters.sent++;
+  }
+
+  function updateLatency(id) {
+    const p = pending.get(id);
+    if (!p) return;
+
+    const delta = Date.now() - p.sent_at;
+    pending.delete(id);
+
+    latencySamples.push(delta);
+    while (latencySamples.length > 50) latencySamples.shift();
+
+    const avg = latencySamples.reduce((a, b) => a + b, 0) / latencySamples.length;
+
+    STRATUM_STATE.telemetry.pool_latency_ms_last = delta;
+    STRATUM_STATE.telemetry.pool_latency_ms_avg = Number(avg.toFixed(2));
+  }
+
+  function handleSubscribeResult(msg) {
+    const r = msg.result;
+
+    if (Array.isArray(r)) {
+      STRATUM_STATE.subscribed = true;
+      STRATUM_STATE.session.subscription_id = JSON.stringify(r[0] || null);
+      STRATUM_STATE.session.extranonce1 = r[1] || null;
+      STRATUM_STATE.session.extranonce2_size = r[2] || null;
+    }
+  }
+
+  function handleAuthorizeResult(msg) {
+    if (msg.result === true) {
+      STRATUM_STATE.authorized = true;
+    } else if (msg.result === false) {
+      STRATUM_STATE.authorized = false;
+      STRATUM_STATE.last_error = "AUTH_REJECTED";
+    }
+  }
+
+  function pushJob(params) {
+    const job = {
+      received_at: nowIso(),
+      job_id: params[0] || null,
+      prevhash: params[1] || null,
+      coinb1: params[2] || null,
+      coinb2: params[3] || null,
+      merkle_branch: params[4] || [],
+      version: params[5] || null,
+      nbits: params[6] || null,
+      ntime: params[7] || null,
+      clean_jobs: params[8] || false
+    };
+
+    STRATUM_STATE.jobs.unshift(job);
+    STRATUM_STATE.jobs = STRATUM_STATE.jobs.slice(0, 20);
+    STRATUM_STATE.counters.jobs_received++;
+
+    return job;
+  }
+
+  function handleNotification(msg) {
+    if (msg.method === "mining.notify") {
+      const job = pushJob(msg.params || []);
+      bus.emit("job", job);
+      return;
+    }
+
+    if (msg.method === "mining.set_difficulty") {
+      const diff = Array.isArray(msg.params) ? msg.params[0] : null;
+      STRATUM_STATE.session.difficulty = diff;
+      return;
+    }
+
+    if (msg.method === "mining.set_extranonce") {
+      if (Array.isArray(msg.params)) {
+        STRATUM_STATE.session.extranonce1 = msg.params[0] || STRATUM_STATE.session.extranonce1;
+        STRATUM_STATE.session.extranonce2_size = msg.params[1] || STRATUM_STATE.session.extranonce2_size;
+      }
+    }
+  }
+
+  function handleResponse(msg) {
+    if (msg.id != null) updateLatency(msg.id);
+
+    if (msg.error) {
+      STRATUM_STATE.last_error = JSON.stringify(msg.error);
+      STRATUM_STATE.counters.rejected++;
+      return;
+    }
+
+    if (msg.id != null) {
+      const pendingInfo = pending.get(msg.id);
+
+      if (pendingInfo && pendingInfo.method === "mining.subscribe") {
+        handleSubscribeResult(msg);
+      }
+
+      if (pendingInfo && pendingInfo.method === "mining.authorize") {
+        handleAuthorizeResult(msg);
+      }
+
+      if (pendingInfo && pendingInfo.method === "mining.submit") {
+        if (msg.result === true) STRATUM_STATE.counters.accepted++;
+        else STRATUM_STATE.counters.rejected++;
+      }
+    }
+  }
+
+  function handleLine(line) {
+    if (!line.trim()) return;
+
+    let msg;
+    try {
+      msg = JSON.parse(line);
+    } catch (err) {
+      STRATUM_STATE.counters.parse_errors++;
+      STRATUM_STATE.last_error = "JSON_PARSE_ERROR: " + err.message;
+      return;
+    }
+
+    STRATUM_STATE.counters.received++;
+    STRATUM_STATE.last_message_at = nowIso();
+
+    if (msg.method) handleNotification(msg);
+    else handleResponse(msg);
+  }
+
+  function disconnectStratum(reason = "manual") {
+    if (socket) {
+      try { socket.destroy(); } catch {}
+    }
+
+    socket = null;
+    recvBuffer = "";
+
+    STRATUM_STATE.status = "DISCONNECTED";
+    STRATUM_STATE.connected = false;
+    STRATUM_STATE.authorized = false;
+    STRATUM_STATE.subscribed = false;
+    STRATUM_STATE.last_disconnect_at = nowIso();
+    STRATUM_STATE.last_error = reason;
+  }
+
+  function connectStratum(override = {}) {
+    STRATUM_STATE.config = sanitizeConfig({ ...STRATUM_STATE.config, ...override });
+
+    if (STRATUM_STATE.config.tls) {
+      throw new Error("TLS_NOT_IMPLEMENTED_IN_THIS_BLOCK_USE_NET_ONLY_OR_ADD_TLS_MODULE");
+    }
+
+    if (socket) disconnectStratum("reconnect_requested");
+
+    return new Promise((resolve, reject) => {
+      STRATUM_STATE.status = "CONNECTING";
+      STRATUM_STATE.last_error = null;
+
+      socket = net.createConnection(
+        {
+          host: STRATUM_STATE.config.host,
+          port: STRATUM_STATE.config.port
+        },
+        () => {
+          STRATUM_STATE.status = "CONNECTED";
+          STRATUM_STATE.connected = true;
+          STRATUM_STATE.last_connect_at = nowIso();
+
+          if (STRATUM_STATE.config.auto_subscribe) {
+            stratumRequest("mining.subscribe", ["TRILLIONS_STRATUM_BTC/1.0.0"]);
+          }
+
+          if (STRATUM_STATE.config.auto_authorize) {
+            stratumRequest("mining.authorize", [
+              STRATUM_STATE.config.worker,
+              STRATUM_STATE.config.password
+            ]);
+          }
+
+          resolve({
+            ok: true,
+            status: STRATUM_STATE.status,
+            config: safePublicConfig()
+          });
+        }
+      );
+
+      socket.setKeepAlive(true, 30000);
+
+      socket.on("data", chunk => {
+        recvBuffer += chunk.toString("utf8");
+        const lines = recvBuffer.split("\n");
+        recvBuffer = lines.pop() || "";
+
+        for (const line of lines) handleLine(line);
+      });
+
+      socket.on("error", err => {
+        STRATUM_STATE.last_error = err.message;
+        STRATUM_STATE.status = "ERROR";
+        if (!STRATUM_STATE.connected) reject(err);
+      });
+
+      socket.on("close", () => {
+        const shouldReconnect = STRATUM_STATE.config.reconnect;
+        STRATUM_STATE.connected = false;
+        STRATUM_STATE.authorized = false;
+        STRATUM_STATE.subscribed = false;
+        STRATUM_STATE.status = "CLOSED";
+        STRATUM_STATE.last_disconnect_at = nowIso();
+
+        if (shouldReconnect) {
+          STRATUM_STATE.counters.reconnects++;
+          setTimeout(() => {
+            connectStratum().catch(err => {
+              STRATUM_STATE.last_error = "RECONNECT_FAILED: " + err.message;
+            });
+          }, STRATUM_STATE.config.reconnect_delay_ms);
+        }
+      });
+    });
+  }
+
+  function submitShare({ job_id, extranonce2, ntime, nonce }) {
+    if (!STRATUM_STATE.config.submit_enabled) {
+      throw new Error("SUBMIT_DISABLED_BY_SAFETY");
+    }
+
+    if (!STRATUM_STATE.authorized) {
+      throw new Error("STRATUM_NOT_AUTHORIZED");
+    }
+
+    if (!job_id || !extranonce2 || !ntime || !nonce) {
+      throw new Error("Missing submit fields: job_id, extranonce2, ntime, nonce");
+    }
+
+    STRATUM_STATE.counters.submits_sent++;
+
+    return stratumRequest("mining.submit", [
+      STRATUM_STATE.config.worker,
+      job_id,
+      extranonce2,
+      ntime,
+      nonce
+    ]);
+  }
+
+  function attachRoute(method, path, handler) {
+    if (typeof app !== "undefined" && app && typeof app[method] === "function") {
+      app[method](path, handler);
+      return true;
+    }
+
+    if (typeof global !== "undefined" && global.app && typeof global.app[method] === "function") {
+      global.app[method](path, handler);
+      return true;
+    }
+
+    return false;
+  }
+
+  const mounted =
+    attachRoute("get", "/api/stratum/status", (req, res) => {
+      res.json({
+        ok: true,
+        state: {
+          ...STRATUM_STATE,
+          config: safePublicConfig()
+        }
+      });
+    }) &&
+
+    attachRoute("get", "/api/stratum/config", (req, res) => {
+      res.json({
+        ok: true,
+        config: safePublicConfig()
+      });
+    }) &&
+
+    attachRoute("post", "/api/stratum/config", (req, res) => {
+      try {
+        STRATUM_STATE.config = sanitizeConfig(req.body || {});
+        res.json({
+          ok: true,
+          config: safePublicConfig()
+        });
+      } catch (err) {
+        res.status(400).json({ ok: false, error: err.message });
+      }
+    }) &&
+
+    attachRoute("post", "/api/stratum/connect", async (req, res) => {
+      try {
+        const result = await connectStratum(req.body || {});
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({
+          ok: false,
+          error: err.message
+        });
+      }
+    }) &&
+
+    attachRoute("post", "/api/stratum/disconnect", (req, res) => {
+      disconnectStratum("manual_disconnect");
+      res.json({
+        ok: true,
+        status: STRATUM_STATE.status
+      });
+    }) &&
+
+    attachRoute("post", "/api/stratum/send", (req, res) => {
+      try {
+        const body = req.body || {};
+        if (body.method === "mining.submit") {
+          const id = submitShare(body.params || body);
+          return res.json({ ok: true, id, method: "mining.submit" });
+        }
+
+        if (!body.method) {
+          return res.status(400).json({ ok: false, error: "method required" });
+        }
+
+        const id = stratumRequest(body.method, Array.isArray(body.params) ? body.params : []);
+        res.json({ ok: true, id, method: body.method });
+      } catch (err) {
+        res.status(400).json({
+          ok: false,
+          error: err.message
+        });
+      }
+    }) &&
+
+    attachRoute("get", "/api/stratum/jobs", (req, res) => {
+      res.json({
+        ok: true,
+        count: STRATUM_STATE.jobs.length,
+        jobs: STRATUM_STATE.jobs
+      });
+    }) &&
+
+    attachRoute("get", "/api/stratum/telemetry", (req, res) => {
+      res.json({
+        ok: true,
+        telemetry: STRATUM_STATE.telemetry,
+        counters: STRATUM_STATE.counters,
+        session: STRATUM_STATE.session,
+        honesty: STRATUM_STATE.honesty
+      });
+    });
+
+  if (mounted) {
+    console.log("[TRILLIONS] Stratum BTC routes mounted:");
+    console.log("  GET  /api/stratum/status");
+    console.log("  GET  /api/stratum/config");
+    console.log("  POST /api/stratum/config");
+    console.log("  POST /api/stratum/connect");
+    console.log("  POST /api/stratum/disconnect");
+    console.log("  POST /api/stratum/send");
+    console.log("  GET  /api/stratum/jobs");
+    console.log("  GET  /api/stratum/telemetry");
+  } else {
+    console.warn("[TRILLIONS] Stratum BTC loaded but Express app was not found.");
+    console.warn("[TRILLIONS] Add global.app = app after const app = express();");
+  }
+
+  if (typeof global !== "undefined") {
+    global.TRILLIONS_STRATUM_STATE = STRATUM_STATE;
+    global.TRILLIONS_STRATUM_CONNECT = connectStratum;
+    global.TRILLIONS_STRATUM_DISCONNECT = disconnectStratum;
+    global.TRILLIONS_STRATUM_REQUEST = stratumRequest;
+  }
+})();
