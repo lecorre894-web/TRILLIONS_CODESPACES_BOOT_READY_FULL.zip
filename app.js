@@ -13321,3 +13321,166 @@ try {
 <button onclick="load('/api/die-3dnand/cache')">DIE CACHE</button>
 <button onclick="load('/api/die-3dnand/latency')">DIE LATENCY</button>
 */
+
+/* ============================================================
+   TRILLIONS ADDITIVE AVX_SIMD_NATIVE_FIELD
+   Hardware-first AVX/SIMD native structure.
+   No benchmark. No score. No fake AVX.
+============================================================ */
+
+const AVX_SIMD_NATIVE_FIELD = {
+  name: "AVX_SIMD_NATIVE_FIELD",
+  version: "V1_NATIVE_AVX_SIMD_DICT_STRUCTURE",
+  additive_only: true,
+  identity: "HARDWARE_FIRST_KERNEL_PROCESSOR",
+  role: "native SIMD / AVX processor unit support field",
+  doctrine: [
+    "MATERIAL_FIRST",
+    "NATIVE_SIMD_SUPPORT",
+    "AVX_IS_HARDWARE_FLAG",
+    "SIMD_IS_PROCESSOR_VECTOR_UNIT",
+    "NO_FAKE_AVX",
+    "NO_FAKE_AVX512",
+    "NO_BENCHMARK",
+    "NO_SCORE",
+    "REAL_OR_UNAVAILABLE"
+  ],
+  native_paths: {
+    C_CPP_INTRINSICS: [
+      "immintrin.h",
+      "_mm_*",
+      "_mm256_*",
+      "_mm512_*"
+    ],
+    NODE_NATIVE: [
+      "N-API addon",
+      "node-gyp",
+      "prebuild optional",
+      "runtime CPU dispatch"
+    ],
+    WASM_SIMD: [
+      "v128",
+      "wasm32 SIMD",
+      "portable SIMD fallback"
+    ],
+    JS_SURFACE: [
+      "TypedArray bridge only",
+      "no direct AVX instruction claim"
+    ]
+  }
+};
+
+const DICT_AVX_SIMD_NATIVE = {
+  version: "DICT_AVX_SIMD_NATIVE_V1",
+  mode: "NATIVE_VECTOR_PROCESSOR_STRUCTURE",
+  families: {
+    SIMD_CORE: {
+      keys: [
+        "simd", "smid", "vector", "vector lane", "packed arithmetic",
+        "lane width", "register width", "v128", "v256", "v512",
+        "typedarray", "float32array", "float64array"
+      ],
+      role: "generic vector processor structure"
+    },
+    SSE: {
+      keys: [
+        "sse", "sse2", "sse3", "ssse3",
+        "sse4", "sse4.1", "sse4.2",
+        "__m128", "_mm_add_ps", "_mm_mul_ps"
+      ],
+      role: "128-bit x86 SIMD family"
+    },
+    AVX: {
+      keys: [
+        "avx", "avx1", "avx2", "avx512",
+        "avx512f", "avx512dq", "avx512bw", "avx512vl",
+        "__m256", "__m512",
+        "_mm256_add_ps", "_mm256_mul_ps",
+        "_mm512_add_ps", "_mm512_mul_ps"
+      ],
+      role: "x86 AVX native vector family"
+    },
+    FMA: {
+      keys: [
+        "fma", "fma3", "fused multiply add",
+        "_mm256_fmadd_ps", "_mm512_fmadd_ps"
+      ],
+      role: "native fused multiply-add processor path"
+    },
+    ARM_SIMD: {
+      keys: [
+        "neon", "asimd", "sve", "sve2",
+        "arm vector", "aarch64 simd"
+      ],
+      role: "ARM native SIMD family"
+    },
+    WASM_SIMD: {
+      keys: [
+        "wasm simd", "webassembly simd",
+        "v128", "i8x16", "i16x8", "i32x4",
+        "f32x4", "f64x2"
+      ],
+      role: "portable SIMD layer when native addon is unavailable"
+    },
+    NODE_NATIVE_ADDON: {
+      keys: [
+        "node-gyp", "n-api", "native addon",
+        "binding.gyp", "c++ addon", "cpu dispatch",
+        "runtime dispatch", "intrinsics"
+      ],
+      role: "Node bridge to real native SIMD"
+    }
+  }
+};
+
+function avxSimdNativeStructure() {
+  return {
+    time: now(),
+    field: AVX_SIMD_NATIVE_FIELD,
+    dict: DICT_AVX_SIMD_NATIVE,
+    structure_only: true,
+    no_benchmark: true,
+    no_score: true,
+    native_truth: {
+      js_direct_avx: "NO_DIRECT_AVX_FROM_JS",
+      typedarray: "BRIDGE_MEMORY_SURFACE_ONLY",
+      real_avx: "REQUIRES_NATIVE_ADDON_OR_COMPILED_BINARY",
+      wasm_simd: "PORTABLE_SIMD_IF_SUPPORTED",
+      avx512: "REQUIRES_CPU_FLAG_AND_COMPILED_PATH"
+    },
+    processor_reading:
+      "AVX/SIMD is treated as a native processor vector unit. JavaScript only exposes buffer/TypedArray surfaces; real AVX requires C/C++ native path or WASM SIMD."
+  };
+}
+
+function avxSimdClassify(input = "") {
+  const text = String(input || "").toLowerCase();
+  const hits = [];
+
+  for (const [family, cfg] of Object.entries(DICT_AVX_SIMD_NATIVE.families)) {
+    const matched = [];
+    for (const key of cfg.keys || []) {
+      if (text.includes(String(key).toLowerCase())) matched.push(key);
+    }
+    if (matched.length) hits.push({ family, matched, role: cfg.role });
+  }
+
+  return {
+    time: now(),
+    input: safeText(input, 4000),
+    classification: hits,
+    no_benchmark: true
+  };
+}
+
+app.get("/api/avx-simd-native", async (req, res) => {
+  res.json(avxSimdNativeStructure());
+});
+
+app.get("/api/avx-simd-native/dict", async (req, res) => {
+  res.json(DICT_AVX_SIMD_NATIVE);
+});
+
+app.get("/api/avx-simd-native/classify", async (req, res) => {
+  res.json(avxSimdClassify(req.query.q || req.query.text || ""));
+});
