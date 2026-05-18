@@ -11910,3 +11910,536 @@ app.get("/api/hash-field/kdf", async (req, res) => res.json({
 <button onclick="load('/api/hash-field/hash?algo=md5&message=test')">MD5 TEST</button>
 <button onclick="load('/api/hash-field/hash?algo=blake2b512&message=test')">BLAKE2 TEST</button>
 */
+
+/* ============================================================
+   TRILLIONS ADDITIVE QN_QUANTUM_COPROCESSOR_FIELD
+   Purpose: quantum-neural logical coprocessor field with
+   L1..L6 cache hierarchy, L6 raw exponential, software RAID
+   over cache memory, 3D_VCACHE_ECC coherence.
+   Additive only. No fake QPU. No fake physical memory.
+============================================================ */
+
+const QN_QUANTUM_COPROCESSOR_FIELD = {
+  name: "QN_QUANTUM_COPROCESSOR_FIELD",
+  version: "V1_QN_CACHE_HIERARCHY_L1_TO_L6_RAID_ECC",
+  additive_only: true,
+  role: "logical quantum-neural coprocessor field across memory/cache/solver/hash/latency",
+  qpu_claim: "NO_LOCAL_QPU_CLAIM",
+  memory_claim: "LOGICAL_CACHE_FIELD_NOT_PHYSICAL_RAM_CLAIM",
+  relies_on_existing_guards: [
+    "LOGIC_GUARD",
+    "REAL_OR_UNAVAILABLE",
+    "NO_FAKE_METRICS",
+    "NO_FAKE_POWER",
+    "NO_FAKE_QPU"
+  ],
+  doctrine: [
+    "QN_AS_COPROCESSOR_FIELD",
+    "NO_FAKE_QUANTUM_HARDWARE",
+    "NO_FAKE_MEMORY_CAPACITY",
+    "CACHE_HIERARCHY_AS_LOGICAL_ORCHESTRATION",
+    "L6_RAW_EXPONENTIAL_AS_STRUCTURE_EXPANSION",
+    "L6_RAID_SOFTWARE_AS_CACHE_AGGREGATOR",
+    "3D_VCACHE_ECC_AS_COHERENCE_AND_CORRECTION_MODEL",
+    "REAL_BACKEND_OR_UNAVAILABLE"
+  ],
+  layers: {
+    L1: {
+      name: "L1_QN_CACHE",
+      declared_size_MB: 8096,
+      type: "logical_hot_cache",
+      role: "ultra-hot working set for QN operations"
+    },
+    L2: {
+      name: "L2_VECTOR_TENSOR_CACHE",
+      type: "logical_vector_tensor_cache",
+      role: "TypedArray/vector/tensor staging"
+    },
+    L3: {
+      name: "L3_SOLVER_GRAPH_CACHE",
+      type: "logical_solver_graph_cache",
+      role: "solver states, graph blocks, DICT traversal"
+    },
+    L4: {
+      name: "L4_HASH_LATENCY_CACHE",
+      type: "logical_hash_latency_cache",
+      role: "hash/KDF/latency probe reuse and digest workspace"
+    },
+    L5: {
+      name: "L5_MEMORY_FIELD_CACHE",
+      type: "logical_memory_cache",
+      role: "memory/cache/codec/hpc bridge"
+    },
+    L6_RAW: {
+      name: "L6_RAW_EXPONENTIAL",
+      type: "raw_expansion_structure",
+      role: "unbounded structural expansion descriptor, not physical infinite memory"
+    },
+    L6_RAID: {
+      name: "L6_SOFTWARE_RAID_CACHE",
+      type: "software_raid_over_cache_layers",
+      role: "aggregate L1..L6 cache shards with parity/checksum/ledger"
+    },
+    ECC: {
+      name: "3D_VCACHE_ECC",
+      type: "logical_ecc_coherence",
+      role: "detect/correct logical cache drift using checksum/parity/metadata"
+    }
+  }
+};
+
+const DICT_QN_COPROCESSOR = {
+  version: "DICT_QN_COPROCESSOR_V1",
+  mode: "QN_LOGICAL_COPROCESSOR_REAL_OR_UNAVAILABLE",
+  families: {
+    QN_CORE: {
+      keys: [
+        "qn", "quantum neural", "quantique neuronal",
+        "coprocessor", "coprocesseur", "qpu", "qasm",
+        "quantum circuit", "qubit", "statevector", "tensor network",
+        "variational", "qaoa", "vqe", "sampling",
+        "quantum backend", "quantum simulator"
+      ],
+      routes: [
+        "/api/qn-coprocessor",
+        "/api/qn-coprocessor/probe",
+        "/api/qn-coprocessor/dict"
+      ],
+      solvers: [
+        "qn_backend_classifier",
+        "quantum_unavailable_guard",
+        "logical_qn_router"
+      ]
+    },
+
+    QN_CACHE_LAYERS: {
+      keys: [
+        "l1", "l2", "l3", "l4", "l5", "l6",
+        "l1 8096mo", "8096 mb", "8096mo",
+        "l6 raw", "l6 raw exponential",
+        "software raid", "raid logiciel",
+        "cache hierarchy", "cache layer", "3d vcache",
+        "3d_vcache", "ecc", "parity", "checksum",
+        "cache shard", "cache coherence"
+      ],
+      routes: [
+        "/api/qn-coprocessor/layers",
+        "/api/qn-coprocessor/cache-map"
+      ],
+      solvers: [
+        "qn_cache_layer_mapper",
+        "l6_raid_cache_aggregator",
+        "ecc_coherence_mapper"
+      ]
+    },
+
+    QN_MEMORY_RAID: {
+      keys: [
+        "raid0", "raid1", "raid5", "raid6", "raid10",
+        "raid software", "software raid", "parity",
+        "mirror", "stripe", "checksum", "ecc",
+        "cache raid", "memory raid", "logical raid",
+        "3d cache", "3d v-cache", "vcache ecc"
+      ],
+      routes: [
+        "/api/qn-coprocessor/raid",
+        "/api/qn-coprocessor/ecc"
+      ],
+      solvers: [
+        "software_raid_cache_router",
+        "parity_checksum_solver",
+        "ecc_drift_detector"
+      ]
+    },
+
+    QN_RAW_EXPONENTIAL: {
+      keys: [
+        "raw exponential", "l6 raw exponential",
+        "exponential memory", "expansion",
+        "field expansion", "state expansion",
+        "branch expansion", "superposition",
+        "combinatorial explosion", "search space",
+        "state space", "tensor expansion",
+        "graph expansion"
+      ],
+      routes: [
+        "/api/qn-coprocessor/l6-raw",
+        "/api/qn-coprocessor/classify"
+      ],
+      solvers: [
+        "raw_expansion_descriptor",
+        "state_space_bound_guard",
+        "expansion_not_physical_memory"
+      ]
+    }
+  }
+};
+
+function qnNum(x, d = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
+
+function qnRound(x, d = 3) {
+  const n = Number(x);
+  return Number.isFinite(n) ? +n.toFixed(d) : null;
+}
+
+function qnClassifyText(input) {
+  const text = String(input || "").toLowerCase();
+  const hits = [];
+
+  for (const [family, cfg] of Object.entries(DICT_QN_COPROCESSOR.families)) {
+    let score = 0;
+    const matched = [];
+
+    for (const key of cfg.keys || []) {
+      if (text.includes(String(key).toLowerCase())) {
+        score++;
+        matched.push(key);
+      }
+    }
+
+    if (score > 0) {
+      hits.push({
+        family,
+        score,
+        matched,
+        routes: cfg.routes,
+        solvers: cfg.solvers
+      });
+    }
+  }
+
+  return hits.sort((a, b) => b.score - a.score);
+}
+
+/* ============================================================
+   QN CACHE HIERARCHY / SOFTWARE RAID / 3D_VCACHE_ECC
+============================================================ */
+
+function qnLayerMap() {
+  const layers = QN_QUANTUM_COPROCESSOR_FIELD.layers;
+
+  return {
+    time: now(),
+    field: QN_QUANTUM_COPROCESSOR_FIELD.name,
+    hierarchy: {
+      L1: {
+        ...layers.L1,
+        size_bytes_declared: layers.L1.declared_size_MB * 1048576,
+        activation: "LOGICAL_DECLARED_CACHE",
+        physical_claim: false
+      },
+      L2: {
+        ...layers.L2,
+        activation: "DYNAMIC_TYPEDARRAY_OR_VECTOR_WORKSPACE"
+      },
+      L3: {
+        ...layers.L3,
+        activation: "SOLVER_GRAPH_STATE_INDEX"
+      },
+      L4: {
+        ...layers.L4,
+        activation: "HASH_LATENCY_DIGEST_WORKSPACE"
+      },
+      L5: {
+        ...layers.L5,
+        activation: "MEMORY_CACHE_HPC_CODEC_BRIDGE"
+      },
+      L6_RAW: {
+        ...layers.L6_RAW,
+        activation: "STRUCTURAL_EXPANSION_DESCRIPTOR",
+        physical_claim: false,
+        note: "L6 raw exponential is not infinite RAM; it describes expansion of states/branches."
+      },
+      L6_RAID: {
+        ...layers.L6_RAID,
+        activation: "SOFTWARE_AGGREGATION_OVER_CACHE_SHARDS"
+      },
+      ECC: {
+        ...layers.ECC,
+        activation: "LOGICAL_PARITY_CHECKSUM_DRIFT_CONTROL"
+      }
+    },
+    honesty:
+      "L1 8096MB is a declared logical cache target, not proof that this RAM is allocated or physically present."
+  };
+}
+
+function qnMakeShard(data, index = 0) {
+  const payload = typeof data === "string" ? data : JSON.stringify(data || {});
+  const hash = crypto.createHash("sha256").update(payload).digest("hex");
+
+  return {
+    index,
+    bytes: Buffer.byteLength(payload, "utf8"),
+    checksum_sha256: hash,
+    payload_preview: safeText(payload, 500)
+  };
+}
+
+function qnRaidAssemble(shards = []) {
+  const list = Array.isArray(shards) ? shards : [];
+  const normalized = list.map((x, i) => qnMakeShard(x, i));
+
+  const parityInput = normalized.map(x => x.checksum_sha256).join("|");
+  const parity = crypto.createHash("sha256").update(parityInput).digest("hex");
+
+  return {
+    time: now(),
+    field: QN_QUANTUM_COPROCESSOR_FIELD.name,
+    raid: "L6_SOFTWARE_RAID_CACHE",
+    mode: "LOGICAL_RAID_PARITY_OVER_CACHE_SHARDS",
+    shards_count: normalized.length,
+    total_payload_bytes: normalized.reduce((s, x) => s + x.bytes, 0),
+    shards: normalized,
+    parity_sha256: parity,
+    ecc: {
+      type: "3D_VCACHE_ECC_LOGICAL",
+      parity,
+      drift_detection: "compare shard checksums + parity on next read",
+      correction: "metadata-level correction only; no physical ECC claim"
+    }
+  };
+}
+
+function qnEccCheck(raidObject = {}) {
+  const shards = Array.isArray(raidObject.shards) ? raidObject.shards : [];
+  const parityInput = shards.map(x => x.checksum_sha256).join("|");
+  const parity = crypto.createHash("sha256").update(parityInput).digest("hex");
+  const expected = raidObject.parity_sha256 || "";
+
+  return {
+    time: now(),
+    field: QN_QUANTUM_COPROCESSOR_FIELD.name,
+    ecc_check: "3D_VCACHE_ECC_LOGICAL_CHECK",
+    shards_count: shards.length,
+    expected_parity: expected,
+    computed_parity: parity,
+    ok: expected === parity,
+    drift: expected && expected !== parity ? "DRIFT_DETECTED" : "NO_DRIFT_DETECTED",
+    note:
+      "Logical ECC check over metadata/checksums. Not physical ECC RAM validation."
+  };
+}
+
+function qnL6RawDescriptor(width = 2, depth = 6) {
+  width = Math.min(Math.max(1, qnNum(width, 2)), 16);
+  depth = Math.min(Math.max(1, qnNum(depth, 6)), 64);
+
+  const states = Math.pow(width, depth);
+
+  return {
+    time: now(),
+    field: QN_QUANTUM_COPROCESSOR_FIELD.name,
+    layer: "L6_RAW_EXPONENTIAL",
+    width,
+    depth,
+    theoretical_state_count: Number.isFinite(states) ? states : "too_large",
+    expression: `${width}^${depth}`,
+    meaning:
+      "Raw exponential describes possible branch/state expansion, not allocated memory.",
+    physical_memory_claim: false
+  };
+}
+
+/* ============================================================
+   QN REAL / UNAVAILABLE PROBES
+============================================================ */
+
+async function qnBackendProbe() {
+  const cmds = [
+    "python3 - <<'PY'\nimport importlib.util,json\nmods=['qiskit','cirq','pennylane','braket','qutip','numpy','scipy','torch']\nprint(json.dumps({m:importlib.util.find_spec(m) is not None for m in mods}))\nPY",
+    "which qiskit 2>/dev/null || echo qiskit_cli_unavailable",
+    "which python3 2>/dev/null || echo python3_unavailable",
+    "node -e \"try{console.log('node_ok')}catch(e){console.log('node_unavailable')}\""
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 12000)));
+
+  let py = {};
+  try {
+    py = JSON.parse(String(out[0].out || "{}").trim());
+  } catch (e) {
+    py = {};
+  }
+
+  const anyQuantum =
+    !!py.qiskit || !!py.cirq || !!py.pennylane || !!py.braket || !!py.qutip;
+
+  return {
+    time: now(),
+    field: QN_QUANTUM_COPROCESSOR_FIELD.name,
+    backend_status: anyQuantum
+      ? "REAL_QUANTUM_SOFTWARE_BACKEND_DETECTED"
+      : "UNAVAILABLE_NO_QUANTUM_SOFTWARE_BACKEND",
+    local_qpu_status: "UNAVAILABLE_NO_LOCAL_QPU_CLAIM",
+    python_modules: py,
+    cli: {
+      qiskit: safeText(out[1].out, 1000),
+      python3: safeText(out[2].out, 1000),
+      node: safeText(out[3].out, 1000)
+    },
+    note:
+      "Quantum software backend detection does not mean a real QPU is connected. Real QPU requires external configured provider."
+  };
+}
+
+async function qnMemoryRealityProbe() {
+  const sys = await system().catch(e => ({ error: e.message }));
+  const mem = process.memoryUsage();
+
+  return {
+    time: now(),
+    field: QN_QUANTUM_COPROCESSOR_FIELD.name,
+    declared_L1_MB: QN_QUANTUM_COPROCESSOR_FIELD.layers.L1.declared_size_MB,
+    process_memory_MB: {
+      rss: qnRound(mem.rss / 1048576, 3),
+      heapTotal: qnRound(mem.heapTotal / 1048576, 3),
+      heapUsed: qnRound(mem.heapUsed / 1048576, 3),
+      external: qnRound(mem.external / 1048576, 3),
+      arrayBuffers: qnRound((mem.arrayBuffers || 0) / 1048576, 3)
+    },
+    system_memory: sys.ram || null,
+    reading:
+      "Declared QN L1 is logical target. Actual process/system memory is shown separately."
+  };
+}
+
+async function qnCoprocessorProbe() {
+  const [backend, memoryReality] = await Promise.all([
+    qnBackendProbe(),
+    qnMemoryRealityProbe()
+  ]);
+
+  return {
+    time: now(),
+    field: QN_QUANTUM_COPROCESSOR_FIELD,
+    dict: DICT_QN_COPROCESSOR,
+    layers: qnLayerMap(),
+    backend,
+    memory_reality: memoryReality,
+    free_expression: {
+      identity: "QN_QUANTUM_COPROCESSOR_FIELD",
+      meaning:
+        "A logical quantum-neural coprocessor field crossing cache, solver, hash, latency and memory structures.",
+      real_activation:
+        "Real execution only where Node/Python/backend/tool exists.",
+      unavailable:
+        "QPU, RDMA, GPU, large physical cache remain unavailable unless detected."
+    }
+  };
+}
+
+/* ============================================================
+   QN COPROCESSOR API ROUTES
+============================================================ */
+
+app.get("/api/qn-coprocessor", async (req, res) => {
+  res.json({
+    time: now(),
+    field: QN_QUANTUM_COPROCESSOR_FIELD,
+    dict: DICT_QN_COPROCESSOR
+  });
+});
+
+app.get("/api/qn-coprocessor/dict", async (req, res) => {
+  res.json(DICT_QN_COPROCESSOR);
+});
+
+app.get("/api/qn-coprocessor/probe", async (req, res) => {
+  res.json(await qnCoprocessorProbe());
+});
+
+app.get("/api/qn-coprocessor/layers", async (req, res) => {
+  res.json(qnLayerMap());
+});
+
+app.get("/api/qn-coprocessor/cache-map", async (req, res) => {
+  res.json(qnLayerMap());
+});
+
+app.get("/api/qn-coprocessor/l6-raw", async (req, res) => {
+  res.json(qnL6RawDescriptor(req.query.width || 2, req.query.depth || 6));
+});
+
+app.post("/api/qn-coprocessor/raid", async (req, res) => {
+  res.json(qnRaidAssemble(req.body && req.body.shards || []));
+});
+
+app.post("/api/qn-coprocessor/ecc", async (req, res) => {
+  res.json(qnEccCheck(req.body || {}));
+});
+
+app.get("/api/qn-coprocessor/backend", async (req, res) => {
+  res.json(await qnBackendProbe());
+});
+
+app.get("/api/qn-coprocessor/memory-reality", async (req, res) => {
+  res.json(await qnMemoryRealityProbe());
+});
+
+app.get("/api/qn-coprocessor/classify", async (req, res) => {
+  const text = req.query.q || req.query.text || "";
+  res.json({
+    time: now(),
+    input: safeText(text, 4000),
+    classification: qnClassifyText(text),
+    dict_version: DICT_QN_COPROCESSOR.version
+  });
+});
+
+app.post("/api/qn-coprocessor/classify", async (req, res) => {
+  const text = req.body && (req.body.q || req.body.text) || "";
+  res.json({
+    time: now(),
+    input: safeText(text, 4000),
+    classification: qnClassifyText(text),
+    dict_version: DICT_QN_COPROCESSOR.version
+  });
+});
+
+/* Optional registry hook */
+try {
+  if (typeof moduleRegistry === "function") {
+    const __moduleRegistryOriginal_QN = moduleRegistry;
+
+    moduleRegistry = function moduleRegistryWithQNCoprocessor() {
+      const base = __moduleRegistryOriginal_QN();
+
+      return {
+        ...base,
+        qn_quantum_coprocessor_field: {
+          field: QN_QUANTUM_COPROCESSOR_FIELD,
+          dict: DICT_QN_COPROCESSOR,
+          routes: [
+            "/api/qn-coprocessor",
+            "/api/qn-coprocessor/dict",
+            "/api/qn-coprocessor/probe",
+            "/api/qn-coprocessor/layers",
+            "/api/qn-coprocessor/cache-map",
+            "/api/qn-coprocessor/l6-raw",
+            "/api/qn-coprocessor/raid",
+            "/api/qn-coprocessor/ecc",
+            "/api/qn-coprocessor/backend",
+            "/api/qn-coprocessor/memory-reality",
+            "/api/qn-coprocessor/classify"
+          ]
+        }
+      };
+    };
+  }
+} catch (e) {
+  console.warn("QN_COPROCESSOR registry hook unavailable:", e.message);
+}
+
+/* Optional UI buttons */
+/*
+<button onclick="load('/api/qn-coprocessor')">QN COPROCESSOR</button>
+<button onclick="load('/api/qn-coprocessor/probe')">QN PROBE</button>
+<button onclick="load('/api/qn-coprocessor/layers')">QN L1-L6</button>
+<button onclick="load('/api/qn-coprocessor/l6-raw?width=2&depth=12')">L6 RAW</button>
+<button onclick="load('/api/qn-coprocessor/backend')">QN BACKEND</button>
+<button onclick="load('/api/qn-coprocessor/memory-reality')">QN MEMORY REAL</button>
+*/
