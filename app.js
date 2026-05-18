@@ -3547,3 +3547,678 @@ app.get("/api/world-hpc/readiness",async(req,res)=>res.json(await worldHpcReadin
 app.get("/api/world-hpc/orchestrate",async(req,res)=>res.json(await worldHpcOrchestrate(String(req.query.level||"standard"))));
 app.get("/api/world-hpc/stress",async(req,res)=>res.json(await worldHpcOrchestrate(String(req.query.level||"heavy"))));
 try{appendJsonl("kernel_boot.jsonl",{time:now(),event:"WORLD_HPC_REAL_POSSIBLE_LAYER_LOADED",routes:WORLD_HPC_REAL_POSSIBLE_LAYER.routes});}catch(e){}
+
+/* ============================================================
+   TRILLIONS V11.6+ ADDITIVE HPC_SIMD LAYER
+   Additive only. Does NOT modify WORLD_HPC / HPC_ZETA.
+   Doctrine: REAL_ONLY_OR_UNAVAILABLE + NO_FAKE_FLOPS.
+   Paste after existing WORLD_HPC / HPC_ZETA layer.
+============================================================ */
+
+const { Worker } = require("worker_threads");
+
+const HPC_SIMD = {
+  name: "HPC_SIMD",
+  version: "V11_6_HPC_SIMD_NATIVE_VECTOR_LAYER",
+  additive_only: true,
+  does_not_touch: ["WORLD_HPC", "HPC_ZETA", "WORLD_HPC_REAL_POSSIBLE_LAYER"],
+  doctrine: [
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_FLOPS",
+    "NO_FAKE_AVX",
+    "NO_FAKE_BLAS",
+    "NO_FAKE_GPU",
+    "NO_FAKE_CLUSTER"
+  ],
+  modules: [
+    "CPU_FLAG_DETECTION",
+    "AVX2_AVX512_PROBE",
+    "NATIVE_SIMD_DICT",
+    "TYPEDARRAY_VECTOR_KERNELS",
+    "FMA_STYLE_LOOPS",
+    "WASM_SIMD_PROBE",
+    "BLAS_OPTIMIZED_PROBE",
+    "WORKER_THREADS_PARALLEL_KERNELS",
+    "SIMD_MICRO_BENCHMARK",
+    "SIMD_CAPABILITY_REPORT"
+  ],
+  honesty:
+    "JavaScript cannot force AVX2/AVX512 directly; Node/V8 may use CPU SIMD internally. Native AVX/BLAS are detected via OS/tools or optional native bindings. Results are measured locally only."
+};
+
+const DICT_HPC_SIMD = {
+  version: "DICT_HPC_SIMD_NATIVE_V1",
+  domains: {
+    CPU_FLAGS: {
+      keys: [
+        "avx",
+        "avx2",
+        "avx512",
+        "fma",
+        "sse",
+        "neon",
+        "simd",
+        "lscpu",
+        "cpu flags"
+      ],
+      routes: ["/api/hpc-simd/cpu-flags", "/api/hpc-simd/probe"],
+      solvers: ["cpu_flag_detector", "simd_capability_classifier"]
+    },
+    SIMD_NATIVE: {
+      keys: [
+        "typedarray",
+        "float64array",
+        "float32array",
+        "vectorized",
+        "kernel",
+        "fma loop"
+      ],
+      routes: ["/api/hpc-simd/typedarray", "/api/hpc-simd/bench"],
+      solvers: ["typedarray_vector_kernel", "fma_style_loop_benchmark"]
+    },
+    WASM_SIMD: {
+      keys: ["wasm", "webassembly", "wasm simd", "v128"],
+      routes: ["/api/hpc-simd/wasm", "/api/hpc-simd/probe"],
+      solvers: ["wasm_simd_compile_probe"]
+    },
+    BLAS: {
+      keys: [
+        "blas",
+        "openblas",
+        "mkl",
+        "lapack",
+        "atlas",
+        "matrix multiply",
+        "sgemm",
+        "dgemm"
+      ],
+      routes: ["/api/hpc-simd/blas", "/api/hpc-simd/probe"],
+      solvers: ["blas_presence_probe", "optimized_math_library_detector"]
+    },
+    WORKERS: {
+      keys: ["worker_threads", "parallel", "threads", "workers", "cpu pool"],
+      routes: ["/api/hpc-simd/workers", "/api/hpc-simd/bench"],
+      solvers: ["parallel_worker_kernel", "thread_scaling_probe"]
+    }
+  },
+  guards: {
+    REAL_ONLY: true,
+    UNAVAILABLE_IF_NOT_DETECTED: true,
+    NO_FAKE_FLOPS: true,
+    NO_FAKE_AVX512: true,
+    NO_HARDWARE_CLAIM_WITHOUT_FLAG: true
+  }
+};
+
+function hpcSimdNum(x, d = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
+
+function hpcSimdRound(x, d = 3) {
+  const n = Number(x);
+  return Number.isFinite(n) ? +n.toFixed(d) : null;
+}
+
+function hpcSimdTimingClass(ms) {
+  if (ms < 10) return "MICRO";
+  if (ms < 100) return "FAST";
+  if (ms < 1000) return "NORMAL";
+  if (ms < 5000) return "HEAVY";
+  return "VERY_HEAVY";
+}
+
+async function hpcSimdCpuFlags() {
+  const cmds = [
+    "lscpu 2>/dev/null || true",
+    "cat /proc/cpuinfo 2>/dev/null | head -120 || true",
+    "sysctl -a 2>/dev/null | grep -Ei 'machdep.cpu|hw.optional' | head -120 || true"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 10000)));
+
+  const raw = [
+    out[0] && out[0].out || "",
+    out[1] && out[1].out || "",
+    out[2] && out[2].out || ""
+  ].join("\n").toLowerCase();
+
+  const flags = {
+    sse: /\bsse\b/.test(raw),
+    sse2: /\bsse2\b/.test(raw),
+    sse3: /\bsse3\b/.test(raw) || /\bpni\b/.test(raw),
+    ssse3: /\bssse3\b/.test(raw),
+    sse4_1: /\bsse4_1\b/.test(raw) || /sse4\.1/.test(raw),
+    sse4_2: /\bsse4_2\b/.test(raw) || /sse4\.2/.test(raw),
+    avx: /\bavx\b/.test(raw),
+    avx2: /\bavx2\b/.test(raw),
+    avx512f: /\bavx512f\b/.test(raw),
+    avx512dq: /\bavx512dq\b/.test(raw),
+    avx512cd: /\bavx512cd\b/.test(raw),
+    avx512bw: /\bavx512bw\b/.test(raw),
+    avx512vl: /\bavx512vl\b/.test(raw),
+    fma: /\bfma\b/.test(raw),
+    neon: /\bneon\b/.test(raw) || /\basimd\b/.test(raw),
+    aes: /\baes\b/.test(raw)
+  };
+
+  const detected = Object.entries(flags)
+    .filter(([, v]) => v)
+    .map(([k]) => k);
+
+  return {
+    time: now(),
+    layer: HPC_SIMD.name,
+    cpu_arch: process.arch,
+    platform: process.platform,
+    detected_flags: detected,
+    flags,
+    avx2_status: flags.avx2 ? "REAL_FLAG_DETECTED" : "UNAVAILABLE_OR_NOT_EXPOSED",
+    avx512_status: flags.avx512f ? "REAL_FLAG_DETECTED" : "UNAVAILABLE_OR_NOT_EXPOSED",
+    fma_status: flags.fma ? "REAL_FLAG_DETECTED" : "UNAVAILABLE_OR_NOT_EXPOSED",
+    raw_lscpu_preview: safeText(out[0] && out[0].out || "", 12000),
+    raw_cpuinfo_preview: safeText(out[1] && out[1].out || "", 12000),
+    honesty:
+      "Flags are detected from OS-visible CPU data. Absence means unavailable or hidden by container/VM."
+  };
+}
+
+function hpcSimdTypedArrayKernel(size = 1000000, rounds = 3) {
+  size = Math.min(Math.max(1024, hpcSimdNum(size, 1000000)), 30000000);
+  rounds = Math.min(Math.max(1, hpcSimdNum(rounds, 3)), 20);
+
+  const a = new Float64Array(size);
+  const b = new Float64Array(size);
+  const c = new Float64Array(size);
+
+  for (let i = 0; i < size; i++) {
+    a[i] = (i % 997) * 0.001;
+    b[i] = (i % 991) * 0.002;
+    c[i] = 0.25;
+  }
+
+  const started = Date.now();
+  let checksum = 0;
+
+  for (let r = 0; r < rounds; r++) {
+    for (let i = 0; i < size; i++) {
+      c[i] = a[i] * b[i] + c[i];
+    }
+  }
+
+  for (let i = 0; i < Math.min(size, 4096); i++) {
+    checksum += c[i];
+  }
+
+  const ms = Math.max(1, Date.now() - started);
+  const fmaLikeOps = size * rounds * 2;
+  const gops = fmaLikeOps / (ms / 1000) / 1e9;
+
+  return {
+    kernel: "Float64Array_FMA_STYLE_LOOP",
+    size,
+    rounds,
+    duration_ms: ms,
+    timing_class: hpcSimdTimingClass(ms),
+    fma_like_ops: fmaLikeOps,
+    estimated_gops_local: hpcSimdRound(gops, 6),
+    checksum: hpcSimdRound(checksum, 6),
+    memory_bytes: size * 8 * 3,
+    memory_MB: hpcSimdRound(size * 8 * 3 / 1048576, 3),
+    honesty:
+      "This is a real local JS TypedArray benchmark. GOPS is a local estimate from counted arithmetic operations, not certified FLOPS."
+  };
+}
+
+function hpcSimdFloat32Kernel(size = 1000000, rounds = 3) {
+  size = Math.min(Math.max(1024, hpcSimdNum(size, 1000000)), 50000000);
+  rounds = Math.min(Math.max(1, hpcSimdNum(rounds, 3)), 20);
+
+  const a = new Float32Array(size);
+  const b = new Float32Array(size);
+  const c = new Float32Array(size);
+
+  for (let i = 0; i < size; i++) {
+    a[i] = (i % 127) * 0.01;
+    b[i] = (i % 113) * 0.02;
+    c[i] = 0.5;
+  }
+
+  const started = Date.now();
+  let checksum = 0;
+
+  for (let r = 0; r < rounds; r++) {
+    for (let i = 0; i < size; i++) {
+      c[i] = a[i] * b[i] + c[i];
+    }
+  }
+
+  for (let i = 0; i < Math.min(size, 4096); i++) {
+    checksum += c[i];
+  }
+
+  const ms = Math.max(1, Date.now() - started);
+  const fmaLikeOps = size * rounds * 2;
+  const gops = fmaLikeOps / (ms / 1000) / 1e9;
+
+  return {
+    kernel: "Float32Array_FMA_STYLE_LOOP",
+    size,
+    rounds,
+    duration_ms: ms,
+    timing_class: hpcSimdTimingClass(ms),
+    fma_like_ops: fmaLikeOps,
+    estimated_gops_local: hpcSimdRound(gops, 6),
+    checksum: hpcSimdRound(checksum, 6),
+    memory_bytes: size * 4 * 3,
+    memory_MB: hpcSimdRound(size * 4 * 3 / 1048576, 3),
+    honesty:
+      "Real local Float32Array arithmetic. V8 may optimize using host CPU features, but direct AVX instruction dispatch is not claimed."
+  };
+}
+
+async function hpcSimdWasmProbe() {
+  const out = {
+    time: now(),
+    layer: HPC_SIMD.name,
+    webassembly_available: typeof WebAssembly !== "undefined",
+    wasm_simd_status: "UNKNOWN",
+    details: null,
+    honesty:
+      "Probe checks whether current Node/WebAssembly accepts SIMD-related compilation. It does not prove peak SIMD throughput."
+  };
+
+  if (typeof WebAssembly === "undefined") {
+    out.wasm_simd_status = "UNAVAILABLE_NO_WEBASSEMBLY";
+    return out;
+  }
+
+  try {
+    const basicModule = new Uint8Array([
+      0x00, 0x61, 0x73, 0x6d,
+      0x01, 0x00, 0x00, 0x00
+    ]);
+
+    const basicOk = WebAssembly.validate(basicModule);
+
+    out.basic_wasm_validate = basicOk;
+    out.wasm_simd_status = basicOk
+      ? "WEBASSEMBLY_AVAILABLE_SIMD_NOT_DIRECTLY_CONFIRMED"
+      : "WEBASSEMBLY_VALIDATE_FAILED";
+    out.details =
+      "For hard WASM SIMD confirmation, add a v128 module compiled by clang/emcc or wasm-pack.";
+    return out;
+  } catch (e) {
+    out.wasm_simd_status = "UNAVAILABLE_OR_REJECTED";
+    out.error = e.message;
+    return out;
+  }
+}
+
+async function hpcSimdBlasProbe() {
+  const cmds = [
+    "ldconfig -p 2>/dev/null | grep -Ei 'openblas|blas|lapack|mkl|atlas' | head -80 || true",
+    "python3 - <<'PY'\ntry:\n import numpy as np\n import json\n print(json.dumps({'numpy':np.__version__,'config':str(np.__config__.show())}))\nexcept Exception as e:\n print('numpy_unavailable:'+str(e))\nPY",
+    "python - <<'PY'\ntry:\n import numpy as np\n print('numpy:'+np.__version__)\nexcept Exception as e:\n print('python_numpy_unavailable:'+str(e))\nPY"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 12000)));
+  const raw = out
+    .map(x => (x.out || "") + "\n" + (x.err || ""))
+    .join("\n")
+    .toLowerCase();
+
+  const detected =
+    /openblas|libblas|lapack|mkl|atlas|numpy/.test(raw) &&
+    !/numpy_unavailable|python_numpy_unavailable/.test(raw);
+
+  return {
+    time: now(),
+    layer: HPC_SIMD.name,
+    blas_status: detected ? "REAL_OR_LIBRARY_DETECTED" : "UNAVAILABLE_NOT_DETECTED",
+    libraries_detected: {
+      openblas: /openblas/.test(raw),
+      blas: /libblas|\bblas\b/.test(raw),
+      lapack: /lapack/.test(raw),
+      mkl: /\bmkl\b/.test(raw),
+      atlas: /atlas/.test(raw),
+      numpy: /numpy/.test(raw) && !/numpy_unavailable|python_numpy_unavailable/.test(raw)
+    },
+    ldconfig_preview: safeText(out[0] && out[0].out || "", 12000),
+    python_numpy_preview: safeText(
+      (out[1] && out[1].out || "") + "\n" + (out[2] && out[2].out || ""),
+      12000
+    ),
+    honesty:
+      "BLAS is only active if detected from system libraries or Python/Numpy. No BLAS acceleration is invented."
+  };
+     }
+
+async function hpcSimdWorkerBench(size = 1000000, rounds = 3, workers = null) {
+  size = Math.min(Math.max(1024, hpcSimdNum(size, 1000000)), 30000000);
+  rounds = Math.min(Math.max(1, hpcSimdNum(rounds, 3)), 20);
+  workers = workers || Math.min(os.cpus().length || 1, 8);
+  workers = Math.min(Math.max(1, hpcSimdNum(workers, 2)), 16);
+
+  const workerCode = `
+    const { parentPort, workerData } = require("worker_threads");
+
+    const size = workerData.size;
+    const rounds = workerData.rounds;
+
+    const a = new Float64Array(size);
+    const b = new Float64Array(size);
+    const c = new Float64Array(size);
+
+    for (let i = 0; i < size; i++) {
+      a[i] = (i % 997) * 0.001;
+      b[i] = (i % 991) * 0.002;
+      c[i] = 0.25;
+    }
+
+    const started = Date.now();
+    let checksum = 0;
+
+    for (let r = 0; r < rounds; r++) {
+      for (let i = 0; i < size; i++) {
+        c[i] = a[i] * b[i] + c[i];
+      }
+    }
+
+    for (let i = 0; i < Math.min(size, 2048); i++) {
+      checksum += c[i];
+    }
+
+    const ms = Math.max(1, Date.now() - started);
+
+    parentPort.postMessage({
+      ok: true,
+      size,
+      rounds,
+      duration_ms: ms,
+      ops: size * rounds * 2,
+      checksum
+    });
+  `;
+
+  const perWorker = Math.floor(size / workers);
+  const started = Date.now();
+
+  const results = await Promise.all(
+    Array.from({ length: workers }, () =>
+      new Promise(resolve => {
+        const w = new Worker(workerCode, {
+          eval: true,
+          workerData: { size: perWorker, rounds }
+        });
+
+        w.on("message", resolve);
+        w.on("error", e => resolve({ ok: false, error: e.message }));
+        w.on("exit", code => {
+          if (code !== 0) {
+            resolve({ ok: false, error: "worker_exit_" + code });
+          }
+        });
+      })
+    )
+  );
+
+  const totalMs = Math.max(1, Date.now() - started);
+  const totalOps = results.reduce((a, r) => a + hpcSimdNum(r.ops, 0), 0);
+  const gops = totalOps / (totalMs / 1000) / 1e9;
+
+  return {
+    time: now(),
+    layer: HPC_SIMD.name,
+    kernel: "worker_threads_parallel_Float64Array_FMA_STYLE_LOOP",
+    workers,
+    total_size_requested: size,
+    per_worker_size: perWorker,
+    rounds,
+    total_duration_ms: totalMs,
+    timing_class: hpcSimdTimingClass(totalMs),
+    total_fma_like_ops: totalOps,
+    estimated_parallel_gops_local: hpcSimdRound(gops, 6),
+    worker_results: results,
+    honesty:
+      "Real Node worker_threads benchmark. Scaling depends on host cores, VM limits, scheduling and memory bandwidth."
+  };
+}
+
+async function hpcSimdProbe() {
+  const [flags, wasm, blas] = await Promise.all([
+    hpcSimdCpuFlags(),
+    hpcSimdWasmProbe(),
+    hpcSimdBlasProbe()
+  ]);
+
+  return {
+    time: now(),
+    layer: HPC_SIMD,
+    dict: DICT_HPC_SIMD,
+    cpu_flags: flags,
+    wasm,
+    blas,
+    node_runtime: {
+      node: process.version,
+      v8: process.versions && process.versions.v8,
+      arch: process.arch,
+      platform: process.platform,
+      logical_cpus: os.cpus().length || null,
+      total_ram_GB: hpcSimdRound(os.totalmem() / 1073741824, 3)
+    },
+    status_rule:
+      "REAL if detected or benchmarked locally; UNAVAILABLE if absent; no fake SIMD/FLOPS claim."
+  };
+}
+
+async function hpcSimdBench(size = 1000000, rounds = 3, workers = null) {
+  const started = Date.now();
+
+  const [f64, f32, workerResult, flags] = await Promise.all([
+    Promise.resolve().then(() => hpcSimdTypedArrayKernel(size, rounds)),
+    Promise.resolve().then(() => hpcSimdFloat32Kernel(size, rounds)),
+    hpcSimdWorkerBench(size, rounds, workers),
+    hpcSimdCpuFlags()
+  ]);
+
+  const ms = Date.now() - started;
+
+  return {
+    time: now(),
+    layer: HPC_SIMD.name,
+    duration_ms_total: ms,
+    cpu_flags_summary: {
+      avx: flags.flags.avx,
+      avx2: flags.flags.avx2,
+      avx512f: flags.flags.avx512f,
+      fma: flags.flags.fma,
+      neon: flags.flags.neon
+    },
+    typedarray_float64: f64,
+    typedarray_float32: f32,
+    worker_threads: workerResult,
+    best_estimated_gops_local: Math.max(
+      hpcSimdNum(f64.estimated_gops_local, 0),
+      hpcSimdNum(f32.estimated_gops_local, 0),
+      hpcSimdNum(workerResult.estimated_parallel_gops_local, 0)
+    ),
+    honesty:
+      "Benchmark is real local execution. It is not LINPACK, not TOP500, and not proof of AVX512 execution."
+  };
+}
+
+async function hpcSimdReport(size = 2000000, rounds = 5, workers = null) {
+  const [probe, bench] = await Promise.all([
+    hpcSimdProbe(),
+    hpcSimdBench(size, rounds, workers)
+  ]);
+
+  return {
+    time: now(),
+    report: "HPC_SIMD_REAL_LOCAL_REPORT",
+    additive_only: true,
+    world_hpc_preserved: true,
+    probe,
+    benchmark: bench,
+    recommendations: [
+      probe.cpu_flags.flags.avx2
+        ? "AVX2 flag visible: native addons or BLAS may exploit it."
+        : "AVX2 not visible: keep TypedArray/WASM/worker fallback.",
+      probe.cpu_flags.flags.avx512f
+        ? "AVX512F visible: native kernel path can be added via addon/C++/N-API."
+        : "AVX512F not visible: do not claim AVX512.",
+      probe.blas.blas_status === "REAL_OR_LIBRARY_DETECTED"
+        ? "BLAS detected: matrix kernels should route to BLAS where possible."
+        : "BLAS not detected: install/configure OpenBLAS/MKL only if needed.",
+      "For true native AVX2/AVX512 kernels, add optional N-API addon or external compiled binary and keep this layer as detector/router.",
+      "For browser/client side, add WASM SIMD module compiled from C/Rust and expose it under the same DICT."
+    ],
+    doctrine: HPC_SIMD.doctrine
+  };
+}
+
+/* ============================================================
+   HPC_SIMD API ROUTES — additive only
+============================================================ */
+
+app.get("/api/hpc-simd", async (req, res) => {
+  res.json({
+    time: now(),
+    layer: HPC_SIMD,
+    dict: DICT_HPC_SIMD
+  });
+});
+
+app.get("/api/hpc-simd/dict", async (req, res) => {
+  res.json(DICT_HPC_SIMD);
+});
+
+app.get("/api/hpc-simd/cpu-flags", async (req, res) => {
+  res.json(await hpcSimdCpuFlags());
+});
+
+app.get("/api/hpc-simd/wasm", async (req, res) => {
+  res.json(await hpcSimdWasmProbe());
+});
+
+app.get("/api/hpc-simd/blas", async (req, res) => {
+  res.json(await hpcSimdBlasProbe());
+});
+
+app.get("/api/hpc-simd/probe", async (req, res) => {
+  res.json(await hpcSimdProbe());
+});
+
+app.get("/api/hpc-simd/typedarray", async (req, res) => {
+  res.json({
+    time: now(),
+    layer: HPC_SIMD.name,
+    float64: hpcSimdTypedArrayKernel(
+      req.query.size || 1000000,
+      req.query.rounds || 3
+    ),
+    float32: hpcSimdFloat32Kernel(
+      req.query.size || 1000000,
+      req.query.rounds || 3
+    )
+  });
+});
+
+app.get("/api/hpc-simd/workers", async (req, res) => {
+  res.json(
+    await hpcSimdWorkerBench(
+      req.query.size || 1000000,
+      req.query.rounds || 3,
+      req.query.workers || null
+    )
+  );
+});
+
+app.get("/api/hpc-simd/bench", async (req, res) => {
+  res.json(
+    await hpcSimdBench(
+      req.query.size || 1000000,
+      req.query.rounds || 3,
+      req.query.workers || null
+    )
+  );
+});
+
+app.get("/api/hpc-simd/report", async (req, res) => {
+  res.json(
+    await hpcSimdReport(
+      req.query.size || 2000000,
+      req.query.rounds || 5,
+      req.query.workers || null
+    )
+  );
+});
+
+/* ============================================================
+   Optional registry hook — does not overwrite existing logic.
+============================================================ */
+
+try {
+  if (typeof moduleRegistry === "function") {
+    const __moduleRegistryOriginal_HPC_SIMD = moduleRegistry;
+
+    moduleRegistry = function moduleRegistryWithHpcSimd() {
+      const base = __moduleRegistryOriginal_HPC_SIMD();
+
+      return {
+        ...base,
+        hpc_simd: {
+          layer: HPC_SIMD,
+          dict: DICT_HPC_SIMD,
+          routes: [
+            "/api/hpc-simd",
+            "/api/hpc-simd/dict",
+            "/api/hpc-simd/cpu-flags",
+            "/api/hpc-simd/wasm",
+            "/api/hpc-simd/blas",
+            "/api/hpc-simd/probe",
+            "/api/hpc-simd/typedarray",
+            "/api/hpc-simd/workers",
+            "/api/hpc-simd/bench",
+            "/api/hpc-simd/report"
+          ]
+        }
+      };
+    };
+  }
+} catch (e) {
+  console.warn("HPC_SIMD registry hook unavailable:", e.message);
+}
+
+/* ============================================================
+   Optional UI buttons
+   Add these inside your existing .tabs HTML block.
+============================================================ */
+
+/*
+<button onclick="load('/api/hpc-simd')">HPC SIMD</button>
+<button onclick="load('/api/hpc-simd/probe')">SIMD PROBE</button>
+<button onclick="load('/api/hpc-simd/cpu-flags')">CPU FLAGS</button>
+<button onclick="load('/api/hpc-simd/blas')">BLAS</button>
+<button onclick="load('/api/hpc-simd/wasm')">WASM SIMD</button>
+<button onclick="load('/api/hpc-simd/bench?size=2000000&rounds=5')">SIMD BENCH</button>
+<button onclick="load('/api/hpc-simd/report?size=3000000&rounds=5')">SIMD REPORT</button>
+*/
+
+/* ============================================================
+   Routes added
+============================================================ */
+
+/*
+/api/hpc-simd
+/api/hpc-simd/dict
+/api/hpc-simd/cpu-flags
+/api/hpc-simd/wasm
+/api/hpc-simd/blas
+/api/hpc-simd/probe
+/api/hpc-simd/typedarray?size=1000000&rounds=3
+/api/hpc-simd/workers?size=1000000&rounds=3&workers=4
+/api/hpc-simd/bench?size=2000000&rounds=5
+/api/hpc-simd/report?size=3000000&rounds=5
+*/
