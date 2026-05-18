@@ -3885,10 +3885,6 @@ app.get("/api/dict-sha256/bench",(req,res)=>{
    REAL_ONLY_OR_UNAVAILABLE
 ============================================================ */
 
-const os = require("os");
-const fs = require("fs");
-const crypto = require("crypto");
-
 const DICT_MEMORY_FABRIC = {
   version: "DICT_MEMORY_FABRIC_V1",
 
