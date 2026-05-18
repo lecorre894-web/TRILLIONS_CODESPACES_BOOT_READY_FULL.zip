@@ -4614,3 +4614,112 @@ app.get("/api/software-processor/matrix",async(req,res)=>{
 app.get("/api/software-processor/safe-repair",(req,res)=>{
   res.json(safeSelfRepairStatus());
 });
+
+/* ============================================================
+   TRILLIONS SOFTWARE PROCESSOR DIE LAYER
+   KERNEL + QN COPROCESSOR + L1→L6 CACHE DIE MAP
+   ADDITIVE ONLY — REAL_ONLY_OR_UNAVAILABLE
+============================================================ */
+
+const SOFTWARE_PROCESSOR_DIE_LAYER = {
+  version:"DIE_KERNEL_LAYER_V1",
+
+  doctrine:[
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_SILICON",
+    "NO_FAKE_QPU",
+    "NO_FAKE_CACHE",
+    "NO_FAKE_POWER"
+  ],
+
+  die_type:"LOGICAL_SOFTWARE_DIE",
+
+  kernel_core:{
+    name:"TRILLIONS_SOFTWARE_KERNEL",
+    role:"runtime orchestration core",
+    links:[
+      "scheduler",
+      "worker_fabric",
+      "memory_fabric",
+      "benchmark_matrix",
+      "safe_repair",
+      "software_processor_calibrator"
+    ]
+  },
+
+  coprocessor_QN:{
+    enabled:true,
+    type:"LOGICAL_QUANTUM_STYLE_COPROCESSOR",
+    real_qpu:false,
+    role:[
+      "queue_normalization",
+      "probabilistic_routing",
+      "latency_path_selection",
+      "batch_distribution",
+      "worker_mesh_coordination",
+      "memory_pressure_avoidance"
+    ],
+    honesty:"QN is a logical orchestration coprocessor, not physical quantum hardware"
+  },
+
+  cache_die:{
+    L1:{role:"FAST_HOT_PATH_CACHE",size_MB:8096},
+    L2:{role:"BATCH_CACHE",size_MB:16096*2},
+    L3:{role:"VECTOR_CACHE",size_MB:32096*4},
+    L4:{role:"SHARED_BUFFER_FABRIC",size_MB:64096*8},
+    L5:{role:"RAMDISK_NVME_LAYER",size_MB:128096*16},
+    L6:{role:"RAW_RAID_3D_VCACHE_LOGIC",size_MB:256096*32}
+  },
+
+  die_bus:{
+    shared_array_buffer:typeof SharedArrayBuffer!=="undefined",
+    atomics:typeof Atomics!=="undefined",
+    ramdisk_dev_shm:fs.existsSync("/dev/shm"),
+    worker_threads:true,
+    routing:"CACHE_LOCALITY_AWARE",
+    scheduler:"QN_ASSISTED_ADAPTIVE_BATCH"
+  },
+
+  security_die:{
+    joker_1_0:[
+      "input_guard",
+      "route_guard",
+      "unsafe_mode_blocker"
+    ],
+    joker_2_0:[
+      "memory_pressure_guard",
+      "rollback_guard",
+      "worker_storm_protection",
+      "cache_corruption_guard"
+    ]
+  },
+
+  honesty:
+    "logical DIE map for software processor orchestration; not real silicon fabrication"
+};
+
+function softwareProcessorDieStatus(){
+  const mem=process.memoryUsage();
+
+  return {
+    time:new Date().toISOString(),
+    status:"SOFTWARE_DIE_STATUS_COMPLETE",
+    die:SOFTWARE_PROCESSOR_DIE_LAYER,
+    runtime:{
+      node:process.version,
+      arch:process.arch,
+      platform:process.platform,
+      logical_cpus:os.cpus().length,
+      rss_MB:+(mem.rss/1048576).toFixed(2),
+      heap_used_MB:+(mem.heapUsed/1048576).toFixed(2),
+      ramdisk:fs.existsSync("/dev/shm"),
+      shared_array_buffer:typeof SharedArrayBuffer!=="undefined",
+      atomics:typeof Atomics!=="undefined"
+    },
+    honesty:"status maps logical software die only"
+  };
+}
+
+app.get("/api/software-processor/die",(req,res)=>{
+  res.json(softwareProcessorDieStatus());
+});
