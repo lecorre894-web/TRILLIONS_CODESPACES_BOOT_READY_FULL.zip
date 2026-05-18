@@ -11067,3 +11067,846 @@ try {
 <button onclick="load('/api/sha-field/hash?algo=sha256&message=test')">SHA256 TEST</button>
 <button onclick="load('/api/sha-field/hash?algo=sha512&message=test')">SHA512 TEST</button>
 */
+
+/* ============================================================
+   TRILLIONS ADDITIVE HASH_MULTI_FIELD
+   Purpose: compile SHA2/SHA3/MD5/BLAKE/SCRYPT/RandomX/etc.
+   Additive only. No new police. No rally score.
+   Uses existing LOGIC_GUARD / REAL_OR_UNAVAILABLE.
+============================================================ */
+
+const HASH_MULTI_FIELD = {
+  name: "HASH_MULTI_FIELD",
+  version: "V1_MULTI_HASH_DICT_PROCESSOR_FIELD",
+  additive_only: true,
+  role: "transverse hash processor field",
+  algorithms_scope: [
+    "SHA256",
+    "SHA512",
+    "SHA3",
+    "KECCAK_IF_AVAILABLE",
+    "MD5",
+    "BLAKE2",
+    "BLAKE3_IF_AVAILABLE",
+    "RIPEMD160",
+    "SCRYPT",
+    "PBKDF2",
+    "HMAC",
+    "RANDOMX_IF_BINARY_OR_LIBRARY_DETECTED",
+    "ARGON2_IF_BINARY_OR_LIBRARY_DETECTED"
+  ],
+  relies_on_existing_guards: [
+    "LOGIC_GUARD",
+    "REAL_OR_UNAVAILABLE",
+    "NO_FAKE_METRICS",
+    "NO_FAKE_POWER"
+  ],
+  doctrine: [
+    "HASH_AS_PROCESSOR_SIGNAL",
+    "REAL_OR_UNAVAILABLE",
+    "NODE_CRYPTO_WHEN_AVAILABLE",
+    "EXTERNAL_BINARY_OR_LIBRARY_WHEN_AVAILABLE",
+    "NO_FAKE_RANDOMX",
+    "NO_FAKE_ARGON2",
+    "NO_RALLY_SCORE",
+    "NO_NEW_POLICE_LAYER"
+  ],
+  structures: [
+    "NODE_CRYPTO",
+    "OPENSSL",
+    "CPU_FLAGS",
+    "BUFFER",
+    "STREAM",
+    "FILE_HASH",
+    "MESSAGE_HASH",
+    "HMAC",
+    "KDF",
+    "POW_HASH",
+    "DICT",
+    "LATENCY",
+    "BENCH_LOCAL"
+  ]
+};
+
+const DICT_HASH_MULTI = {
+  version: "DICT_HASH_MULTI_V1",
+  mode: "MULTI_HASH_REAL_OR_UNAVAILABLE",
+  families: {
+    SHA2: {
+      keys: [
+        "sha2", "sha-2",
+        "sha224", "sha-224",
+        "sha256", "sha-256",
+        "sha384", "sha-384",
+        "sha512", "sha-512",
+        "sha512-224", "sha512-256",
+        "secure hash algorithm 2",
+        "digest sha2",
+        "sha2 hmac",
+        "sha2 file",
+        "sha2 stream"
+      ],
+      routes: [
+        "/api/hash-field/sha2",
+        "/api/hash-field/hash",
+        "/api/hash-field/bench"
+      ],
+      solvers: [
+        "sha2_node_crypto_router",
+        "sha2_stream_digest",
+        "sha2_latency_bench"
+      ]
+    },
+
+    SHA3_KECCAK: {
+      keys: [
+        "sha3", "sha-3",
+        "sha3-224", "sha3-256", "sha3-384", "sha3-512",
+        "keccak", "keccak256", "keccak-256",
+        "shake128", "shake256",
+        "xof", "sponge function",
+        "ethereum keccak",
+        "sha3 hmac",
+        "sha3 file",
+        "sha3 stream"
+      ],
+      routes: [
+        "/api/hash-field/sha3",
+        "/api/hash-field/hash",
+        "/api/hash-field/probe"
+      ],
+      solvers: [
+        "sha3_node_crypto_if_available",
+        "keccak_external_library_if_available",
+        "sha3_unavailable_guard"
+      ]
+    },
+
+    MD5_RIPEMD: {
+      keys: [
+        "md5",
+        "md5sum",
+        "ripemd",
+        "ripemd160",
+        "rmd160",
+        "legacy hash",
+        "checksum md5",
+        "file md5",
+        "message md5",
+        "ripemd file",
+        "ripemd hmac"
+      ],
+      routes: [
+        "/api/hash-field/legacy",
+        "/api/hash-field/hash",
+        "/api/hash-field/probe"
+      ],
+      solvers: [
+        "md5_node_crypto_router",
+        "ripemd160_node_crypto_router",
+        "legacy_hash_classifier"
+      ]
+    },
+
+    BLAKE: {
+      keys: [
+        "blake",
+        "blake2",
+        "blake2b",
+        "blake2s",
+        "blake3",
+        "b2sum",
+        "b3sum",
+        "blake file",
+        "blake stream",
+        "blake hash",
+        "blake keyed hash",
+        "blake mac"
+      ],
+      routes: [
+        "/api/hash-field/blake",
+        "/api/hash-field/hash",
+        "/api/hash-field/probe"
+      ],
+      solvers: [
+        "blake2_node_crypto_router",
+        "blake3_binary_or_library_detector",
+        "blake_unavailable_guard"
+      ]
+    },
+
+    KDF_PASSWORD_HASH: {
+      keys: [
+        "scrypt",
+        "pbkdf2",
+        "argon2",
+        "bcrypt",
+        "password hash",
+        "key derivation",
+        "kdf",
+        "salt",
+        "iterations",
+        "work factor",
+        "memory cost",
+        "time cost",
+        "parallelism",
+        "derived key",
+        "dklen"
+      ],
+      routes: [
+        "/api/hash-field/kdf",
+        "/api/hash-field/scrypt",
+        "/api/hash-field/pbkdf2"
+      ],
+      solvers: [
+        "scrypt_node_crypto_router",
+        "pbkdf2_node_crypto_router",
+        "argon2_binary_or_library_detector"
+      ]
+    }
+  },
+  guards_reference_only: {
+    existing_guards_apply: true,
+    no_new_police_layer: true,
+    no_fake_randomx: true,
+    no_fake_argon2: true,
+    unavailable_if_algorithm_absent: true
+  }
+};
+
+function hashFieldNum(x, d = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
+
+function hashFieldRound(x, d = 3) {
+  const n = Number(x);
+  return Number.isFinite(n) ? +n.toFixed(d) : null;
+}
+
+function hashFieldRate(hps) {
+  hps = hashFieldNum(hps, 0);
+  if (hps >= 1e12) return hashFieldRound(hps / 1e12, 6) + " TH/s";
+  if (hps >= 1e9) return hashFieldRound(hps / 1e9, 6) + " GH/s";
+  if (hps >= 1e6) return hashFieldRound(hps / 1e6, 6) + " MH/s";
+  if (hps >= 1e3) return hashFieldRound(hps / 1e3, 6) + " KH/s";
+  return hashFieldRound(hps, 3) + " H/s";
+}
+
+/* ============================================================
+   HASH MULTI DICT EXTENSIONS
+============================================================ */
+
+DICT_HASH_MULTI.families.RANDOMX_POW = {
+  keys: [
+    "randomx",
+    "monero",
+    "xmr",
+    "rx/0",
+    "rx/wow",
+    "randomx dataset",
+    "randomx cache",
+    "randomx vm",
+    "jit randomx",
+    "superscalar hash",
+    "scratchpad",
+    "pow hash",
+    "proof of work",
+    "cpu mining hash",
+    "memory hard pow",
+    "xmrig",
+    "randomx benchmark"
+  ],
+  routes: [
+    "/api/hash-field/randomx",
+    "/api/hash-field/probe",
+    "/api/hash-field/classify"
+  ],
+  solvers: [
+    "randomx_binary_detector",
+    "xmrig_benchmark_detector",
+    "randomx_unavailable_if_absent"
+  ]
+};
+
+DICT_HASH_MULTI.families.MULTI_POW_HASHES = {
+  keys: [
+    "kawpow",
+    "etchash",
+    "ethash",
+    "autolykos",
+    "equihash",
+    "zelhash",
+    "kheavyhash",
+    "xelishash",
+    "yescrypt",
+    "neoscrypt",
+    "cryptonight",
+    "groestl",
+    "quark",
+    "x11",
+    "lyra2",
+    "verthash"
+  ],
+  routes: [
+    "/api/hash-field/pow-registry",
+    "/api/hash-field/classify"
+  ],
+  solvers: [
+    "pow_hash_vocabulary_router",
+    "backend_required_guard",
+    "unavailable_without_backend"
+  ]
+};
+
+DICT_HASH_MULTI.families.HMAC_MAC = {
+  keys: [
+    "hmac",
+    "mac",
+    "message authentication code",
+    "hmac sha256",
+    "hmac sha512",
+    "hmac sha3",
+    "hmac md5",
+    "hmac blake2",
+    "secret key",
+    "auth tag",
+    "signature hash"
+  ],
+  routes: [
+    "/api/hash-field/hmac",
+    "/api/hash-field/classify"
+  ],
+  solvers: [
+    "hmac_node_crypto_router",
+    "secret_input_existing_guard",
+    "mac_digest_router"
+  ]
+};
+
+DICT_HASH_MULTI.families.FILE_STREAM_HASH = {
+  keys: [
+    "file hash",
+    "stream hash",
+    "hash file",
+    "hash stream",
+    "chunk hash",
+    "chunked hashing",
+    "large file hash",
+    "digest file",
+    "checksum file",
+    "hash throughput",
+    "stream digest"
+  ],
+  routes: [
+    "/api/hash-field/file",
+    "/api/hash-field/probe"
+  ],
+  solvers: [
+    "file_stream_digest_router",
+    "chunked_hashing",
+    "throughput_measure"
+  ]
+};
+
+DICT_HASH_MULTI.families.HASH_LATENCY = {
+  keys: [
+    "hash latency",
+    "digest latency",
+    "sha latency",
+    "md5 latency",
+    "blake latency",
+    "scrypt latency",
+    "randomx latency",
+    "p50 hash",
+    "p95 hash",
+    "p99 hash",
+    "hash jitter",
+    "throughput"
+  ],
+  routes: [
+    "/api/hash-field/latency",
+    "/api/hash-field/bench"
+  ],
+  solvers: [
+    "hash_latency_probe",
+    "hash_p50_p95_p99",
+    "throughput_signal"
+  ]
+};
+
+function hashFieldNormalizeAlgo(algo) {
+  const raw = String(algo || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  const map = {
+    sha1: "sha1",
+    sha224: "sha224",
+    sha256: "sha256",
+    sha384: "sha384",
+    sha512: "sha512",
+    sha3224: "sha3-224",
+    sha3256: "sha3-256",
+    sha3384: "sha3-384",
+    sha3512: "sha3-512",
+    md5: "md5",
+    ripemd160: "ripemd160",
+    rmd160: "ripemd160",
+    blake2b512: "blake2b512",
+    blake2s256: "blake2s256"
+  };
+
+  return map[raw] || null;
+}
+
+function hashFieldAvailableAlgo(algo, availableHashes) {
+  const a = hashFieldNormalizeAlgo(algo);
+  if (!a) return null;
+  return (availableHashes || crypto.getHashes()).includes(a) ? a : null;
+}
+
+function hashFieldClassify(input) {
+  const text = String(input || "").toLowerCase();
+  const hits = [];
+
+  for (const [family, cfg] of Object.entries(DICT_HASH_MULTI.families)) {
+    let score = 0;
+    const matched = [];
+
+    for (const key of cfg.keys || []) {
+      if (text.includes(String(key).toLowerCase())) {
+        score++;
+        matched.push(key);
+      }
+    }
+
+    if (score > 0) {
+      hits.push({
+        family,
+        score,
+        matched,
+        routes: cfg.routes,
+        solvers: cfg.solvers
+      });
+    }
+  }
+
+  return hits.sort((a, b) => b.score - a.score);
+}
+
+/* ============================================================
+   HASH MULTI PROBES / HASH / KDF / BENCH
+============================================================ */
+
+async function hashFieldProbe() {
+  let hashes = [];
+  try { hashes = crypto.getHashes(); } catch (e) { hashes = []; }
+
+  const cmds = [
+    "openssl version 2>/dev/null || echo openssl_unavailable",
+    "openssl list -digest-algorithms 2>/dev/null | head -200 || echo openssl_digest_list_unavailable",
+    "which b3sum 2>/dev/null || echo b3sum_unavailable",
+    "which b2sum 2>/dev/null || echo b2sum_unavailable",
+    "which xmrig 2>/dev/null || echo xmrig_unavailable",
+    "which randomx-benchmark 2>/dev/null || echo randomx_benchmark_unavailable",
+    "which argon2 2>/dev/null || echo argon2_unavailable"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 12000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    field: HASH_MULTI_FIELD,
+    dict: DICT_HASH_MULTI,
+    node_crypto: {
+      openssl: process.versions && process.versions.openssl,
+      hashes_count: hashes.length,
+      available_scope: {
+        sha1: hashes.includes("sha1"),
+        sha224: hashes.includes("sha224"),
+        sha256: hashes.includes("sha256"),
+        sha384: hashes.includes("sha384"),
+        sha512: hashes.includes("sha512"),
+        sha3_224: hashes.includes("sha3-224"),
+        sha3_256: hashes.includes("sha3-256"),
+        sha3_384: hashes.includes("sha3-384"),
+        sha3_512: hashes.includes("sha3-512"),
+        md5: hashes.includes("md5"),
+        ripemd160: hashes.includes("ripemd160"),
+        blake2b512: hashes.includes("blake2b512"),
+        blake2s256: hashes.includes("blake2s256")
+      }
+    },
+    external_tools: {
+      openssl_cli: !/openssl_unavailable/.test(raw),
+      b3sum_blake3: !/b3sum_unavailable/.test(raw),
+      b2sum_blake2: !/b2sum_unavailable/.test(raw),
+      xmrig_randomx: !/xmrig_unavailable/.test(raw),
+      randomx_benchmark: !/randomx_benchmark_unavailable/.test(raw),
+      argon2_cli: !/argon2_unavailable/.test(raw)
+    },
+    raw_previews: {
+      openssl_version: safeText(out[0].out, 4000),
+      openssl_digests: safeText(out[1].out, 16000),
+      b3sum: safeText(out[2].out, 1000),
+      b2sum: safeText(out[3].out, 1000),
+      xmrig: safeText(out[4].out, 1000),
+      randomx: safeText(out[5].out, 1000),
+      argon2: safeText(out[6].out, 1000)
+    },
+    note:
+      "RandomX/Argon2/BLAKE3 require real binary/library detection. They are unavailable if absent."
+  };
+}
+
+function hashFieldHashMessage(algo, message, encoding = "hex") {
+  let hashes = [];
+  try { hashes = crypto.getHashes(); } catch (e) { hashes = []; }
+
+  const a = hashFieldAvailableAlgo(algo, hashes);
+
+  if (!a) {
+    return {
+      ok: false,
+      error: "UNSUPPORTED_OR_UNAVAILABLE_ALGORITHM",
+      requested: algo,
+      supported_by_node_scope: hashes.filter(x =>
+        /sha|md5|ripemd|blake/i.test(x)
+      ),
+      note: "Use /api/hash-field/probe to see available algorithms."
+    };
+  }
+
+  const enc = encoding === "base64" ? "base64" : "hex";
+  const input = Buffer.from(String(message || ""), "utf8");
+  const t0 = process.hrtime.bigint();
+  const digest = crypto.createHash(a).update(input).digest(enc);
+  const ns = Number(process.hrtime.bigint() - t0);
+
+  return {
+    ok: true,
+    time: now(),
+    algorithm: a,
+    encoding: enc,
+    input_bytes: input.length,
+    duration_ms: hashFieldRound(ns / 1e6, 6),
+    digest
+  };
+}
+
+async function hashFieldHashFile(algo, filePath, encoding = "hex") {
+  let hashes = [];
+  try { hashes = crypto.getHashes(); } catch (e) { hashes = []; }
+
+  const a = hashFieldAvailableAlgo(algo, hashes);
+
+  if (!a) {
+    return { ok: false, error: "UNSUPPORTED_OR_UNAVAILABLE_ALGORITHM", requested: algo };
+  }
+
+  const file = String(filePath || "");
+  if (!file || !fs.existsSync(file)) {
+    return { ok: false, error: "FILE_UNAVAILABLE", file };
+  }
+
+  const enc = encoding === "base64" ? "base64" : "hex";
+  const hash = crypto.createHash(a);
+  const started = Date.now();
+  let bytes = 0;
+
+  await new Promise((resolve, reject) => {
+    const rs = fs.createReadStream(file);
+    rs.on("data", chunk => { bytes += chunk.length; hash.update(chunk); });
+    rs.on("end", resolve);
+    rs.on("error", reject);
+  });
+
+  const ms = Math.max(1, Date.now() - started);
+
+  return {
+    ok: true,
+    time: now(),
+    algorithm: a,
+    file,
+    bytes,
+    MB: hashFieldRound(bytes / 1048576, 6),
+    duration_ms: ms,
+    throughput_MB_s: hashFieldRound((bytes / 1048576) / (ms / 1000), 6),
+    digest: hash.digest(enc)
+  };
+}
+
+function hashFieldHmac(algo, key, message, encoding = "hex") {
+  let hashes = [];
+  try { hashes = crypto.getHashes(); } catch (e) { hashes = []; }
+
+  const a = hashFieldAvailableAlgo(algo, hashes);
+
+  if (!a) {
+    return { ok: false, error: "UNSUPPORTED_OR_UNAVAILABLE_ALGORITHM", requested: algo };
+  }
+
+  const enc = encoding === "base64" ? "base64" : "hex";
+  const t0 = process.hrtime.bigint();
+
+  const digest = crypto
+    .createHmac(a, Buffer.from(String(key || ""), "utf8"))
+    .update(Buffer.from(String(message || ""), "utf8"))
+    .digest(enc);
+
+  const ns = Number(process.hrtime.bigint() - t0);
+
+  return {
+    ok: true,
+    time: now(),
+    algorithm: "hmac-" + a,
+    encoding: enc,
+    key_bytes: Buffer.byteLength(String(key || ""), "utf8"),
+    input_bytes: Buffer.byteLength(String(message || ""), "utf8"),
+    duration_ms: hashFieldRound(ns / 1e6, 6),
+    digest,
+    note: "Do not expose real secrets publicly."
+  };
+}
+
+function hashFieldKdf(kind, password, salt, opts = {}) {
+  const k = String(kind || "").toLowerCase();
+  const pass = Buffer.from(String(password || ""), "utf8");
+  const s = Buffer.from(String(salt || "trillions-salt"), "utf8");
+  const dklen = Math.min(Math.max(hashFieldNum(opts.dklen, 32), 16), 256);
+
+  const t0 = process.hrtime.bigint();
+
+  if (k === "scrypt") {
+    const N = Math.min(Math.max(hashFieldNum(opts.N, 16384), 1024), 1048576);
+    const r = Math.min(Math.max(hashFieldNum(opts.r, 8), 1), 32);
+    const p = Math.min(Math.max(hashFieldNum(opts.p, 1), 1), 16);
+
+    try {
+      const out = crypto.scryptSync(pass, s, dklen, { N, r, p, maxmem: 256 * 1024 * 1024 });
+      const ns = Number(process.hrtime.bigint() - t0);
+      return {
+        ok: true,
+        time: now(),
+        kdf: "scrypt",
+        params: { N, r, p, dklen },
+        duration_ms: hashFieldRound(ns / 1e6, 6),
+        derived_hex: out.toString("hex")
+      };
+    } catch (e) {
+      return { ok: false, kdf: "scrypt", error: e.message };
+    }
+  }
+
+  if (k === "pbkdf2") {
+    const iterations = Math.min(Math.max(hashFieldNum(opts.iterations, 100000), 1000), 5000000);
+    const digest = hashFieldNormalizeAlgo(opts.digest || "sha256") || "sha256";
+
+    try {
+      const out = crypto.pbkdf2Sync(pass, s, iterations, dklen, digest);
+      const ns = Number(process.hrtime.bigint() - t0);
+      return {
+        ok: true,
+        time: now(),
+        kdf: "pbkdf2",
+        params: { iterations, digest, dklen },
+        duration_ms: hashFieldRound(ns / 1e6, 6),
+        derived_hex: out.toString("hex")
+      };
+    } catch (e) {
+      return { ok: false, kdf: "pbkdf2", error: e.message };
+    }
+  }
+
+  return {
+    ok: false,
+    error: "KDF_UNSUPPORTED_IN_NODE_ROUTE",
+    supported_here: ["scrypt", "pbkdf2"],
+    external_possible: ["argon2 if binary/library detected"]
+  };
+}
+
+function hashFieldBenchOne(algo, iterations = 100000, bytes = 1024) {
+  let hashes = [];
+  try { hashes = crypto.getHashes(); } catch (e) { hashes = []; }
+
+  const a = hashFieldAvailableAlgo(algo, hashes);
+
+  if (!a) return { ok: false, requested: algo, error: "UNSUPPORTED_OR_UNAVAILABLE_ALGORITHM" };
+
+  iterations = Math.min(Math.max(1000, hashFieldNum(iterations, 100000)), 5000000);
+  bytes = Math.min(Math.max(8, hashFieldNum(bytes, 1024)), 1048576);
+
+  const input = crypto.randomBytes(bytes);
+  let digest = null;
+  const t0 = process.hrtime.bigint();
+
+  for (let i = 0; i < iterations; i++) {
+    input.writeUInt32LE(i >>> 0, 0);
+    digest = crypto.createHash(a).update(input).digest();
+  }
+
+  const ns = Number(process.hrtime.bigint() - t0);
+  const sec = Math.max(ns / 1e9, 1e-12);
+  const hps = iterations / sec;
+  const bps = (iterations * bytes) / sec;
+
+  return {
+    ok: true,
+    algorithm: a,
+    iterations,
+    input_bytes_per_hash: bytes,
+    duration_ms: hashFieldRound(ns / 1e6, 6),
+    hashes_per_second: Math.round(hps),
+    formatted_hashrate: hashFieldRate(hps),
+    throughput_MB_s: hashFieldRound(bps / 1048576, 6),
+    digest_preview: digest ? digest.toString("hex").slice(0, 32) : null
+  };
+}
+
+function hashFieldBench(iterations = 50000, bytes = 1024) {
+  const algos = [
+    "sha256",
+    "sha512",
+    "sha3-256",
+    "sha3-512",
+    "md5",
+    "ripemd160",
+    "blake2b512",
+    "blake2s256"
+  ];
+
+  return {
+    time: now(),
+    field: HASH_MULTI_FIELD.name,
+    iterations: hashFieldNum(iterations, 50000),
+    bytes: hashFieldNum(bytes, 1024),
+    results: algos.map(a => hashFieldBenchOne(a, iterations, bytes)),
+    note:
+      "Benchmarks only algorithms available in Node crypto. RandomX/BLAKE3/Argon2 require external binary/library."
+  };
+}
+
+async function hashFieldRandomXStatus() {
+  const cmds = [
+    "which xmrig 2>/dev/null || echo xmrig_unavailable",
+    "which randomx-benchmark 2>/dev/null || echo randomx_benchmark_unavailable",
+    "xmrig --version 2>/dev/null | head -20 || true",
+    "randomx-benchmark --help 2>/dev/null | head -20 || true"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 8000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    field: HASH_MULTI_FIELD.name,
+    randomx_status:
+      !/xmrig_unavailable/.test(raw) || !/randomx_benchmark_unavailable/.test(raw)
+        ? "REAL_RANDOMX_BINARY_OR_TOOL_DETECTED"
+        : "UNAVAILABLE_RANDOMX_BINARY_NOT_DETECTED",
+    xmrig: safeText(out[0].out + "\n" + out[2].out, 8000),
+    randomx_benchmark: safeText(out[1].out + "\n" + out[3].out, 8000),
+    note:
+      "RandomX is not emulated here. It is available only if real xmrig/randomx tool or library exists."
+  };
+}
+
+/* API ROUTES */
+app.get("/api/hash-field", async (req, res) => {
+  res.json({ time: now(), field: HASH_MULTI_FIELD, dict: DICT_HASH_MULTI });
+});
+
+app.get("/api/hash-field/dict", async (req, res) => {
+  res.json(DICT_HASH_MULTI);
+});
+
+app.get("/api/hash-field/probe", async (req, res) => {
+  res.json(await hashFieldProbe());
+});
+
+app.get("/api/hash-field/hash", async (req, res) => {
+  res.json(hashFieldHashMessage(req.query.algo || "sha256", req.query.message || "", req.query.encoding || "hex"));
+});
+
+app.post("/api/hash-field/hash", async (req, res) => {
+  res.json(hashFieldHashMessage(
+    req.body && req.body.algo || "sha256",
+    req.body && req.body.message || "",
+    req.body && req.body.encoding || "hex"
+  ));
+});
+
+app.get("/api/hash-field/file", async (req, res) => {
+  res.json(await hashFieldHashFile(req.query.algo || "sha256", req.query.path || "", req.query.encoding || "hex"));
+});
+
+app.post("/api/hash-field/hmac", async (req, res) => {
+  res.json(hashFieldHmac(
+    req.body && req.body.algo || "sha256",
+    req.body && req.body.key || "",
+    req.body && req.body.message || "",
+    req.body && req.body.encoding || "hex"
+  ));
+});
+
+app.post("/api/hash-field/kdf", async (req, res) => {
+  res.json(hashFieldKdf(
+    req.body && req.body.kind || "scrypt",
+    req.body && req.body.password || "",
+    req.body && req.body.salt || "trillions-salt",
+    req.body && req.body.opts || {}
+  ));
+});
+
+app.get("/api/hash-field/bench", async (req, res) => {
+  res.json(hashFieldBench(req.query.iterations || 50000, req.query.bytes || 1024));
+});
+
+app.get("/api/hash-field/randomx", async (req, res) => {
+  res.json(await hashFieldRandomXStatus());
+});
+
+app.get("/api/hash-field/classify", async (req, res) => {
+  const text = req.query.q || req.query.text || "";
+  res.json({
+    time: now(),
+    input: safeText(text, 4000),
+    classification: hashFieldClassify(text),
+    dict_version: DICT_HASH_MULTI.version
+  });
+});
+
+app.post("/api/hash-field/classify", async (req, res) => {
+  const text = req.body && (req.body.q || req.body.text) || "";
+  res.json({
+    time: now(),
+    input: safeText(text, 4000),
+    classification: hashFieldClassify(text),
+    dict_version: DICT_HASH_MULTI.version
+  });
+});
+
+/* family aliases */
+app.get("/api/hash-field/sha2", async (req, res) => res.json(hashFieldBench(20000, 1024)));
+app.get("/api/hash-field/sha3", async (req, res) => res.json(hashFieldBench(20000, 1024)));
+app.get("/api/hash-field/legacy", async (req, res) => res.json(hashFieldBench(20000, 1024)));
+app.get("/api/hash-field/blake", async (req, res) => res.json(hashFieldBench(20000, 1024)));
+app.get("/api/hash-field/kdf", async (req, res) => res.json({
+  time: now(),
+  supported_node_kdf: ["scrypt", "pbkdf2"],
+  argon2: "REAL_IF_BINARY_OR_LIBRARY_DETECTED",
+  route: "POST /api/hash-field/kdf"
+}));
+
+/* Optional UI buttons */
+/*
+<button onclick="load('/api/hash-field')">HASH FIELD</button>
+<button onclick="load('/api/hash-field/dict')">DICT HASH</button>
+<button onclick="load('/api/hash-field/probe')">HASH PROBE</button>
+<button onclick="load('/api/hash-field/bench?iterations=50000&bytes=1024')">HASH BENCH</button>
+<button onclick="load('/api/hash-field/randomx')">RANDOMX</button>
+<button onclick="load('/api/hash-field/hash?algo=sha3-256&message=test')">SHA3 TEST</button>
+<button onclick="load('/api/hash-field/hash?algo=md5&message=test')">MD5 TEST</button>
+<button onclick="load('/api/hash-field/hash?algo=blake2b512&message=test')">BLAKE2 TEST</button>
+*/
