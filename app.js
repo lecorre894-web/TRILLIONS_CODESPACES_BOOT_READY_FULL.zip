@@ -4316,3 +4316,301 @@ app.get("/api/kernel-latency", async(req,res)=>{
   });
 
 });
+
+/* ============================================================
+   TRILLIONS SOFTWARE PROCESSOR NEXT LAYER
+   WORKER FABRIC / HEATMAP / ADAPTIVE BATCH / ARENA / MATRIX
+   ADDITIVE ONLY — REAL_ONLY_OR_UNAVAILABLE
+============================================================ */
+
+const SOFTWARE_PROCESSOR_NEXT_LAYER = {
+  version:"SOFTWARE_PROCESSOR_NEXT_LAYER_V1",
+  doctrine:[
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_CPU",
+    "NO_FAKE_GPU",
+    "NO_FAKE_AVX",
+    "NO_FAKE_CLUSTER"
+  ],
+  modules:{
+    worker_fabric:true,
+    heatmap_runtime:true,
+    adaptive_batch_engine:true,
+    memory_arena_allocator:true,
+    runtime_prediction_engine:true,
+    benchmark_matrix:true,
+    safe_self_repair:true
+  },
+  honesty:
+    "software orchestration layer only; hardware acceleration requires real backend"
+};
+
+/* ============================================================
+   MEMORY ARENA
+============================================================ */
+
+const TRILLIONS_ARENA = {
+  buffers:new Map(),
+  created_at:new Date().toISOString()
+};
+
+function arenaAlloc(name,sizeMB=64){
+  sizeMB=Math.max(8,Math.min(Number(sizeMB||64),512));
+  const bytes=sizeMB*1024*1024;
+  const buffer=Buffer.alloc(bytes);
+  TRILLIONS_ARENA.buffers.set(name,{sizeMB,buffer,created:new Date().toISOString()});
+  return {name,sizeMB,status:"ARENA_ALLOCATED"};
+}
+
+function arenaStatus(){
+  let totalMB=0;
+  const entries=[];
+  for(const [name,v] of TRILLIONS_ARENA.buffers.entries()){
+    totalMB+=v.sizeMB;
+    entries.push({name,size_MB:v.sizeMB,created:v.created});
+  }
+  return {
+    status:"ARENA_STATUS",
+    entries,
+    total_MB:totalMB,
+    count:entries.length
+  };
+}
+
+function arenaClear(){
+  const count=TRILLIONS_ARENA.buffers.size;
+  TRILLIONS_ARENA.buffers.clear();
+  return {status:"ARENA_CLEARED",cleared:count};
+}
+
+/* ============================================================
+   HEATMAP RUNTIME
+============================================================ */
+
+function runtimeHeatmap(){
+  const mem=process.memoryUsage();
+  const total=os.totalmem();
+  const free=os.freemem();
+  const usedPercent=(1-free/total)*100;
+  const cpus=os.cpus().length||1;
+
+  const heapPressure=(mem.heapUsed/Math.max(mem.heapTotal,1))*100;
+
+  return {
+    time:new Date().toISOString(),
+    status:"RUNTIME_HEATMAP_COMPLETE",
+    cpu:{
+      logical_cpus:cpus,
+      mode:cpus>=8?"HEAVY_READY":cpus>=4?"BALANCED_READY":"LIGHT_READY"
+    },
+    memory:{
+      system_used_percent:+usedPercent.toFixed(2),
+      heap_pressure_percent:+heapPressure.toFixed(2),
+      rss_MB:+(mem.rss/1048576).toFixed(2),
+      external_MB:+(mem.external/1048576).toFixed(2)
+    },
+    heat:{
+      memory:
+        usedPercent>85?"HOT":
+        usedPercent>65?"WARM":
+        "COOL",
+      heap:
+        heapPressure>85?"HOT":
+        heapPressure>65?"WARM":
+        "COOL"
+    },
+    verdict:
+      usedPercent<65 && heapPressure<65
+        ? "STABLE_LOW_PRESSURE"
+        : usedPercent<85
+          ? "STABLE_MEDIUM_PRESSURE"
+          : "PRESSURE_HIGH"
+  };
+}
+
+/* ============================================================
+   ADAPTIVE BATCH ENGINE
+============================================================ */
+
+function adaptiveBatchProfile(){
+  const h=runtimeHeatmap();
+  const cpus=os.cpus().length||1;
+
+  let batchMB=128;
+  let workers=Math.min(cpus,4);
+  let profile="BALANCED";
+
+  if(h.heat.memory==="HOT" || h.heat.heap==="HOT"){
+    batchMB=32;
+    workers=Math.max(1,Math.floor(workers/2));
+    profile="SAFE_LOW_MEMORY";
+  }else if(cpus>=8 && h.heat.memory==="COOL"){
+    batchMB=256;
+    workers=Math.min(cpus,8);
+    profile="HEAVY_LOCAL";
+  }else if(cpus>=4){
+    batchMB=128;
+    workers=Math.min(cpus,4);
+    profile="BALANCED";
+  }else{
+    batchMB=64;
+    workers=1;
+    profile="LIGHT";
+  }
+
+  return {
+    status:"ADAPTIVE_BATCH_PROFILE_READY",
+    profile,
+    recommended:{batch_MB:batchMB,workers},
+    heatmap:h,
+    honesty:"adaptive scheduling recommendation only"
+  };
+}
+
+/* ============================================================
+   BENCHMARK MATRIX
+============================================================ */
+
+async function softwareProcessorMatrix(){
+  const started=Date.now();
+
+  const latency =
+    typeof kernelLatencyBench==="function"
+      ? await kernelLatencyBench(1000)
+      : {status:"UNAVAILABLE"};
+
+  const memory =
+    typeof trillionsMemoryBatchBench==="function"
+      ? trillionsMemoryBatchBench(128)
+      : {status:"UNAVAILABLE"};
+
+  const shared =
+    typeof trillionsSharedBufferBench==="function"
+      ? trillionsSharedBufferBench(128)
+      : {status:"UNAVAILABLE"};
+
+  const heat=runtimeHeatmap();
+  const adaptive=adaptiveBatchProfile();
+
+  return {
+    time:new Date().toISOString(),
+    status:"SOFTWARE_PROCESSOR_MATRIX_COMPLETE",
+    duration_ms:Date.now()-started,
+    matrix:{
+      latency,
+      memory,
+      shared_buffer:shared,
+      heatmap:heat,
+      adaptive
+    },
+    score_hint:{
+      latency:
+        latency?.latency_us?.avg<10 ? "EXCELLENT" : "NORMAL",
+      memory:
+        memory?.bandwidth_MB_s>1000 ? "FAST" : "NORMAL",
+      shared_buffer:
+        shared?.bandwidth_MB_s>2000 ? "FAST" : "NORMAL",
+      stability:
+        heat.verdict
+    },
+    honesty:
+      "composite runtime matrix; not a standardized HPC benchmark"
+  };
+}
+
+/* ============================================================
+   SAFE SELF REPAIR STATUS
+============================================================ */
+
+function safeSelfRepairStatus(){
+  const heat=runtimeHeatmap();
+  const actions=[];
+
+  if(heat.heat.memory==="HOT"){
+    actions.push("reduce_batch_size");
+    actions.push("clear_optional_arenas");
+  }
+
+  if(heat.heat.heap==="HOT"){
+    actions.push("recycle_workers");
+    actions.push("force_gc_if_node_started_with_expose_gc");
+  }
+
+  if(actions.length===0){
+    actions.push("no_action_required");
+  }
+
+  return {
+    time:new Date().toISOString(),
+    status:"SAFE_SELF_REPAIR_ANALYSIS_COMPLETE",
+    actions,
+    allowed_only:[
+      "reduce_batch_size",
+      "recycle_workers",
+      "clear_optional_arenas",
+      "mark_backend_unavailable",
+      "rollback_runtime_profile"
+    ],
+    forbidden:[
+      "delete_project",
+      "fake_metrics",
+      "fake_gpu",
+      "disable_guards"
+    ],
+    honesty:"diagnostic only; no destructive auto-repair"
+  };
+}
+
+/* ============================================================
+   ENDPOINTS
+============================================================ */
+
+app.get("/api/software-processor/next-layer",(req,res)=>{
+  res.json({
+    time:new Date().toISOString(),
+    layer:SOFTWARE_PROCESSOR_NEXT_LAYER,
+    heatmap:runtimeHeatmap(),
+    adaptive:adaptiveBatchProfile()
+  });
+});
+
+app.get("/api/software-processor/heatmap",(req,res)=>{
+  res.json(runtimeHeatmap());
+});
+
+app.get("/api/software-processor/adaptive-batch",(req,res)=>{
+  res.json(adaptiveBatchProfile());
+});
+
+app.get("/api/software-processor/arena/alloc",(req,res)=>{
+  const name=String(req.query.name||("arena_"+Date.now()));
+  const sizeMB=Number(req.query.sizeMB||64);
+  res.json({
+    time:new Date().toISOString(),
+    result:arenaAlloc(name,sizeMB),
+    arena:arenaStatus()
+  });
+});
+
+app.get("/api/software-processor/arena/status",(req,res)=>{
+  res.json({
+    time:new Date().toISOString(),
+    arena:arenaStatus()
+  });
+});
+
+app.get("/api/software-processor/arena/clear",(req,res)=>{
+  res.json({
+    time:new Date().toISOString(),
+    result:arenaClear(),
+    arena:arenaStatus()
+  });
+});
+
+app.get("/api/software-processor/matrix",async(req,res)=>{
+  res.json(await softwareProcessorMatrix());
+});
+
+app.get("/api/software-processor/safe-repair",(req,res)=>{
+  res.json(safeSelfRepairStatus());
+});
