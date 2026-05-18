@@ -5853,3 +5853,134 @@ console.log(
     global.TRILLIONS_DICT_UNLOCK_MAP = getUnlockMap;
   }
 })();
+
+/* ============================================================
+   TRILLIONS MEMORY DDR7 9600 MHz CAS 6 BLOCK
+   Memory-only DiCT / software profile / ASIC memory policy
+   Honesty: DDR7 9600 CAS 6 is a software target profile unless real hardware probe confirms it.
+============================================================ */
+
+const TRILLIONS_MEMORY_DDR7_9600_CAS6_BLOCK = {
+  module: "TRILLIONS_MEMORY_DDR7_9600_CAS6",
+  version: "1.0.0",
+  status: "ACTIVE_PROFILE",
+  type: "MEMORY_ONLY_BLOCK",
+
+  MEMORY_PROFILE: {
+    name: "DDR7_9600_CAS6_PROFILE",
+    generation: "DDR7",
+    target_rate_mt_s: 9600,
+    displayed_mhz_label: "9600 MHz",
+    effective_transfer_rate: "9600 MT/s",
+    cas_latency_target: 6,
+    cas_label: "CAS 6",
+    timing_label: "DDR7-9600 CL6",
+    mode: "EXTREME_LOW_LATENCY_HIGH_BANDWIDTH_PROFILE",
+    role: "software_asic_memory_profile",
+    applied_to: [
+      "software_asic_validator",
+      "memory_pipeline",
+      "cache_batch",
+      "benchmark_scanner",
+      "kernel_speed_score",
+      "runtime_orchestration"
+    ]
+  },
+
+  THEORETICAL_TIMING_NOTE: {
+    formula: "CAS_ns = CL / (MT/s / 2) * 1000",
+    cas_ns_estimate: Number((6 / (9600 / 2) * 1000).toFixed(4)),
+    cas_ns_label: "≈ 1.25 ns theoretical CAS latency",
+    honesty: "This is a timing calculation only, not detected physical RAM latency."
+  },
+
+  DDR7_9600_CAS6_DICT: {
+    DICT_MEMORY_DDR7: true,
+    DICT_MEMORY_9600: true,
+    DICT_MEMORY_CAS6: true,
+    DICT_MEMORY_CL6: true,
+    DICT_MEMORY_PROFILE_ACTIVE: true,
+    DICT_MEMORY_BANDWIDTH_TARGET: "EXTREME",
+    DICT_MEMORY_LATENCY_TARGET: "CAS6_ULTRA_LOW",
+    DICT_MEMORY_CACHE_SYNC: true,
+    DICT_MEMORY_BATCH_COPY: true,
+    DICT_MEMORY_PREFETCH_LOGIC: true,
+    DICT_MEMORY_PRESSURE_GUARD: true,
+    DICT_MEMORY_NO_FAKE_HARDWARE: true
+  },
+
+  MEMORY_TARGETS: {
+    target_bandwidth_label: "DDR7 9600 class",
+    target_latency_label: "CAS 6 ultra-low latency profile",
+    target_timing_label: "DDR7-9600 CL6",
+    target_use: "optimize memory-copy path, buffers, warm cache, batch size, lane selection",
+    benchmark_metric_primary: "memory_MB_sec",
+    benchmark_metric_secondary: [
+      "heap_used_mb",
+      "rss_mb",
+      "event_loop_p95_ms",
+      "memory_gain_percent",
+      "cache_hit_gain",
+      "buffer_reuse_gain"
+    ]
+  },
+
+  SOFTWARE_ASIC_MEMORY_POLICY: {
+    replace_bad_asicMemory: true,
+    preferred_strategy: "ADAPTIVE_MEMORY_LANES_CAS6_PROFILE",
+    fallback_strategy: "NORMAL_MEMORY_COPY",
+    avoid_strategy: "fragmented small lanes if slower",
+    optimization_intent: [
+      "reuse buffers",
+      "reduce allocations",
+      "favor contiguous copy",
+      "warm cache before measurement",
+      "select fastest lane profile",
+      "reject memory regression"
+    ],
+    lane_policy: {
+      auto_test_lanes: [1, 2, 4, 8],
+      auto_test_sizes_mb: [8, 16, 32, 64],
+      select_best_by: "memory_MB_sec",
+      reject_if_event_loop_p95_above_ms: 25,
+      reject_if_memory_gain_negative_percent: -5,
+      label_best_profile_as: "DDR7_9600_CAS6_SELECTED_PATH"
+    }
+  },
+
+  CAS6_GUARDS: {
+    REALITY_LOCK: true,
+    HONESTY_LOCK: true,
+    DDR7_PROFILE_NOT_REAL_DETECTION: true,
+    CAS6_PROFILE_NOT_REAL_DETECTION: true,
+    REAL_DDR7_REQUIRES_HARDWARE_PROBE: true,
+    REAL_CAS6_REQUIRES_BIOS_OR_SMBIOS_PROBE: true,
+    NO_FAKE_RAM_SPEED: true,
+    NO_FAKE_CAS_LATENCY: true,
+    NO_FAKE_BANDWIDTH: true,
+    UNAVAILABLE_IF_NOT_MEASURED: true
+  },
+
+  HONESTY: {
+    statement: "DDR7 9600 CAS 6 is used here as a software memory optimization/profile label.",
+    not_claiming_real_ddr7_installed: true,
+    not_claiming_real_9600_mhz_detected: true,
+    not_claiming_real_cas6_detected: true,
+    real_measure_required: [
+      "BIOS/UEFI memory report",
+      "SMBIOS/dmidecode memory timing",
+      "native hardware sensor",
+      "real bandwidth benchmark",
+      "real latency benchmark"
+    ],
+    measured_truth_source: [
+      "memory_MB_sec",
+      "event_loop_p95_ms",
+      "memory_gain_percent"
+    ]
+  }
+};
+
+if (typeof global !== "undefined") {
+  global.TRILLIONS_MEMORY_DDR7_9600_CAS6_BLOCK = TRILLIONS_MEMORY_DDR7_9600_CAS6_BLOCK;
+}
