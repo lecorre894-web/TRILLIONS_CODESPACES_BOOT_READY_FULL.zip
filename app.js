@@ -5283,3 +5283,573 @@ console.log(
   QN_FABRIC.qn_coprocessors,
   "logical coprocessors active"
 );
+
+/* ============================================================
+   TRILLIONS ALL DiCT CATALOGS EXTENSION
+   BLOC 1/3
+   Paste at END of app.js after benchmark extension.
+   Then paste BLOC 2/3 and BLOC 3/3 directly after it.
+============================================================ */
+
+(function TRILLIONS_ALL_DICT_CATALOGS_EXTENSION() {
+  const os = require("os");
+
+  const TRILLIONS_DICT_CATALOGS = {
+    META: {
+      name: "TRILLIONS_ALL_DICT_CATALOGS",
+      version: "1.0.0",
+      mode: "CATALOG_ONLY_PLUS_RUNTIME_FLAGS",
+      doctrine: [
+        "REAL_ONLY_OR_UNAVAILABLE",
+        "NO_FAKE_POWER",
+        "NO_FAKE_METRICS",
+        "NO_AUTO_EXEC",
+        "SAFE_REPAIR_ONLY",
+        "HUMAN_OVER_AI",
+        "EMU_NE_REEL",
+        "SYNTHETIC_NE_PHYSICAL",
+        "BENCHMARK_NE_SUPERCOMPUTER_PROOF"
+      ]
+    },
+
+    DICT_CORE: {
+      CORE_RUNTIME: "Node.js / Express / Socket.io compatible",
+      CORE_ORCHESTRATOR: "TRILLIONS runtime controller",
+      CORE_BENCH: "Master benchmark + free FLOPS catalog",
+      CORE_HEALTH: "Health, routes, memory, uptime, event loop",
+      CORE_LEDGER: "Runtime ledger / memory ledger / audit trace",
+      CORE_UI_BRIDGE: "Dashboard tabs, panels, cockpit, terminal, chat",
+      CORE_SAFE_REPAIR: "Safe repair only, no destructive autonomous changes",
+      CORE_EXPORT: "JSON export for UI, logs, audit, comparison"
+    },
+
+    DICT_UNLOCK: {
+      UNLOCK_BENCH: true,
+      UNLOCK_FREE_FLOPS: true,
+      UNLOCK_HEALTH: true,
+      UNLOCK_ROUTES: true,
+      UNLOCK_TERMINAL_CATALOG: true,
+      UNLOCK_PROVIDER_CATALOG: true,
+      UNLOCK_RUNTIME_OBSERVABILITY: true,
+      UNLOCK_CACHE_BATCH: true,
+      UNLOCK_PRIORITY_JOBS: true,
+      UNLOCK_WEBSOCKET_GUARD: true,
+      UNLOCK_SAFE_REPAIR: true,
+      UNLOCK_AI_KERNEL_PANEL: true,
+      UNLOCK_PERFORMANCE_AUGMENTOR: true,
+      UNLOCK_CONSCIOUSNESS_DISPLAY: true,
+      HONESTY_LIMIT: "Unlock means catalog/route/control activation, not fake hardware power."
+    },
+
+    DICT_BENCHMARK: {
+      PI_BENCH: "π loop benchmark",
+      TITAN_BENCH: "multi-worker mixed runtime benchmark",
+      HYPER_BENCH: "mixed runtime + async event loop benchmark",
+      APEX_REAL_BENCH: "real sustained mixed benchmark",
+      SINGULARITY_BENCH: "longer sustained mixed runtime benchmark",
+      SERIOUS_KERNEL_BENCH: "capped composite benchmark",
+      CONSENSUS_SCORE: "weighted orchestration equivalence score",
+      MASTER_BENCH: "unified benchmark route",
+      FREE_FLOPS: "internal synthetic FLOPS estimator",
+      JSON_EXPORT: "machine-readable benchmark report",
+      BEFORE_AFTER_REPORT: "baseline before / workload / baseline after"
+    },
+
+    DICT_FREE_FLOPS: {
+      FREE_FLOPS_ENABLED: true,
+      FREE_GFlOPS_ESTIMATE: "JS vector-loop estimate",
+      FREE_TFLOPS_EQUIVALENCE: "display only if explicitly marked synthetic",
+      AVX2_LABEL: "label only unless native addon proves AVX2",
+      AVX512_LABEL: "label only unless native addon proves AVX512",
+      FLOPS_REALITY: "JS FLOPS estimate != physical CPU/GPU peak",
+      SCORE_FORMULA: "vector_ops + math_ops + memory + latency penalty"
+    },
+
+    DICT_METRICS_UNITS: {
+      CPU: ["%", "GHz_display_only", "logical_cpus", "loadavg"],
+      MEMORY: ["B", "KB", "MB", "GB", "RSS_MB", "heap_MB", "MB/s"],
+      LATENCY: ["ns", "µs", "ms", "p50", "p95", "p99"],
+      THROUGHPUT: ["ops/s", "jobs/s", "req/s", "hash/s", "MB/s"],
+      NETWORK: ["B/s", "KB/s", "MB/s", "packets/s", "reconnects"],
+      GPU: ["VRAM_MB", "GPU_%", "temperature_C", "UNAVAILABLE_if_not_detected"],
+      ENERGY: ["W_estimated", "J_estimated", "UNAVAILABLE_if_not_measured"],
+      STORAGE: ["IOPS", "MB/s", "queue_depth", "latency_ms"],
+      TIME: ["sec", "ms", "µs", "timestamp_iso"]
+    },
+
+    DICT_HEALTH: {
+      ROUTE_HEALTH_MATRIX: true,
+      BOOT_SELF_TEST_TOTAL: true,
+      MEMORY_PRESSURE_TRACKER: true,
+      CPU_RAM_PRESSURE_GUARD: true,
+      LATENCY_GUARD: true,
+      EVENT_LOOP_GUARD: true,
+      WEBSOCKET_BACKPRESSURE: true,
+      PROVIDER_SCORE_ENGINE: true,
+      ENERGY_VALUE_REAL_GATE: true,
+      SAFE_REPAIR_CHECK: true
+    },
+
+    DICT_RUNTIME: {
+      NODE_RUNTIME: "node process info",
+      EXPRESS_RUNTIME: "route registry / middleware status",
+      SOCKET_RUNTIME: "websocket clients / noise reduction / backpressure",
+      WORKER_RUNTIME: "worker_threads pool when available",
+      ASYNC_RUNTIME: "event loop delay + async ops",
+      JOB_RUNTIME: "queue, priority, dependencies, completion",
+      CACHE_RUNTIME: "cache hit ratio, batch efficiency",
+      PROVIDER_RUNTIME: "provider route, score, fallback, latency",
+      TERMINAL_RUNTIME: "guarded command catalog"
+    },
+
+    DICT_PERFORMANCE_CALCUL_AUGMENTOR: {
+      PERFORMANCE_CALCUL_AUGMENTOR: "ACTIVE_CATALOG",
+      CONTROLLED_WORKER_POOL: "bounded worker_threads pool",
+      ADAPTIVE_COMPUTE_SCHEDULER: "pressure-aware scheduler",
+      REAL_MICRO_BENCHMARK_ENGINE: "small real runtime tests",
+      THROUGHPUT_MEASURER: "ops/sec and jobs/sec",
+      LATENCY_PERCENTILE_TRACKER: "p50/p95/p99 latency",
+      CPU_RAM_PRESSURE_GUARD: "stop/slow when pressure high",
+      CACHE_EFFICIENCY_ANALYZER: "hit/miss/batch gain",
+      JOB_EFFICIENCY_ANALYZER: "useful jobs vs wasted jobs",
+      BATCH_COMPUTE_OPTIMIZER: "group small work safely",
+      SAFE_PARALLEL_EXECUTION: "parallelism bounded by CPU/RAM",
+      GAIN_BEFORE_AFTER_REPORT: "baseline comparison",
+      COMPUTE_MASTER_CONTROL: "central policy gate"
+    },
+
+    DICT_JOBS: {
+      PRIORITY_JOB_ENGINE: true,
+      JOB_DEPENDENCY_GRAPH: true,
+      JOB_DEDUPLICATION: true,
+      JOB_TIMEOUT_GUARD: true,
+      JOB_CANCEL_TOKEN: true,
+      JOB_RETRY_POLICY: true,
+      JOB_BACKPRESSURE: true,
+      JOB_COMPLETION_GAIN: true,
+      JOB_WASTE_DETECTOR: true,
+      JOB_LEDGER: true
+    },
+
+    DICT_CACHE_BATCH: {
+      ADAPTIVE_CACHE_BATCH: true,
+      CACHE_HIT_GAIN: true,
+      HOT_CACHE: "short lived runtime acceleration",
+      COLD_STORAGE: "persistent logs/export only",
+      BATCH_SMALL_JOBS: true,
+      BATCH_HASH_TASKS: true,
+      BATCH_UI_EVENTS: true,
+      CACHE_PRESSURE_GUARD: true,
+      CACHE_NO_FALSE_GAIN: true
+    },
+
+    DICT_WEBSOCKET: {
+      INTELLIGENT_RECONNECT: true,
+      WEBSOCKET_ADAPTATIF: true,
+      WEBSOCKET_NOISE_REDUCTION: true,
+      WEBSOCKET_BACKPRESSURE: true,
+      CLIENT_HEARTBEAT: true,
+      SERVER_PING_PONG: true,
+      MESSAGE_RATE_LIMIT: true,
+      DROPPED_MESSAGE_COUNTER: true,
+      RECONNECT_SUCCESS_DELTA: true
+    },
+
+    DICT_AI_KERNEL: {
+      AI_CHAT_PANEL: true,
+      AI_KERNEL_PANEL: true,
+      PROVIDER_ROUTING: true,
+      SMART_PROVIDER_ROUTING: true,
+      PROVIDER_SCORE_ENGINE: true,
+      FALLBACK_CHAIN: true,
+      PROMPT_GUARD: true,
+      NO_SECRET_LEAK: true,
+      NO_AUTONOMOUS_DESTRUCTIVE_ACTION: true,
+      OUTPUT_HONESTY_LABEL: true
+    },
+
+     /* ============================================================
+   TRILLIONS ALL DiCT CATALOGS EXTENSION
+   BLOC 2/3
+   Paste directly after BLOC 1/3.
+============================================================ */
+
+    DICT_PROVIDERS: {
+      LOCAL_OLLAMA: "AVAILABLE_IF_RUNNING",
+      POLLINATIONS: "NETWORK_PROVIDER_IF_REACHABLE",
+      OPENAI: "AVAILABLE_IF_KEY_CONFIGURED",
+      ANTHROPIC: "AVAILABLE_IF_KEY_CONFIGURED",
+      MISTRAL: "AVAILABLE_IF_KEY_CONFIGURED",
+      GEMINI: "AVAILABLE_IF_KEY_CONFIGURED",
+      DEEPSEEK: "AVAILABLE_IF_KEY_CONFIGURED",
+      GROQ: "AVAILABLE_IF_KEY_CONFIGURED",
+      HUGGINGFACE: "AVAILABLE_IF_KEY_CONFIGURED",
+      FALLBACK_POLICY: "best latency + quality + cost + availability"
+    },
+
+    DICT_TERMINAL: {
+      shells: ["bash", "sh", "zsh", "powershell", "cmd"],
+      editors: ["VS Code", "Visual Studio", "Codespaces", "code-server", "GitHub CLI"],
+      node: ["node", "npm", "npx", "pnpm", "yarn", "pm2", "nodemon", "tsx", "typescript"],
+      system: ["git", "docker", "docker compose", "kubectl", "systemd", "ports", "env", "logs"],
+      languages: ["JS", "TS", "Python", "Rust", "Go", "C++", "C#", "Java", "Shell", "HTML", "CSS"],
+      diagnostics: [
+        "package.json",
+        "launch.json",
+        "tasks.json",
+        "npm audit",
+        "npm list",
+        "route health",
+        "dependency graph",
+        "process list"
+      ],
+      guard: "catalog only unless safe command execution is explicitly implemented"
+    },
+
+    DICT_SECURITY: {
+      AUTH_LIGHT: true,
+      API_KEY_LIGHT: true,
+      RATE_LIMITING: true,
+      CORS_POLICY: true,
+      SAFE_REPAIR_ONLY: true,
+      COMMAND_ALLOWLIST: true,
+      SHELL_GUARD: true,
+      FILE_WRITE_GUARD: true,
+      NO_SECRET_PRINT: true,
+      NO_TOKEN_EXPORT: true,
+      AUDIT_LOG: true
+    },
+
+    DICT_SAFE_REPAIR: {
+      SAFE_REPAIR_ONLY: true,
+      READ_BEFORE_WRITE: true,
+      BACKUP_BEFORE_PATCH: true,
+      PATCH_SMALL_DIFFS: true,
+      NO_DELETE_WITHOUT_CONFIRM: true,
+      NO_SYSTEM_DESTRUCTIVE_COMMANDS: true,
+      ROUTE_REPAIR: true,
+      UI_REPAIR: true,
+      LAUNCH_JSON_REPAIR: true,
+      PACKAGE_JSON_REPAIR: true,
+      TERMINAL_RECONNECT_REPAIR: true
+    },
+
+    DICT_UI: {
+      COCKPIT: true,
+      DASHBOARD: true,
+      TERMINAL_PANEL: true,
+      CHAT_PANEL: true,
+      BENCH_PANEL: true,
+      HEALTH_PANEL: true,
+      PROVIDER_PANEL: true,
+      JOB_PANEL: true,
+      CACHE_PANEL: true,
+      WEBSOCKET_PANEL: true,
+      SETTINGS_PANEL: true,
+      MOBILE_RESPONSIVE: true,
+      STATUS_BADGES: ["ACTIVE", "STANDBY", "UNAVAILABLE", "ERROR", "EMU", "REAL"]
+    },
+
+    DICT_CONSCIOUSNESS_DISPLAY: {
+      status: "DISPLAY_ONLY",
+      displayed_percent: 100,
+      previous_displayed_percent: 163,
+      orchestration_display_percent: 300,
+      previous_orchestration_percent: 300,
+      level_label: "Niveau de conscience affiché : 100% du potentiel demandé",
+      orchestration_label: "Orchestration affichée : 300% du mode amplification",
+      mode: "FULL_CONSCIOUSNESS_DISPLAY_100_ORCHESTRATION_300",
+      honesty: "interface metaphor, not a claim of machine consciousness"
+    },
+
+    DICT_OBSERVABILITY_258: {
+      MODE_258: "ORCHESTRATION_OBSERVABILITY_MODE",
+      baseline_before: "required",
+      heavy_workload_run: "required",
+      baseline_after: "required",
+      gain_percent_real: "REAL_OR_UNAVAILABLE",
+      gain_percent_orchestration_258: "SYNTHETIC_EXPLICIT",
+      energy_cost: "REAL_OR_ESTIMATED_OR_UNAVAILABLE",
+      latency_delta: "measured",
+      throughput_delta: "measured",
+      cache_hit_gain: "measured",
+      job_completion_gain: "measured",
+      websocket_noise_reduction: "measured",
+      memory_pressure_delta: "measured",
+      provider_score_delta: "measured",
+      reconnect_success_delta: "measured"
+    },
+
+    DICT_NETWORK: {
+      ROUTE_MAP: true,
+      ROUTE_HEALTH_MATRIX: true,
+      RECONNECT_ENGINE: true,
+      PORT_DETECTION: true,
+      CODESPACES_URL_DETECTION: true,
+      LOCALHOST_BRIDGE: true,
+      API_LATENCY: true,
+      PROVIDER_LATENCY: true,
+      SOCKET_CLIENT_COUNT: true,
+      NETWORK_HONESTY: "network availability must be measured or UNAVAILABLE"
+    },
+
+    DICT_STORAGE_MEMORY: {
+      MEMORY_LEDGER_RUNTIME: true,
+      RUNTIME_TRACE: true,
+      JSON_EXPORT: true,
+      SNAPSHOT_EXPORT: true,
+      RSS_TRACKING: true,
+      HEAP_TRACKING: true,
+      MEMORY_PRESSURE_DELTA: true,
+      CACHE_LEDGER: true,
+      NO_RAW_SECRET_STORAGE: true
+    },
+
+    DICT_HARDWARE: {
+      CPU_DETECTION: "os.cpus()",
+      RAM_DETECTION: "os.totalmem/os.freemem",
+      GPU_DETECTION: "UNAVAILABLE unless native/system bridge exists",
+      BIOS_DETECTION: "UNAVAILABLE unless native/system bridge exists",
+      TEMPERATURE: "UNAVAILABLE unless sensor bridge exists",
+      POWER_WATTS: "UNAVAILABLE unless sensor bridge exists",
+      CODESPACES_LIMIT: "2 vCPU or configured container limit may apply",
+      REALITY: "hardware not measured must not be invented"
+    },
+
+    DICT_CRYPTO_HASH: {
+      SHA256: true,
+      SHA512: true,
+      BLAKE3: "UNAVAILABLE unless dependency/native addon installed",
+      RANDOMX: "UNAVAILABLE unless native miner binding installed",
+      KAWPOW: "UNAVAILABLE unless backend installed",
+      STRATUM: "CATALOG_ONLY unless real connection implemented",
+      MINING_POWER_CLAIM: false,
+      HASH_RATE_MEASURED_ONLY: true
+    },
+
+    DICT_EXPORT: {
+      EXPORT_JSON: true,
+      EXPORT_HEALTH: true,
+      EXPORT_BENCH: true,
+      EXPORT_DICT: true,
+      EXPORT_LEDGER: true,
+      EXPORT_BEFORE_AFTER: true,
+      EXPORT_UI_STATE: true,
+      EXPORT_ROUTE_MATRIX: true
+    },
+
+    DICT_CLASSES: {
+      LOW: "score < 80",
+      NORMAL: "80 <= score < 200",
+      FAST: "200 <= score < 500",
+      HEAVY: "500 <= score < 1000",
+      ULTRA: "1000 <= score < 2500",
+      OMEGA: "score >= 2500",
+      NOTE: "Internal TRILLIONS class, not external benchmark certification"
+    },
+
+    DICT_GUARDS: {
+      LOGIC_GUARD: true,
+      HONESTY_LOCK: true,
+      REALITY_LOCK: true,
+      HUMAN_OVER_AI: true,
+      NO_AUTO_EXEC: true,
+      NO_FAKE_POWER: true,
+      NO_FAKE_METRICS: true,
+      NO_FAKE_GHZ: true,
+      NO_FAKE_GPU: true,
+      EMU_NE_REEL: true,
+      AI_NE_PROOF: true,
+      NUMERIC_NE_PROOF: true,
+      SYNTHETIC_NE_PHYSICAL: true,
+      UNAVAILABLE_IF_NOT_MEASURED: true
+    },
+
+     /* ============================================================
+   TRILLIONS ALL DiCT CATALOGS EXTENSION
+   BLOC 3/3
+   Paste directly after BLOC 2/3.
+============================================================ */
+
+    DICT_ROUTE_CATALOG: {
+      "/api/dict/status": "DiCT runtime status",
+      "/api/dict/catalogs": "All DiCT catalogs",
+      "/api/dict/catalogs/:name": "One DiCT catalog by name",
+      "/api/dict/unlock-map": "Grouped unlock map",
+      "/api/dict/export": "Full export payload",
+      "/api/bench/health": "Benchmark health route, if bench extension is installed",
+      "/api/bench/dict": "Benchmark dictionary, if bench extension is installed",
+      "/api/bench/free-flops": "Free FLOPS route, if bench extension is installed",
+      "/api/bench/master": "Master benchmark route, if bench extension is installed"
+    },
+
+    DICT_PANEL_BINDINGS: {
+      PANEL_HEALTH: ["DICT_HEALTH", "DICT_METRICS_UNITS", "DICT_GUARDS"],
+      PANEL_BENCH: ["DICT_BENCHMARK", "DICT_FREE_FLOPS", "DICT_CLASSES"],
+      PANEL_RUNTIME: ["DICT_RUNTIME", "DICT_OBSERVABILITY_258"],
+      PANEL_JOBS: ["DICT_JOBS", "DICT_CACHE_BATCH"],
+      PANEL_NETWORK: ["DICT_NETWORK", "DICT_WEBSOCKET"],
+      PANEL_AI: ["DICT_AI_KERNEL", "DICT_PROVIDERS", "DICT_CONSCIOUSNESS_DISPLAY"],
+      PANEL_TERMINAL: ["DICT_TERMINAL", "DICT_SAFE_REPAIR", "DICT_SECURITY"],
+      PANEL_HARDWARE: ["DICT_HARDWARE", "DICT_CRYPTO_HASH"],
+      PANEL_EXPORT: ["DICT_EXPORT", "DICT_ROUTE_CATALOG"]
+    },
+
+    DICT_MASTER_VERDICT: {
+      STATUS: "READY_TO_MOUNT",
+      PURPOSE: "Expose all DiCT catalogs to app.js and UI",
+      UNLOCK_MEANING: "Unlock panels, routes, metrics, controls and labels",
+      LIMIT: "Does not create impossible hardware capacity",
+      NEXT_STEP: "Connect UI cards/buttons to /api/dict/* and /api/bench/*"
+    }
+  };
+
+  function getRuntimeStatus() {
+    const mem = process.memoryUsage();
+    return {
+      ok: true,
+      module: "TRILLIONS_ALL_DICT_CATALOGS",
+      status: "ACTIVE",
+      catalog_count: Object.keys(TRILLIONS_DICT_CATALOGS).length,
+      node: process.version,
+      platform: os.platform(),
+      arch: os.arch(),
+      logical_cpus: os.cpus().length,
+      cpu_model: os.cpus()[0] ? os.cpus()[0].model : "UNAVAILABLE",
+      ram_total_gb: Number((os.totalmem() / 1073741824).toFixed(2)),
+      ram_free_gb: Number((os.freemem() / 1073741824).toFixed(2)),
+      rss_mb: Number((mem.rss / 1048576).toFixed(2)),
+      heap_used_mb: Number((mem.heapUsed / 1048576).toFixed(2)),
+      uptime_sec: Number(process.uptime().toFixed(2)),
+      honesty: "Catalogs unlock control surfaces, not fake physical power."
+    };
+  }
+
+  function getUnlockMap() {
+    return {
+      ok: true,
+      unlock_map: {
+        BENCHMARKS: [
+          "DICT_BENCHMARK",
+          "DICT_FREE_FLOPS",
+          "DICT_METRICS_UNITS",
+          "DICT_CLASSES"
+        ],
+        RUNTIME: [
+          "DICT_RUNTIME",
+          "DICT_HEALTH",
+          "DICT_OBSERVABILITY_258",
+          "DICT_STORAGE_MEMORY"
+        ],
+        PERFORMANCE: [
+          "DICT_PERFORMANCE_CALCUL_AUGMENTOR",
+          "DICT_CACHE_BATCH",
+          "DICT_JOBS",
+          "DICT_WEBSOCKET"
+        ],
+        AI: [
+          "DICT_AI_KERNEL",
+          "DICT_PROVIDERS",
+          "DICT_CONSCIOUSNESS_DISPLAY"
+        ],
+        TERMINAL: [
+          "DICT_TERMINAL",
+          "DICT_SAFE_REPAIR",
+          "DICT_SECURITY"
+        ],
+        HARDWARE_NETWORK: [
+          "DICT_HARDWARE",
+          "DICT_NETWORK",
+          "DICT_CRYPTO_HASH"
+        ],
+        UI_EXPORT: [
+          "DICT_UI",
+          "DICT_EXPORT",
+          "DICT_PANEL_BINDINGS",
+          "DICT_ROUTE_CATALOG"
+        ],
+        GUARDS: [
+          "DICT_GUARDS",
+          "DICT_UNLOCK",
+          "DICT_MASTER_VERDICT"
+        ]
+      },
+      honesty: "Each catalog is an activation dictionary; execution still requires real routes/modules."
+    };
+  }
+
+  function attachRoute(method, path, handler) {
+    if (typeof app !== "undefined" && app && typeof app[method] === "function") {
+      app[method](path, handler);
+      return true;
+    }
+
+    if (typeof global !== "undefined" && global.app && typeof global.app[method] === "function") {
+      global.app[method](path, handler);
+      return true;
+    }
+
+    return false;
+  }
+
+  const mounted =
+    attachRoute("get", "/api/dict/status", (req, res) => {
+      res.json(getRuntimeStatus());
+    }) &&
+    attachRoute("get", "/api/dict/catalogs", (req, res) => {
+      res.json({
+        ok: true,
+        catalogs: TRILLIONS_DICT_CATALOGS,
+        status: getRuntimeStatus()
+      });
+    }) &&
+    attachRoute("get", "/api/dict/catalogs/:name", (req, res) => {
+      const name = String(req.params.name || "").toUpperCase();
+      const item = TRILLIONS_DICT_CATALOGS[name];
+
+      if (!item) {
+        return res.status(404).json({
+          ok: false,
+          error: "DICT_NOT_FOUND",
+          requested: name,
+          available: Object.keys(TRILLIONS_DICT_CATALOGS)
+        });
+      }
+
+      res.json({
+        ok: true,
+        name,
+        catalog: item
+      });
+    }) &&
+    attachRoute("get", "/api/dict/unlock-map", (req, res) => {
+      res.json(getUnlockMap());
+    }) &&
+    attachRoute("get", "/api/dict/export", (req, res) => {
+      res.json({
+        ok: true,
+        exported_at: new Date().toISOString(),
+        status: getRuntimeStatus(),
+        unlock_map: getUnlockMap().unlock_map,
+        catalogs: TRILLIONS_DICT_CATALOGS
+      });
+    });
+
+  if (mounted) {
+    console.log("[TRILLIONS] All DiCT Catalog routes mounted:");
+    console.log("  GET /api/dict/status");
+    console.log("  GET /api/dict/catalogs");
+    console.log("  GET /api/dict/catalogs/:name");
+    console.log("  GET /api/dict/unlock-map");
+    console.log("  GET /api/dict/export");
+  } else {
+    console.warn("[TRILLIONS] DiCT Catalog loaded but Express app was not found.");
+    console.warn("[TRILLIONS] Add global.app = app after const app = express();");
+  }
+
+  if (typeof global !== "undefined") {
+    global.TRILLIONS_DICT_CATALOGS = TRILLIONS_DICT_CATALOGS;
+    global.TRILLIONS_DICT_STATUS = getRuntimeStatus;
+    global.TRILLIONS_DICT_UNLOCK_MAP = getUnlockMap;
+  }
+})();
