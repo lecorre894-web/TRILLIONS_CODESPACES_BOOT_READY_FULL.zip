@@ -4222,3 +4222,5089 @@ try {
 /api/hpc-simd/bench?size=2000000&rounds=5
 /api/hpc-simd/report?size=3000000&rounds=5
 */
+
+/* ============================================================
+   TRILLIONS V11.6+ ADDITIVE CODEC_CPU LAYER
+   Additive only. Does NOT modify WORLD_HPC or HPC_SIMD.
+   Goal: compile all codecs + DICT into processor-aware routing.
+   Doctrine: REAL_ONLY_OR_UNAVAILABLE + NO_FAKE_CODEC + CPU_FIRST.
+============================================================ */
+
+const CODEC_CPU = {
+  name: "CODEC_CPU",
+  version: "V11_6_ALL_CODECS_PROCESSOR_DICT_LAYER",
+  additive_only: true,
+  cpu_first: true,
+  does_not_touch: ["WORLD_HPC", "HPC_ZETA", "HPC_SIMD"],
+  doctrine: [
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_CODEC",
+    "NO_FAKE_TRANSCODE",
+    "NO_FAKE_GPU_ACCELERATION",
+    "CPU_FIRST_PROCESSOR_ROUTING",
+    "UNAVAILABLE_IF_BINARY_OR_LIBRARY_ABSENT"
+  ],
+  processor_targets: [
+    "scalar_cpu",
+    "typedarray_cpu",
+    "worker_threads_cpu",
+    "wasm_cpu",
+    "ffmpeg_cpu",
+    "node_builtin_cpu",
+    "python_optional_cpu",
+    "native_addon_optional_cpu"
+  ],
+  codec_families: [
+    "video",
+    "audio",
+    "image",
+    "subtitle",
+    "container",
+    "archive",
+    "compression",
+    "text",
+    "binary",
+    "crypto_hash",
+    "network_payload",
+    "scientific_data"
+  ],
+  honesty:
+    "This layer routes and detects real codecs. It does not claim a codec is executable unless the runtime, binary, library or API is detected."
+};
+
+const DICT_CODECS_PROCESSOR = {
+  version: "DICT_CODECS_PROCESSOR_V1_ALL_FAMILIES",
+  mode: "CPU_FIRST_REAL_OR_UNAVAILABLE",
+  families: {
+    VIDEO_CODECS: {
+      keys: [
+        "h264", "avc", "h265", "hevc", "av1", "vp8", "vp9",
+        "mpeg2", "mpeg4", "prores", "dnxhd", "dnxhr",
+        "theora", "huffyuv", "ffv1", "rawvideo"
+      ],
+      routes: [
+        "/api/codec-cpu/video",
+        "/api/codec-cpu/ffmpeg",
+        "/api/codec-cpu/probe"
+      ],
+      processors: ["ffmpeg_cpu", "wasm_ffmpeg_optional", "native_decoder_optional"]
+    },
+    AUDIO_CODECS: {
+      keys: [
+        "aac", "mp3", "opus", "vorbis", "flac", "wav", "pcm",
+        "alac", "ac3", "eac3", "dts", "amr", "speex", "wma"
+      ],
+      routes: [
+        "/api/codec-cpu/audio",
+        "/api/codec-cpu/ffmpeg",
+        "/api/codec-cpu/probe"
+      ],
+      processors: ["ffmpeg_cpu", "node_buffer_cpu", "wasm_audio_optional"]
+    },
+    IMAGE_CODECS: {
+      keys: [
+        "jpeg", "jpg", "png", "webp", "gif", "bmp", "tiff",
+        "avif", "heif", "heic", "ico", "svg", "raw", "exr", "qoi"
+      ],
+      routes: [
+        "/api/codec-cpu/image",
+        "/api/codec-cpu/probe"
+      ],
+      processors: ["sharp_optional", "imagemagick_optional", "ffmpeg_cpu", "node_buffer_cpu"]
+    },
+    SUBTITLE_CODECS: {
+      keys: [
+        "srt", "vtt", "ass", "ssa", "subrip", "webvtt", "mov_text", "pgs"
+      ],
+      routes: [
+        "/api/codec-cpu/subtitle",
+        "/api/codec-cpu/probe"
+      ],
+      processors: ["text_cpu", "ffmpeg_cpu"]
+    },
+    CONTAINERS: {
+      keys: [
+        "mp4", "mkv", "webm", "mov", "avi", "flv", "mpegts",
+        "ts", "m4a", "ogg", "ogv", "wav", "mxf", "3gp"
+      ],
+      routes: [
+        "/api/codec-cpu/container",
+        "/api/codec-cpu/ffmpeg"
+      ],
+      processors: ["ffprobe_cpu", "ffmpeg_cpu"]
+    },
+    ARCHIVE_CODECS: {
+      keys: [
+        "zip", "gzip", "gz", "tar", "tgz", "brotli", "br",
+        "zstd", "7z", "xz", "lzma", "rar", "bz2"
+      ],
+      routes: [
+        "/api/codec-cpu/archive",
+        "/api/codec-cpu/node"
+      ],
+      processors: ["node_zlib_cpu", "system_tools_optional", "wasm_archive_optional"]
+    },
+    TEXT_CODECS: {
+      keys: [
+        "utf8", "utf-8", "utf16", "utf-16", "ascii", "latin1",
+        "base64", "base64url", "hex", "json", "csv", "xml", "yaml", "markdown"
+      ],
+      routes: [
+        "/api/codec-cpu/text",
+        "/api/codec-cpu/node"
+      ],
+      processors: ["node_buffer_cpu", "textdecoder_cpu", "textencoder_cpu"]
+    },
+    CRYPTO_HASH_CODECS: {
+      keys: [
+        "sha1", "sha224", "sha256", "sha384", "sha512",
+        "sha3", "md5", "blake2", "ripemd160", "hmac", "pbkdf2"
+      ],
+      routes: [
+        "/api/codec-cpu/crypto",
+        "/api/codec-cpu/node"
+      ],
+      processors: ["node_crypto_cpu", "openssl_cpu"]
+    },
+    NETWORK_PAYLOAD_CODECS: {
+      keys: [
+        "http", "websocket", "json", "msgpack", "protobuf",
+        "cbor", "ndjson", "multipart", "formdata", "urlencoded"
+      ],
+      routes: [
+        "/api/codec-cpu/network-payload",
+        "/api/codec-cpu/probe"
+      ],
+      processors: ["node_http_cpu", "json_cpu", "optional_libraries"]
+    },
+    SCIENTIFIC_DATA_CODECS: {
+      keys: [
+        "npy", "npz", "hdf5", "parquet", "arrow", "fits",
+        "netcdf", "mat", "wavetable", "tensor"
+      ],
+      routes: [
+        "/api/codec-cpu/scientific",
+        "/api/codec-cpu/probe"
+      ],
+      processors: ["python_optional", "node_optional", "unavailable_if_absent"]
+    }
+  },
+  guards: {
+    REAL_ONLY: true,
+    CPU_FIRST: true,
+    UNAVAILABLE_IF_NOT_DETECTED: true,
+    NO_FAKE_GPU_CODEC: true,
+    NO_FAKE_TRANSCODE: true,
+    NO_FAKE_CONTAINER_SUPPORT: true
+  }
+};
+
+function codecCpuHasText(s, words) {
+  const t = String(s || "").toLowerCase();
+  return words.some(w => t.includes(String(w).toLowerCase()));
+}
+
+function codecCpuSplitLines(s, max = 300) {
+  return String(s || "")
+    .split(/\r?\n/)
+    .map(x => x.trim())
+    .filter(Boolean)
+    .slice(0, max);
+}
+
+function codecCpuUnique(arr) {
+  return [...new Set((arr || []).filter(Boolean))];
+}
+
+function codecCpuStatus(ok, label = "REAL_DETECTED") {
+  return ok ? label : "UNAVAILABLE_NOT_DETECTED";
+     }
+
+async function codecCpuNodeProbe() {
+  const zlib = require("zlib");
+  const crypto = require("crypto");
+
+  const encodings = [
+    "utf8",
+    "utf16le",
+    "latin1",
+    "ascii",
+    "base64",
+    "base64url",
+    "hex"
+  ];
+
+  let hashes = [];
+  try {
+    hashes = crypto.getHashes();
+  } catch (e) {
+    hashes = [];
+  }
+
+  const zlibSupport = {
+    gzip: typeof zlib.gzipSync === "function",
+    gunzip: typeof zlib.gunzipSync === "function",
+    deflate: typeof zlib.deflateSync === "function",
+    inflate: typeof zlib.inflateSync === "function",
+    brotliCompress: typeof zlib.brotliCompressSync === "function",
+    brotliDecompress: typeof zlib.brotliDecompressSync === "function"
+  };
+
+  let textEncoder = false;
+  let textDecoder = false;
+
+  try {
+    textEncoder = typeof TextEncoder !== "undefined";
+    textDecoder = typeof TextDecoder !== "undefined";
+  } catch (e) {}
+
+  return {
+    time: now(),
+    layer: CODEC_CPU.name,
+    runtime: "node",
+    node: process.version,
+    v8: process.versions && process.versions.v8,
+    processor: "node_builtin_cpu",
+    encodings,
+    buffer_available: typeof Buffer !== "undefined",
+    text_encoder_available: textEncoder,
+    text_decoder_available: textDecoder,
+    zlib: zlibSupport,
+    crypto_hashes_count: hashes.length,
+    crypto_hashes_preview: hashes.slice(0, 80),
+    crypto_sha256: hashes.includes("sha256"),
+    crypto_sha512: hashes.includes("sha512"),
+    crypto_md5: hashes.includes("md5"),
+    crypto_blake2: hashes.some(x => x.includes("blake2")),
+    status: "REAL_NODE_CPU_CODECS_DETECTED",
+    honesty: "Node built-in encodings, zlib and crypto are real CPU/runtime capabilities."
+  };
+}
+
+async function codecCpuFfmpegProbe() {
+  const cmds = [
+    "ffmpeg -version 2>/dev/null | head -30 || echo ffmpeg_unavailable",
+    "ffmpeg -hide_banner -codecs 2>/dev/null | head -500 || echo ffmpeg_codecs_unavailable",
+    "ffmpeg -hide_banner -formats 2>/dev/null | head -500 || echo ffmpeg_formats_unavailable",
+    "ffprobe -version 2>/dev/null | head -10 || echo ffprobe_unavailable"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 20000)));
+
+  const version = out[0].out || "";
+  const codecsRaw = out[1].out || "";
+  const formatsRaw = out[2].out || "";
+  const ffprobeRaw = out[3].out || "";
+
+  const ffmpegDetected = !/ffmpeg_unavailable/i.test(version) && /ffmpeg version/i.test(version);
+  const ffprobeDetected = !/ffprobe_unavailable/i.test(ffprobeRaw) && /ffprobe version/i.test(ffprobeRaw);
+
+  const rawLower = (codecsRaw + "\n" + formatsRaw).toLowerCase();
+
+  const known = {
+    h264: /h264|libx264/.test(rawLower),
+    h265_hevc: /hevc|h265|libx265/.test(rawLower),
+    av1: /\bav1\b|libaom|svtav1|rav1e/.test(rawLower),
+    vp8: /\bvp8\b/.test(rawLower),
+    vp9: /\bvp9\b/.test(rawLower),
+    prores: /prores/.test(rawLower),
+    ffv1: /ffv1/.test(rawLower),
+    aac: /\baac\b/.test(rawLower),
+    mp3: /\bmp3\b|libmp3lame/.test(rawLower),
+    opus: /opus|libopus/.test(rawLower),
+    flac: /flac/.test(rawLower),
+    vorbis: /vorbis/.test(rawLower),
+    wav_pcm: /\bpcm\b|\bwav\b/.test(rawLower),
+    png: /\bpng\b/.test(rawLower),
+    jpeg: /mjpeg|jpeg|jpg/.test(rawLower),
+    webp: /webp/.test(rawLower),
+    gif: /\bgif\b/.test(rawLower),
+    tiff: /tiff/.test(rawLower),
+    avif: /avif/.test(rawLower),
+    mp4: /\bmp4\b|mov,mp4/.test(rawLower),
+    mkv: /matroska|mkv/.test(rawLower),
+    webm: /webm/.test(rawLower),
+    mov: /\bmov\b/.test(rawLower),
+    avi: /\bavi\b/.test(rawLower),
+    srt: /\bsrt\b|subrip/.test(rawLower),
+    webvtt: /webvtt|vtt/.test(rawLower),
+    ass: /\bass\b|ssa/.test(rawLower)
+  };
+
+  return {
+    time: now(),
+    layer: CODEC_CPU.name,
+    ffmpeg_status: codecCpuStatus(ffmpegDetected, "REAL_FFMPEG_CPU_AVAILABLE"),
+    ffprobe_status: codecCpuStatus(ffprobeDetected, "REAL_FFPROBE_CPU_AVAILABLE"),
+    known_codec_support: known,
+    version_preview: safeText(version, 8000),
+    codecs_preview: safeText(codecsRaw, 20000),
+    formats_preview: safeText(formatsRaw, 16000),
+    honesty:
+      "FFmpeg/FFprobe support is read from installed binaries only. If absent, codec execution is unavailable."
+  };
+}
+
+async function codecCpuSystemToolsProbe() {
+  const cmds = [
+    "which ffmpeg 2>/dev/null || echo unavailable",
+    "which ffprobe 2>/dev/null || echo unavailable",
+    "which convert 2>/dev/null || echo imagemagick_convert_unavailable",
+    "which magick 2>/dev/null || echo imagemagick_magick_unavailable",
+    "which zip 2>/dev/null || echo zip_unavailable",
+    "which unzip 2>/dev/null || echo unzip_unavailable",
+    "which tar 2>/dev/null || echo tar_unavailable",
+    "which gzip 2>/dev/null || echo gzip_unavailable",
+    "which brotli 2>/dev/null || echo brotli_unavailable",
+    "which zstd 2>/dev/null || echo zstd_unavailable",
+    "which 7z 2>/dev/null || echo 7z_unavailable",
+    "which xz 2>/dev/null || echo xz_unavailable",
+    "which openssl 2>/dev/null || echo openssl_unavailable",
+    "which python3 2>/dev/null || echo python3_unavailable"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 8000)));
+
+  const map = {
+    ffmpeg: out[0].out,
+    ffprobe: out[1].out,
+    imagemagick_convert: out[2].out,
+    imagemagick_magick: out[3].out,
+    zip: out[4].out,
+    unzip: out[5].out,
+    tar: out[6].out,
+    gzip: out[7].out,
+    brotli: out[8].out,
+    zstd: out[9].out,
+    seven_zip: out[10].out,
+    xz: out[11].out,
+    openssl: out[12].out,
+    python3: out[13].out
+  };
+
+  const detected = {};
+  for (const [k, v] of Object.entries(map)) {
+    detected[k] = !/unavailable/i.test(String(v || ""));
+  }
+
+  return {
+    time: now(),
+    layer: CODEC_CPU.name,
+    tools_detected: detected,
+    raw_paths: map,
+    status: "REAL_SYSTEM_TOOL_SCAN_COMPLETE",
+    honesty: "System codec tools are marked available only when the executable path is detected."
+  };
+}
+
+async function codecCpuPythonProbe() {
+  const cmd = `python3 - <<'PY'
+import json, importlib.util
+mods = [
+  "numpy","PIL","cv2","imageio","soundfile","scipy","h5py",
+  "pyarrow","pandas","av","ffmpeg","zstandard","brotli"
+]
+out = {}
+for m in mods:
+  out[m] = importlib.util.find_spec(m) is not None
+print(json.dumps(out))
+PY`;
+
+  const r = await sh(cmd, 12000);
+
+  let parsed = {};
+  try {
+    parsed = JSON.parse(String(r.out || "{}").trim());
+  } catch (e) {
+    parsed = {};
+  }
+
+  return {
+    time: now(),
+    layer: CODEC_CPU.name,
+    python3_status: r.ok && Object.keys(parsed).length
+      ? "REAL_PYTHON_CODEC_LIB_SCAN_COMPLETE"
+      : "UNAVAILABLE_OR_NO_PYTHON_LIBS",
+    libraries: parsed,
+    raw: safeText((r.out || "") + "\n" + (r.err || ""), 12000),
+    honesty: "Python codec/data libraries are optional and only marked available if importable."
+  };
+}
+
+async function codecCpuClassify(text) {
+  const t = String(text || "").toLowerCase();
+  const hits = [];
+
+  for (const [family, cfg] of Object.entries(DICT_CODECS_PROCESSOR.families)) {
+    let score = 0;
+    for (const key of cfg.keys) {
+      if (t.includes(String(key).toLowerCase())) score++;
+    }
+    if (score > 0) {
+      hits.push({
+        family,
+        score,
+        routes: cfg.routes,
+        processors: cfg.processors
+      });
+    }
+  }
+
+  return {
+    time: now(),
+    input: safeText(text, 2000),
+    classification: hits.sort((a, b) => b.score - a.score),
+    dict: "DICT_CODECS_PROCESSOR_V1_ALL_FAMILIES"
+  };
+}
+
+async function codecCpuProbe() {
+  const [nodeProbe, ffmpegProbe, toolsProbe, pythonProbe] = await Promise.all([
+    codecCpuNodeProbe(),
+    codecCpuFfmpegProbe(),
+    codecCpuSystemToolsProbe(),
+    codecCpuPythonProbe()
+  ]);
+
+  return {
+    time: now(),
+    layer: CODEC_CPU,
+    dict: DICT_CODECS_PROCESSOR,
+    processor_runtime: {
+      node: process.version,
+      v8: process.versions && process.versions.v8,
+      platform: process.platform,
+      arch: process.arch,
+      logical_cpus: os.cpus().length || null,
+      ram_GB: +(os.totalmem() / 1073741824).toFixed(3)
+    },
+    probes: {
+      node: nodeProbe,
+      ffmpeg: ffmpegProbe,
+      system_tools: toolsProbe,
+      python: pythonProbe
+    },
+    cpu_pipeline: [
+      "classify_codec_request_with_DICT_CODECS_PROCESSOR",
+      "select_cpu_processor_path",
+      "prefer_node_builtin_for_text_crypto_zlib",
+      "prefer_ffmpeg_for_audio_video_container",
+      "prefer_system_tools_for_archive_image_when_detected",
+      "prefer_python_optional_for_scientific_data",
+      "return_UNAVAILABLE_if_no_real_processor"
+    ],
+    status_rule:
+      "A codec is executable only if Node builtin, FFmpeg, system binary, Python lib, WASM module or native addon is detected."
+  };
+}
+
+async function codecCpuFamilyReport(familyName) {
+  const fam = String(familyName || "").toUpperCase();
+  const probe = await codecCpuProbe();
+
+  const family =
+    DICT_CODECS_PROCESSOR.families[fam] ||
+    DICT_CODECS_PROCESSOR.families[fam + "_CODECS"] ||
+    null;
+
+  if (!family) {
+    return {
+      time: now(),
+      ok: false,
+      error: "unknown_codec_family",
+      requested: familyName,
+      available_families: Object.keys(DICT_CODECS_PROCESSOR.families)
+    };
+  }
+
+  const allRaw = JSON.stringify(probe).toLowerCase();
+  const support = {};
+
+  for (const key of family.keys) {
+    support[key] = allRaw.includes(String(key).toLowerCase())
+      ? "DETECTED_OR_REFERENCED"
+      : "UNAVAILABLE_OR_NOT_DETECTED";
+  }
+
+  return {
+    time: now(),
+    family: fam,
+    dict_family: family,
+    support,
+    processor_paths: family.processors,
+    routes: family.routes,
+    honesty:
+      "Family support is derived from detected runtime/tools and dictionary references; actual transcoding still requires calling the real binary/library."
+  };
+}
+
+/* ============================================================
+   CODEC_CPU API ROUTES
+============================================================ */
+
+app.get("/api/codec-cpu", async (req, res) => {
+  res.json({
+    time: now(),
+    layer: CODEC_CPU,
+    dict: DICT_CODECS_PROCESSOR
+  });
+});
+
+app.get("/api/codec-cpu/dict", async (req, res) => {
+  res.json(DICT_CODECS_PROCESSOR);
+});
+
+app.get("/api/codec-cpu/probe", async (req, res) => {
+  res.json(await codecCpuProbe());
+});
+
+app.get("/api/codec-cpu/node", async (req, res) => {
+  res.json(await codecCpuNodeProbe());
+});
+
+app.get("/api/codec-cpu/ffmpeg", async (req, res) => {
+  res.json(await codecCpuFfmpegProbe());
+});
+
+app.get("/api/codec-cpu/tools", async (req, res) => {
+  res.json(await codecCpuSystemToolsProbe());
+});
+
+app.get("/api/codec-cpu/python", async (req, res) => {
+  res.json(await codecCpuPythonProbe());
+});
+
+app.get("/api/codec-cpu/classify", async (req, res) => {
+  res.json(await codecCpuClassify(req.query.q || req.query.text || ""));
+});
+
+app.post("/api/codec-cpu/classify", async (req, res) => {
+  res.json(await codecCpuClassify(req.body && (req.body.q || req.body.text) || ""));
+});
+
+app.get("/api/codec-cpu/video", async (req, res) => {
+  res.json(await codecCpuFamilyReport("VIDEO_CODECS"));
+});
+
+app.get("/api/codec-cpu/audio", async (req, res) => {
+  res.json(await codecCpuFamilyReport("AUDIO_CODECS"));
+});
+
+app.get("/api/codec-cpu/image", async (req, res) => {
+  res.json(await codecCpuFamilyReport("IMAGE_CODECS"));
+});
+
+app.get("/api/codec-cpu/subtitle", async (req, res) => {
+  res.json(await codecCpuFamilyReport("SUBTITLE_CODECS"));
+});
+
+app.get("/api/codec-cpu/container", async (req, res) => {
+  res.json(await codecCpuFamilyReport("CONTAINERS"));
+});
+
+app.get("/api/codec-cpu/archive", async (req, res) => {
+  res.json(await codecCpuFamilyReport("ARCHIVE_CODECS"));
+});
+
+app.get("/api/codec-cpu/text", async (req, res) => {
+  res.json(await codecCpuFamilyReport("TEXT_CODECS"));
+});
+
+app.get("/api/codec-cpu/crypto", async (req, res) => {
+  res.json(await codecCpuFamilyReport("CRYPTO_HASH_CODECS"));
+});
+
+app.get("/api/codec-cpu/network-payload", async (req, res) => {
+  res.json(await codecCpuFamilyReport("NETWORK_PAYLOAD_CODECS"));
+});
+
+app.get("/api/codec-cpu/scientific", async (req, res) => {
+  res.json(await codecCpuFamilyReport("SCIENTIFIC_DATA_CODECS"));
+});
+
+/* Optional registry hook */
+try {
+  if (typeof moduleRegistry === "function") {
+    const __moduleRegistryOriginal_CODEC_CPU = moduleRegistry;
+
+    moduleRegistry = function moduleRegistryWithCodecCpu() {
+      const base = __moduleRegistryOriginal_CODEC_CPU();
+
+      return {
+        ...base,
+        codec_cpu: {
+          layer: CODEC_CPU,
+          dict: DICT_CODECS_PROCESSOR,
+          routes: [
+            "/api/codec-cpu",
+            "/api/codec-cpu/dict",
+            "/api/codec-cpu/probe",
+            "/api/codec-cpu/node",
+            "/api/codec-cpu/ffmpeg",
+            "/api/codec-cpu/tools",
+            "/api/codec-cpu/python",
+            "/api/codec-cpu/classify",
+            "/api/codec-cpu/video",
+            "/api/codec-cpu/audio",
+            "/api/codec-cpu/image",
+            "/api/codec-cpu/subtitle",
+            "/api/codec-cpu/container",
+            "/api/codec-cpu/archive",
+            "/api/codec-cpu/text",
+            "/api/codec-cpu/crypto",
+            "/api/codec-cpu/network-payload",
+            "/api/codec-cpu/scientific"
+          ]
+        }
+      };
+    };
+  }
+} catch (e) {
+  console.warn("CODEC_CPU registry hook unavailable:", e.message);
+}
+
+/* ============================================================
+   Optional UI buttons
+   Add inside existing .tabs HTML block.
+============================================================ */
+
+/*
+<button onclick="load('/api/codec-cpu')">CODEC CPU</button>
+<button onclick="load('/api/codec-cpu/probe')">CODEC PROBE</button>
+<button onclick="load('/api/codec-cpu/dict')">DICT CODECS</button>
+<button onclick="load('/api/codec-cpu/ffmpeg')">FFMPEG CPU</button>
+<button onclick="load('/api/codec-cpu/node')">NODE CODECS</button>
+<button onclick="load('/api/codec-cpu/video')">VIDEO CODECS</button>
+<button onclick="load('/api/codec-cpu/audio')">AUDIO CODECS</button>
+<button onclick="load('/api/codec-cpu/image')">IMAGE CODECS</button>
+<button onclick="load('/api/codec-cpu/archive')">ARCHIVE CODECS</button>
+<button onclick="load('/api/codec-cpu/crypto')">CRYPTO CODECS</button>
+*/
+
+/* ============================================================
+   TRILLIONS V11.6+ ADDITIVE MEMORY_TERMS_CPU_SOLVER LAYER
+   Additive only. Does NOT modify WORLD_HPC / HPC_SIMD / CODEC_CPU.
+   Goal: compile memory terms from CPU, HPC, supercomputers,
+   prototypes and solver routing into one processor-aware DICT.
+   Doctrine: REAL_ONLY_OR_UNAVAILABLE + NO_FAKE_MEMORY.
+============================================================ */
+
+const MEMORY_TERMS_CPU_SOLVER = {
+  name: "MEMORY_TERMS_CPU_SOLVER",
+  version: "V11_6_ALL_MEMORY_TERMS_SUPERCOMPUTER_PROTOTYPE_SOLVER",
+  additive_only: true,
+  does_not_touch: ["WORLD_HPC", "HPC_ZETA", "HPC_SIMD", "CODEC_CPU"],
+  doctrine: [
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_MEMORY",
+    "NO_FAKE_BANDWIDTH",
+    "NO_FAKE_CACHE",
+    "NO_FAKE_NUMA",
+    "NO_FAKE_HBM",
+    "NO_FAKE_GPU_MEMORY",
+    "UNAVAILABLE_IF_NOT_DETECTED"
+  ],
+  memory_domains: [
+    "CPU_CACHE",
+    "RAM_MAIN_MEMORY",
+    "VIRTUAL_MEMORY",
+    "NUMA_MEMORY",
+    "GPU_MEMORY",
+    "HPC_MEMORY",
+    "SUPERCOMPUTER_MEMORY",
+    "PROTOTYPE_MEMORY",
+    "STORAGE_MEMORY",
+    "NETWORK_MEMORY",
+    "SOLVER_MEMORY",
+    "RUNTIME_MEMORY",
+    "AI_MEMORY",
+    "LEDGER_MEMORY"
+  ],
+  honesty:
+    "This layer compiles memory terms and detects what the host exposes. Prototype and supercomputer terms are vocabulary/routing unless real hardware or tools expose them."
+};
+
+const DICT_MEMORY_TERMS_SOLVER = {
+  version: "DICT_MEMORY_TERMS_SOLVER_V1",
+  mode: "CPU_SOLVER_MEMORY_ROUTING",
+  families: {
+    CPU_CACHE: {
+      keys: [
+        "l1", "l1d", "l1i", "l2", "l3", "llc", "cache line",
+        "cacheline", "prefetch", "write back", "write through",
+        "inclusive cache", "exclusive cache", "victim cache",
+        "tlb", "itlb", "dtlb", "page walk", "branch target buffer",
+        "store buffer", "load buffer", "reorder buffer", "micro-op cache",
+        "uop cache", "cache miss", "cache hit", "cache latency",
+        "cache bandwidth", "cache coherence", "mesi", "moesi"
+      ],
+      routes: ["/api/memory-terms/cpu-cache", "/api/memory-terms/probe"],
+      solvers: ["cache_detector", "cache_pressure_solver", "locality_optimizer"]
+    },
+
+    RAM_MAIN_MEMORY: {
+      keys: [
+        "ram", "dram", "sdram", "ddr", "ddr3", "ddr4", "ddr5",
+        "lpddr", "ecc", "registered", "rdimm", "lrdimm", "udimm",
+        "rank", "channel", "dual channel", "quad channel", "octa channel",
+        "memory controller", "imc", "cas latency", "cl", "trcd", "trp",
+        "tras", "trfc", "gear mode", "command rate", "bandwidth",
+        "latency", "row buffer", "bank group", "interleaving"
+      ],
+      routes: ["/api/memory-terms/ram", "/api/memory-terms/probe"],
+      solvers: ["ram_capacity_solver", "ram_pressure_solver", "bandwidth_classifier"]
+    },
+
+    VIRTUAL_MEMORY: {
+      keys: [
+        "virtual memory", "swap", "pagefile", "paging", "page fault",
+        "major fault", "minor fault", "hugepage", "hugepages",
+        "transparent huge pages", "thp", "mmap", "memory map",
+        "address space", "rss", "vss", "pss", "heap", "stack",
+        "malloc", "allocator", "arena", "fragmentation",
+        "garbage collection", "gc", "oom", "out of memory"
+      ],
+      routes: ["/api/memory-terms/virtual", "/api/memory-terms/runtime"],
+      solvers: ["vm_pressure_solver", "swap_detector", "heap_allocator_solver"]
+    },
+
+    NUMA_MEMORY: {
+      keys: [
+        "numa", "numactl", "numa node", "numa distance",
+        "local memory", "remote memory", "memory affinity",
+        "cpu affinity", "pinning", "first touch", "interleave",
+        "socket memory", "ccnuma", "snooping", "qpi", "upi",
+        "infinity fabric", "chiplet memory", "ccd", "ccx"
+      ],
+      routes: ["/api/memory-terms/numa", "/api/memory-terms/probe"],
+      solvers: ["numa_detector", "affinity_solver", "locality_policy_solver"]
+    },
+
+    GPU_MEMORY: {
+      keys: [
+        "vram", "gddr6", "gddr6x", "hbm", "hbm2", "hbm2e",
+        "hbm3", "hbm3e", "shared memory", "unified memory",
+        "cuda memory", "hip memory", "rocm memory", "metal memory",
+        "pinned memory", "page locked", "device memory",
+        "global memory", "texture memory", "constant memory",
+        "l2 gpu cache", "tensor memory", "cuda malloc",
+        "nvlink memory", "peer to peer", "p2p", "bar1", "resizable bar"
+      ],
+      routes: ["/api/memory-terms/gpu", "/api/memory-terms/probe"],
+      solvers: ["gpu_memory_detector", "vram_pressure_solver", "unified_memory_classifier"]
+    },
+
+    HPC_MEMORY: {
+      keys: [
+        "mpi buffer", "rdma buffer", "infiniband memory", "verbs",
+        "registered memory", "memory registration", "rkey", "lkey",
+        "zero copy", "one-sided memory", "rma", "put", "get",
+        "partitioned global address space", "pgas", "shmem",
+        "openshmem", "gasnet", "ucx", "libfabric", "ofi",
+        "collective buffer", "allreduce buffer", "halo exchange",
+        "domain decomposition", "checkpoint memory"
+      ],
+      routes: ["/api/memory-terms/hpc", "/api/memory-terms/probe"],
+      solvers: ["hpc_memory_transport_solver", "rdma_capability_detector", "mpi_buffer_solver"]
+    },
+
+    SUPERCOMPUTER_MEMORY: {
+      keys: [
+        "frontier memory", "aurora memory", "el capitan memory",
+        "fugaku memory", "summit memory", "leonardo memory",
+        "lumi memory", "jupiter memory", "exascale memory",
+        "burst buffer", "lustre", "gpfs", "spectrum scale",
+        "daos", "slingshot", "dragonfly", "aries", "tori",
+        "cray shasta", "hpe cray ex", "hbm node", "node local memory",
+        "global address space", "parallel filesystem cache",
+        "checkpoint restart", "scratch memory", "object store"
+      ],
+      routes: ["/api/memory-terms/supercomputer", "/api/memory-terms/probe"],
+      solvers: ["supercomputer_vocabulary_router", "exascale_memory_model", "parallel_fs_memory_solver"]
+    },
+
+    PROTOTYPE_MEMORY: {
+      keys: [
+        "cxl", "cxl memory", "cxl.mem", "cxl.cache", "cxl.io",
+        "memory pooling", "memory disaggregation", "fabric attached memory",
+        "near memory compute", "processing in memory", "pim",
+        "computational memory", "storage class memory", "scm",
+        "persistent memory", "optane", "3d xpoint", "phase change memory",
+        "pcm", "mram", "reram", "fram", "memristor",
+        "photonic memory", "spintronic memory", "neuromorphic memory",
+        "wafer scale memory", "cerebras memory", "sambaNova dataflow memory"
+      ],
+      routes: ["/api/memory-terms/prototype", "/api/memory-terms/probe"],
+      solvers: ["prototype_memory_router", "cxl_readiness_detector", "memory_fabric_classifier"]
+    }
+  },
+  guards: {
+    REAL_ONLY: true,
+    NO_FAKE_MEMORY: true,
+    NO_FAKE_SUPERCOMPUTER: true,
+    PROTOTYPE_TERMS_ARE_VOCABULARY_UNLESS_DETECTED: true
+  }
+};
+
+/* ============================================================
+   MEMORY DICT EXTENSIONS — storage, runtime, solver, AI, ledger
+============================================================ */
+
+DICT_MEMORY_TERMS_SOLVER.families.STORAGE_MEMORY = {
+  keys: [
+    "nvme", "ssd", "hdd", "raid", "raid0", "raid1", "raid5",
+    "raid6", "raid10", "raid50", "raid60", "ramdisk", "tmpfs",
+    "page cache", "buffer cache", "write cache", "read cache",
+    "fancycache", "primocache", "bcache", "zram", "zswap",
+    "direct io", "aio", "io_uring", "queue depth", "iops",
+    "latency", "throughput", "filesystem cache", "block cache"
+  ],
+  routes: ["/api/memory-terms/storage", "/api/memory-terms/probe"],
+  solvers: ["storage_cache_solver", "io_pressure_solver", "hot_cold_memory_router"]
+};
+
+DICT_MEMORY_TERMS_SOLVER.families.NETWORK_MEMORY = {
+  keys: [
+    "socket buffer", "tcp buffer", "udp buffer", "send buffer",
+    "receive buffer", "rx ring", "tx ring", "nic buffer",
+    "dma buffer", "rdma queue", "completion queue", "work queue",
+    "packet buffer", "kernel buffer", "zero copy socket",
+    "splice", "sendfile", "skb", "xdp", "dpdk", "netmap"
+  ],
+  routes: ["/api/memory-terms/network-memory", "/api/memory-terms/probe"],
+  solvers: ["network_buffer_solver", "zero_copy_detector", "packet_memory_classifier"]
+};
+
+DICT_MEMORY_TERMS_SOLVER.families.RUNTIME_MEMORY = {
+  keys: [
+    "node heap", "v8 heap", "heap used", "heap total", "rss",
+    "external memory", "arraybuffer", "buffer memory",
+    "young generation", "old generation", "new space",
+    "old space", "code space", "map space", "large object space",
+    "gc pause", "mark sweep", "scavenge", "incremental marking",
+    "worker memory", "isolate memory", "event loop memory"
+  ],
+  routes: ["/api/memory-terms/runtime", "/api/memory-terms/probe"],
+  solvers: ["node_heap_solver", "gc_pressure_solver", "runtime_memory_ledger"]
+};
+
+DICT_MEMORY_TERMS_SOLVER.families.SOLVER_MEMORY = {
+  keys: [
+    "solver memory", "state memory", "search tree", "frontier",
+    "beam search", "branch and bound", "dynamic programming table",
+    "memoization", "cache key", "transposition table",
+    "working set", "scratchpad", "activation memory",
+    "kv cache", "attention cache", "context window",
+    "token cache", "embedding cache", "vector store",
+    "graph memory", "visited set", "priority queue",
+    "job queue", "result cache", "checkpoint", "rollback"
+  ],
+  routes: ["/api/memory-terms/solver", "/api/memory-terms/classify"],
+  solvers: ["solver_state_memory_router", "memoization_policy_solver", "checkpoint_rollback_solver"]
+};
+
+DICT_MEMORY_TERMS_SOLVER.families.AI_MEMORY = {
+  keys: [
+    "kv cache", "attention cache", "context cache", "prompt cache",
+    "embedding memory", "vector memory", "rag memory",
+    "long context", "sliding window", "recurrent memory",
+    "episodic memory", "semantic memory", "working memory",
+    "activation checkpointing", "gradient checkpointing",
+    "optimizer state", "model weights", "quantized weights",
+    "gguf", "safetensors", "lora memory", "qlora memory",
+    "moe routing memory", "expert cache"
+  ],
+  routes: ["/api/memory-terms/ai-memory", "/api/memory-terms/classify"],
+  solvers: ["ai_context_memory_solver", "kv_cache_classifier", "model_memory_estimator"]
+};
+
+DICT_MEMORY_TERMS_SOLVER.families.LEDGER_MEMORY = {
+  keys: [
+    "ledger", "jsonl", "audit log", "trace", "telemetry history",
+    "metrics history", "event store", "append only", "snapshot",
+    "journal", "commit log", "write ahead log", "wal",
+    "rollback ledger", "repair ledger", "job ledger",
+    "runtime ledger", "memory ledger", "checkpoint ledger"
+  ],
+  routes: ["/api/memory-terms/ledger", "/api/memory-terms/classify"],
+  solvers: ["append_only_memory_ledger", "trace_compaction_solver", "rollback_memory_policy"]
+};
+
+const MEMORY_SOLVER_POLICIES = {
+  version: "MEMORY_SOLVER_POLICIES_V1",
+  policies: {
+    CPU_CACHE_LOCALITY: {
+      target: "reduce cache misses",
+      actions: [
+        "prefer contiguous arrays",
+        "avoid random access where possible",
+        "batch operations",
+        "reuse hot data",
+        "minimize object churn"
+      ]
+    },
+    RAM_PRESSURE: {
+      target: "avoid out-of-memory and swap storms",
+      actions: [
+        "measure heap/rss",
+        "cap batch size",
+        "stream large data",
+        "use backpressure",
+        "evict cold cache"
+      ]
+    },
+    NUMA_AWARENESS: {
+      target: "prefer local memory when NUMA exists",
+      actions: [
+        "detect numactl",
+        "detect NUMA nodes",
+        "pin workers only if supported",
+        "avoid false NUMA claims"
+      ]
+    },
+    GPU_MEMORY: {
+      target: "classify VRAM/unified memory",
+      actions: [
+        "use nvidia-smi if available",
+        "use rocm-smi if available",
+        "mark unavailable if no GPU tool",
+        "do not invent VRAM"
+      ]
+    },
+    SOLVER_STATE: {
+      target: "control solver memory growth",
+      actions: [
+        "memoize only high-value states",
+        "checkpoint long jobs",
+        "clear low-value traces",
+        "record memory deltas",
+        "separate working memory and ledger memory"
+      ]
+    },
+    SUPERCOMPUTER_TERMS: {
+      target: "route vocabulary without fake hardware claim",
+      actions: [
+        "compile exascale memory vocabulary",
+        "map to local equivalent when possible",
+        "mark external-only terms as vocabulary",
+        "avoid claiming Frontier/Aurora hardware"
+      ]
+    }
+  }
+};
+
+function memoryTermsSafeNum(x, d = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
+
+function memoryTermsGB(x) {
+  return +(memoryTermsSafeNum(x) / 1073741824).toFixed(3);
+}
+
+function memoryTermsMB(x) {
+  return +(memoryTermsSafeNum(x) / 1048576).toFixed(3);
+}
+
+function memoryTermsClassifyText(input) {
+  const text = String(input || "").toLowerCase();
+  const hits = [];
+
+  for (const [family, cfg] of Object.entries(DICT_MEMORY_TERMS_SOLVER.families)) {
+    let score = 0;
+    const matched = [];
+
+    for (const key of cfg.keys || []) {
+      if (text.includes(String(key).toLowerCase())) {
+        score++;
+        matched.push(key);
+      }
+    }
+
+    if (score > 0) {
+      hits.push({
+        family,
+        score,
+        matched,
+        routes: cfg.routes,
+        solvers: cfg.solvers
+      });
+    }
+  }
+
+  return hits.sort((a, b) => b.score - a.score);
+}
+
+/* ============================================================
+   MEMORY REAL PROBES — CPU/RAM/VM/NUMA/GPU/HPC
+============================================================ */
+
+async function memoryTermsRuntimeProbe() {
+  const mu = process.memoryUsage();
+  const hs = require("v8").getHeapStatistics();
+
+  return {
+    time: now(),
+    layer: MEMORY_TERMS_CPU_SOLVER.name,
+    node_runtime_memory: {
+      rss_MB: memoryTermsMB(mu.rss),
+      heap_total_MB: memoryTermsMB(mu.heapTotal),
+      heap_used_MB: memoryTermsMB(mu.heapUsed),
+      external_MB: memoryTermsMB(mu.external),
+      arrayBuffers_MB: memoryTermsMB(mu.arrayBuffers || 0)
+    },
+    v8_heap_statistics: {
+      total_heap_size_MB: memoryTermsMB(hs.total_heap_size),
+      total_heap_size_executable_MB: memoryTermsMB(hs.total_heap_size_executable),
+      total_physical_size_MB: memoryTermsMB(hs.total_physical_size),
+      used_heap_size_MB: memoryTermsMB(hs.used_heap_size),
+      heap_size_limit_MB: memoryTermsMB(hs.heap_size_limit),
+      malloced_memory_MB: memoryTermsMB(hs.malloced_memory),
+      peak_malloced_memory_MB: memoryTermsMB(hs.peak_malloced_memory)
+    },
+    solver_reading:
+      "runtime memory = active Node/V8 memory; use for solver pressure and cache limits"
+  };
+}
+
+async function memoryTermsSystemProbe() {
+  const [sys, memCmd, vmCmd, cacheCmd] = await Promise.all([
+    system().catch(e => ({ error: e.message })),
+    sh("free -h 2>/dev/null || vm_stat 2>/dev/null || echo unavailable", 8000),
+    sh("cat /proc/meminfo 2>/dev/null | head -80 || echo meminfo_unavailable", 8000),
+    sh("lscpu -C 2>/dev/null || getconf LEVEL1_DCACHE_SIZE 2>/dev/null || echo cache_info_unavailable", 8000)
+  ]);
+
+  return {
+    time: now(),
+    layer: MEMORY_TERMS_CPU_SOLVER.name,
+    system_memory: sys.ram || null,
+    raw_free: safeText(memCmd.out, 12000),
+    raw_meminfo: safeText(vmCmd.out, 16000),
+    raw_cache_info: safeText(cacheCmd.out, 12000),
+    status: "REAL_SYSTEM_MEMORY_PROBE_COMPLETE",
+    honesty: "System memory data comes from systeminformation and OS commands."
+  };
+}
+
+async function memoryTermsNumaProbe() {
+  const cmds = [
+    "numactl --hardware 2>/dev/null || echo numactl_unavailable",
+    "lscpu 2>/dev/null | grep -Ei 'NUMA|Socket|Core|Thread' || true",
+    "ls /sys/devices/system/node/ 2>/dev/null | grep node || true"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 8000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  const detected =
+    !/numactl_unavailable/.test(raw) ||
+    /numa node/.test(raw) ||
+    /node0/.test(raw);
+
+  return {
+    time: now(),
+    layer: MEMORY_TERMS_CPU_SOLVER.name,
+    numa_status: detected ? "REAL_NUMA_INFO_DETECTED_OR_PARTIAL" : "UNAVAILABLE_NOT_DETECTED",
+    raw_numactl: safeText(out[0].out, 12000),
+    raw_lscpu_numa: safeText(out[1].out, 12000),
+    raw_sys_nodes: safeText(out[2].out, 12000),
+    honesty:
+      "NUMA is detected only if OS exposes nodes or numactl/lscpu reports it. Containers may hide topology."
+  };
+}
+
+async function memoryTermsGpuProbe() {
+  const cmds = [
+    "nvidia-smi --query-gpu=name,memory.total,memory.used,memory.free,utilization.memory --format=csv,noheader 2>/dev/null || echo nvidia_smi_unavailable",
+    "rocm-smi --showmeminfo vram 2>/dev/null || echo rocm_smi_unavailable",
+    "lspci 2>/dev/null | grep -Ei 'vga|3d|display|nvidia|amd|intel' || echo gpu_lspci_unavailable"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 10000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  const nvidia = !/nvidia_smi_unavailable/.test(raw);
+  const rocm = !/rocm_smi_unavailable/.test(raw);
+  const lspciGpu = !/gpu_lspci_unavailable/.test(raw);
+
+  return {
+    time: now(),
+    layer: MEMORY_TERMS_CPU_SOLVER.name,
+    gpu_memory_status:
+      nvidia || rocm
+        ? "REAL_GPU_MEMORY_TOOL_DETECTED"
+        : lspciGpu
+          ? "GPU_LISTED_MEMORY_TOOL_UNAVAILABLE"
+          : "UNAVAILABLE_NOT_DETECTED",
+    nvidia_smi: safeText(out[0].out, 12000),
+    rocm_smi: safeText(out[1].out, 12000),
+    gpu_lspci: safeText(out[2].out, 12000),
+    honesty:
+      "VRAM/HBM is real only when GPU tools expose it. PCI listing alone does not prove usable GPU memory."
+  };
+}
+
+async function memoryTermsHpcProbe() {
+  const cmds = [
+    "which mpirun 2>/dev/null || which mpiexec 2>/dev/null || echo mpi_unavailable",
+    "ompi_info --parsable 2>/dev/null | head -80 || echo ompi_info_unavailable",
+    "ibv_devinfo 2>/dev/null | head -80 || echo ibverbs_unavailable",
+    "ucx_info -v 2>/dev/null || echo ucx_unavailable",
+    "fi_info 2>/dev/null | head -80 || echo libfabric_unavailable",
+    "df -hT 2>/dev/null | grep -Ei 'lustre|gpfs|beegfs|nfs|ceph|xfs|ext4|zfs' || true"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 10000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    layer: MEMORY_TERMS_CPU_SOLVER.name,
+    hpc_memory_transport: {
+      mpi: !/mpi_unavailable/.test(raw),
+      openmpi_info: !/ompi_info_unavailable/.test(raw),
+      rdma_ibverbs: !/ibverbs_unavailable/.test(raw),
+      ucx: !/ucx_unavailable/.test(raw),
+      libfabric: !/libfabric_unavailable/.test(raw),
+      parallel_fs_hint: /lustre|gpfs|beegfs|ceph/.test(raw)
+    },
+    raw_mpi: safeText(out[0].out + "\n" + out[1].out, 16000),
+    raw_rdma: safeText(out[2].out, 12000),
+    raw_ucx: safeText(out[3].out, 8000),
+    raw_libfabric: safeText(out[4].out, 12000),
+    raw_filesystems: safeText(out[5].out, 12000),
+    honesty:
+      "HPC memory transport is detected only through installed tools/devices. RDMA/MPI are unavailable if tools are absent."
+  };
+}
+
+async function memoryTermsPrototypeProbe() {
+  const cmds = [
+    "lspci 2>/dev/null | grep -Ei 'cxl|memory|accelerator' || echo cxl_lspci_unavailable",
+    "ls /sys/bus/cxl/devices 2>/dev/null || echo cxl_sysfs_unavailable",
+    "dmesg 2>/dev/null | grep -Ei 'cxl|pmem|persistent memory|numa' | tail -60 || true",
+    "ndctl list 2>/dev/null || echo ndctl_unavailable"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 10000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    layer: MEMORY_TERMS_CPU_SOLVER.name,
+    prototype_memory_status: /cxl|pmem|persistent memory|ndctl/.test(raw)
+      ? "REAL_OR_PARTIAL_PROTOTYPE_MEMORY_HINT_DETECTED"
+      : "UNAVAILABLE_NOT_DETECTED",
+    cxl_lspci: safeText(out[0].out, 12000),
+    cxl_sysfs: safeText(out[1].out, 12000),
+    dmesg_memory_hints: safeText(out[2].out, 12000),
+    ndctl: safeText(out[3].out, 12000),
+    honesty:
+      "Prototype memory terms such as CXL/PIM/SCM are vocabulary unless OS/hardware exposes evidence."
+  };
+}
+
+/* ============================================================
+   MEMORY GLOBAL PROBE / CLASSIFIER / ROUTES
+============================================================ */
+
+async function memoryTermsProbe() {
+  const [
+    runtimeProbe,
+    systemProbe,
+    numaProbe,
+    gpuProbe,
+    hpcProbe,
+    prototypeProbe
+  ] = await Promise.all([
+    memoryTermsRuntimeProbe(),
+    memoryTermsSystemProbe(),
+    memoryTermsNumaProbe(),
+    memoryTermsGpuProbe(),
+    memoryTermsHpcProbe(),
+    memoryTermsPrototypeProbe()
+  ]);
+
+  return {
+    time: now(),
+    layer: MEMORY_TERMS_CPU_SOLVER,
+    dict: DICT_MEMORY_TERMS_SOLVER,
+    policies: MEMORY_SOLVER_POLICIES,
+    probes: {
+      runtime: runtimeProbe,
+      system: systemProbe,
+      numa: numaProbe,
+      gpu: gpuProbe,
+      hpc: hpcProbe,
+      prototype: prototypeProbe
+    },
+    solver_pipeline: [
+      "classify_memory_terms",
+      "detect_real_host_memory",
+      "separate_real_vs_vocabulary",
+      "route_to_cpu_ram_vm_numa_gpu_hpc_solver",
+      "apply_pressure_policy",
+      "return_unavailable_when_absent"
+    ],
+    status_rule:
+      "Local memory is measured when exposed. Supercomputer/prototype terms are routing vocabulary unless real tools/hardware expose them."
+  };
+}
+
+async function memoryTermsFamilyReport(familyName) {
+  const fam = String(familyName || "").toUpperCase();
+  const family = DICT_MEMORY_TERMS_SOLVER.families[fam];
+
+  if (!family) {
+    return {
+      time: now(),
+      ok: false,
+      error: "unknown_memory_family",
+      requested: familyName,
+      available_families: Object.keys(DICT_MEMORY_TERMS_SOLVER.families)
+    };
+  }
+
+  return {
+    time: now(),
+    family: fam,
+    dict_family: family,
+    solver_policy:
+      MEMORY_SOLVER_POLICIES.policies[fam] ||
+      MEMORY_SOLVER_POLICIES.policies.SOLVER_STATE ||
+      null,
+    honesty:
+      "Family report is vocabulary + routing. Use /api/memory-terms/probe for real host detection."
+  };
+}
+
+async function memoryTermsClassify(input) {
+  return {
+    time: now(),
+    input: safeText(input, 4000),
+    classification: memoryTermsClassifyText(input),
+    dict_version: DICT_MEMORY_TERMS_SOLVER.version
+  };
+}
+
+/* API ROUTES — additive */
+app.get("/api/memory-terms", async (req, res) => {
+  res.json({
+    time: now(),
+    layer: MEMORY_TERMS_CPU_SOLVER,
+    dict: DICT_MEMORY_TERMS_SOLVER,
+    policies: MEMORY_SOLVER_POLICIES
+  });
+});
+
+app.get("/api/memory-terms/dict", async (req, res) => {
+  res.json(DICT_MEMORY_TERMS_SOLVER);
+});
+
+app.get("/api/memory-terms/policies", async (req, res) => {
+  res.json(MEMORY_SOLVER_POLICIES);
+});
+
+app.get("/api/memory-terms/probe", async (req, res) => {
+  res.json(await memoryTermsProbe());
+});
+
+app.get("/api/memory-terms/runtime", async (req, res) => {
+  res.json(await memoryTermsRuntimeProbe());
+});
+
+app.get("/api/memory-terms/system", async (req, res) => {
+  res.json(await memoryTermsSystemProbe());
+});
+
+app.get("/api/memory-terms/numa", async (req, res) => {
+  res.json(await memoryTermsNumaProbe());
+});
+
+app.get("/api/memory-terms/gpu", async (req, res) => {
+  res.json(await memoryTermsGpuProbe());
+});
+
+app.get("/api/memory-terms/hpc", async (req, res) => {
+  res.json(await memoryTermsHpcProbe());
+});
+
+app.get("/api/memory-terms/prototype", async (req, res) => {
+  res.json(await memoryTermsPrototypeProbe());
+});
+
+app.get("/api/memory-terms/classify", async (req, res) => {
+  res.json(await memoryTermsClassify(req.query.q || req.query.text || ""));
+});
+
+app.post("/api/memory-terms/classify", async (req, res) => {
+  res.json(await memoryTermsClassify(req.body && (req.body.q || req.body.text) || ""));
+});
+
+app.get("/api/memory-terms/cpu-cache", async (req, res) => {
+  res.json(await memoryTermsFamilyReport("CPU_CACHE"));
+});
+
+app.get("/api/memory-terms/ram", async (req, res) => {
+  res.json(await memoryTermsFamilyReport("RAM_MAIN_MEMORY"));
+});
+
+app.get("/api/memory-terms/virtual", async (req, res) => {
+  res.json(await memoryTermsFamilyReport("VIRTUAL_MEMORY"));
+});
+
+app.get("/api/memory-terms/supercomputer", async (req, res) => {
+  res.json(await memoryTermsFamilyReport("SUPERCOMPUTER_MEMORY"));
+});
+
+app.get("/api/memory-terms/storage", async (req, res) => {
+  res.json(await memoryTermsFamilyReport("STORAGE_MEMORY"));
+});
+
+app.get("/api/memory-terms/network-memory", async (req, res) => {
+  res.json(await memoryTermsFamilyReport("NETWORK_MEMORY"));
+});
+
+app.get("/api/memory-terms/solver", async (req, res) => {
+  res.json(await memoryTermsFamilyReport("SOLVER_MEMORY"));
+});
+
+app.get("/api/memory-terms/ai-memory", async (req, res) => {
+  res.json(await memoryTermsFamilyReport("AI_MEMORY"));
+});
+
+app.get("/api/memory-terms/ledger", async (req, res) => {
+  res.json(await memoryTermsFamilyReport("LEDGER_MEMORY"));
+});
+
+/* Optional registry hook */
+try {
+  if (typeof moduleRegistry === "function") {
+    const __moduleRegistryOriginal_MEMORY_TERMS = moduleRegistry;
+
+    moduleRegistry = function moduleRegistryWithMemoryTerms() {
+      const base = __moduleRegistryOriginal_MEMORY_TERMS();
+
+      return {
+        ...base,
+        memory_terms_cpu_solver: {
+          layer: MEMORY_TERMS_CPU_SOLVER,
+          dict: DICT_MEMORY_TERMS_SOLVER,
+          policies: MEMORY_SOLVER_POLICIES,
+          routes: [
+            "/api/memory-terms",
+            "/api/memory-terms/dict",
+            "/api/memory-terms/policies",
+            "/api/memory-terms/probe",
+            "/api/memory-terms/runtime",
+            "/api/memory-terms/system",
+            "/api/memory-terms/numa",
+            "/api/memory-terms/gpu",
+            "/api/memory-terms/hpc",
+            "/api/memory-terms/prototype",
+            "/api/memory-terms/classify",
+            "/api/memory-terms/supercomputer",
+            "/api/memory-terms/solver",
+            "/api/memory-terms/ai-memory",
+            "/api/memory-terms/ledger"
+          ]
+        }
+      };
+    };
+  }
+} catch (e) {
+  console.warn("MEMORY_TERMS registry hook unavailable:", e.message);
+}
+
+/* Optional UI buttons — add inside existing .tabs block */
+
+/*
+<button onclick="load('/api/memory-terms')">MEMORY TERMS</button>
+<button onclick="load('/api/memory-terms/dict')">DICT MEMORY</button>
+<button onclick="load('/api/memory-terms/probe')">MEM PROBE</button>
+<button onclick="load('/api/memory-terms/runtime')">NODE MEMORY</button>
+<button onclick="load('/api/memory-terms/system')">SYS MEMORY</button>
+<button onclick="load('/api/memory-terms/numa')">NUMA MEM</button>
+<button onclick="load('/api/memory-terms/gpu')">GPU MEM</button>
+<button onclick="load('/api/memory-terms/hpc')">HPC MEM</button>
+<button onclick="load('/api/memory-terms/prototype')">PROTO MEM</button>
+<button onclick="load('/api/memory-terms/supercomputer')">SUPER MEM</button>
+<button onclick="load('/api/memory-terms/solver')">SOLVER MEM</button>
+*/
+
+/* ============================================================
+   TRILLIONS V11.6+ ADDITIVE CACHE_MEMORY_SOLVER LAYER
+   Additive only. Does NOT modify WORLD_HPC / HPC_SIMD /
+   CODEC_CPU / MEMORY_TERMS_CPU_SOLVER.
+   Goal: compile all cache memory terms and solver routing.
+   Doctrine: REAL_ONLY_OR_UNAVAILABLE + NO_FAKE_CACHE.
+============================================================ */
+
+const CACHE_MEMORY_SOLVER = {
+  name: "CACHE_MEMORY_SOLVER",
+  version: "V11_6_ALL_CACHE_MEMORY_TERMS_SOLVER",
+  additive_only: true,
+  does_not_touch: [
+    "WORLD_HPC",
+    "HPC_ZETA",
+    "HPC_SIMD",
+    "CODEC_CPU",
+    "MEMORY_TERMS_CPU_SOLVER"
+  ],
+  doctrine: [
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_CACHE",
+    "NO_FAKE_CACHE_HIT_RATE",
+    "NO_FAKE_BANDWIDTH",
+    "NO_FAKE_L3",
+    "NO_FAKE_HBM_CACHE",
+    "NO_FAKE_KV_CACHE",
+    "UNAVAILABLE_IF_NOT_DETECTED"
+  ],
+  cache_domains: [
+    "CPU_CACHE",
+    "TLB_CACHE",
+    "V8_NODE_CACHE",
+    "OS_PAGE_CACHE",
+    "FILESYSTEM_CACHE",
+    "STORAGE_CACHE",
+    "NETWORK_BUFFER_CACHE",
+    "GPU_CACHE",
+    "HPC_CACHE",
+    "SOLVER_CACHE",
+    "AI_KV_CACHE",
+    "CODEC_CACHE",
+    "DATABASE_CACHE",
+    "PROTOTYPE_CACHE",
+    "LEDGER_CACHE"
+  ],
+  honesty:
+    "This layer compiles cache memory terms and detects real exposed cache information. Solver/cache hit metrics are measured only if the route computes them."
+};
+
+const DICT_CACHE_MEMORY_SOLVER = {
+  version: "DICT_CACHE_MEMORY_SOLVER_V1",
+  mode: "CACHE_MEMORY_ROUTING_REAL_OR_UNAVAILABLE",
+  families: {
+    CPU_CACHE: {
+      keys: [
+        "l1 cache",
+        "l1d",
+        "l1i",
+        "l2 cache",
+        "l3 cache",
+        "llc",
+        "last level cache",
+        "cache line",
+        "cacheline",
+        "cache set",
+        "cache way",
+        "associativity",
+        "inclusive cache",
+        "exclusive cache",
+        "victim cache",
+        "write back cache",
+        "write through cache",
+        "write allocate",
+        "no write allocate",
+        "prefetcher",
+        "hardware prefetch",
+        "software prefetch",
+        "cache hit",
+        "cache miss",
+        "miss penalty",
+        "cache latency",
+        "cache bandwidth",
+        "cache coherence",
+        "mesi",
+        "moesi",
+        "false sharing",
+        "spatial locality",
+        "temporal locality"
+      ],
+      routes: [
+        "/api/cache-memory/cpu",
+        "/api/cache-memory/probe",
+        "/api/cache-memory/bench"
+      ],
+      solvers: [
+        "cpu_cache_detector",
+        "cache_locality_solver",
+        "false_sharing_guard",
+        "cache_pressure_analyzer"
+      ]
+    },
+
+    TLB_CACHE: {
+      keys: [
+        "tlb",
+        "itlb",
+        "dtlb",
+        "second level tlb",
+        "page walk",
+        "page table cache",
+        "hugepage tlb",
+        "huge pages",
+        "transparent huge pages",
+        "thp",
+        "translation cache",
+        "address translation",
+        "tlb miss",
+        "tlb shootdown"
+      ],
+      routes: [
+        "/api/cache-memory/tlb",
+        "/api/cache-memory/probe"
+      ],
+      solvers: [
+        "tlb_pressure_solver",
+        "hugepage_classifier",
+        "page_walk_detector"
+      ]
+    },
+
+    V8_NODE_CACHE: {
+      keys: [
+        "v8 cache",
+        "node cache",
+        "require cache",
+        "module cache",
+        "code cache",
+        "inline cache",
+        "hidden class",
+        "shape cache",
+        "isolate cache",
+        "compile cache",
+        "jit cache",
+        "old space",
+        "new space",
+        "map space",
+        "code space",
+        "large object space",
+        "arraybuffer cache",
+        "buffer pool",
+        "worker cache",
+        "event loop cache"
+      ],
+      routes: [
+        "/api/cache-memory/node",
+        "/api/cache-memory/runtime"
+      ],
+      solvers: [
+        "node_cache_inspector",
+        "v8_heap_cache_solver",
+        "module_cache_reporter"
+      ]
+    },
+
+    OS_PAGE_CACHE: {
+      keys: [
+        "page cache",
+        "buffer cache",
+        "linux page cache",
+        "standby cache",
+        "cached memory",
+        "dirty pages",
+        "writeback",
+        "drop caches",
+        "readahead",
+        "mmap cache",
+        "file-backed cache",
+        "anonymous memory",
+        "slab cache",
+        "sreclaimable",
+        "sunreclaim",
+        "inode cache",
+        "dentry cache"
+      ],
+      routes: [
+        "/api/cache-memory/os-page",
+        "/api/cache-memory/probe"
+      ],
+      solvers: [
+        "page_cache_detector",
+        "dirty_page_guard",
+        "slab_cache_analyzer"
+      ]
+    },
+
+    FILESYSTEM_CACHE: {
+      keys: [
+        "filesystem cache",
+        "fs cache",
+        "vfs cache",
+        "inode cache",
+        "dentry cache",
+        "metadata cache",
+        "journal cache",
+        "write ahead cache",
+        "read ahead cache",
+        "zfs arc",
+        "zfs l2arc",
+        "btrfs cache",
+        "xfs cache",
+        "ext4 cache",
+        "lustre cache",
+        "gpfs cache",
+        "nfs cache",
+        "ceph cache"
+      ],
+      routes: [
+        "/api/cache-memory/filesystem",
+        "/api/cache-memory/probe"
+      ],
+      solvers: [
+        "filesystem_cache_classifier",
+        "metadata_cache_solver",
+        "parallel_fs_cache_router"
+      ]
+    }
+  },
+  guards: {
+    REAL_ONLY: true,
+    NO_FAKE_CACHE: true,
+    NO_FAKE_HIT_RATE: true,
+    NO_FAKE_L3: true,
+    PROTOTYPE_CACHE_TERMS_ARE_VOCABULARY_UNLESS_DETECTED: true
+  }
+};
+
+/* ============================================================
+   CACHE MEMORY DICT EXTENSIONS
+============================================================ */
+
+DICT_CACHE_MEMORY_SOLVER.families.STORAGE_CACHE = {
+  keys: [
+    "ssd cache",
+    "nvme cache",
+    "dram cache",
+    "slc cache",
+    "write cache",
+    "read cache",
+    "controller cache",
+    "disk cache",
+    "raid cache",
+    "raid controller cache",
+    "bcache",
+    "dm-cache",
+    "lvm cache",
+    "zram",
+    "zswap",
+    "tmpfs",
+    "ramdisk",
+    "primocache",
+    "fancycache",
+    "directstorage",
+    "storage class memory cache",
+    "optane cache",
+    "3d xpoint cache",
+    "io_uring buffer cache",
+    "queue depth cache",
+    "hot data cache",
+    "cold data cache"
+  ],
+  routes: [
+    "/api/cache-memory/storage",
+    "/api/cache-memory/probe"
+  ],
+  solvers: [
+    "storage_cache_detector",
+    "hot_cold_cache_router",
+    "io_cache_pressure_solver"
+  ]
+};
+
+DICT_CACHE_MEMORY_SOLVER.families.NETWORK_BUFFER_CACHE = {
+  keys: [
+    "socket buffer",
+    "tcp send buffer",
+    "tcp receive buffer",
+    "udp buffer",
+    "rx ring",
+    "tx ring",
+    "nic ring buffer",
+    "packet cache",
+    "skb cache",
+    "xdp cache",
+    "dpdk hugepage cache",
+    "netmap buffer",
+    "zero copy buffer",
+    "sendfile cache",
+    "splice cache",
+    "tls session cache",
+    "dns cache",
+    "http cache",
+    "websocket buffer",
+    "backpressure buffer"
+  ],
+  routes: [
+    "/api/cache-memory/network",
+    "/api/cache-memory/probe"
+  ],
+  solvers: [
+    "network_buffer_cache_solver",
+    "socket_backpressure_guard",
+    "zero_copy_cache_classifier"
+  ]
+};
+
+DICT_CACHE_MEMORY_SOLVER.families.GPU_CACHE = {
+  keys: [
+    "gpu l1 cache",
+    "gpu l2 cache",
+    "texture cache",
+    "constant cache",
+    "shared memory",
+    "cuda shared memory",
+    "cuda l2",
+    "rocm cache",
+    "hip cache",
+    "tensor cache",
+    "tensor core cache",
+    "vram cache",
+    "hbm cache",
+    "unified memory cache",
+    "managed memory cache",
+    "bar1 cache",
+    "resizable bar cache",
+    "nvlink cache",
+    "peer memory cache",
+    "tile cache",
+    "shader cache",
+    "pipeline cache"
+  ],
+  routes: [
+    "/api/cache-memory/gpu",
+    "/api/cache-memory/probe"
+  ],
+  solvers: [
+    "gpu_cache_detector",
+    "vram_cache_classifier",
+    "shader_pipeline_cache_reporter"
+  ]
+};
+
+DICT_CACHE_MEMORY_SOLVER.families.HPC_CACHE = {
+  keys: [
+    "mpi cache",
+    "collective cache",
+    "allreduce cache",
+    "halo cache",
+    "domain decomposition cache",
+    "rdma cache",
+    "registered memory cache",
+    "memory registration cache",
+    "ucx cache",
+    "libfabric cache",
+    "ofi cache",
+    "verbs cache",
+    "rkey cache",
+    "lkey cache",
+    "one-sided cache",
+    "rma cache",
+    "checkpoint cache",
+    "burst buffer cache",
+    "parallel filesystem cache",
+    "lustre cache",
+    "gpfs cache",
+    "daos cache",
+    "node local cache",
+    "scratch cache"
+  ],
+  routes: [
+    "/api/cache-memory/hpc",
+    "/api/cache-memory/probe"
+  ],
+  solvers: [
+    "hpc_transport_cache_detector",
+    "rdma_cache_classifier",
+    "checkpoint_cache_solver"
+  ]
+};
+
+DICT_CACHE_MEMORY_SOLVER.families.SOLVER_CACHE = {
+  keys: [
+    "solver cache",
+    "result cache",
+    "memoization cache",
+    "memo table",
+    "dynamic programming cache",
+    "dp table",
+    "transposition table",
+    "visited cache",
+    "state cache",
+    "branch cache",
+    "beam cache",
+    "frontier cache",
+    "priority queue cache",
+    "job cache",
+    "batch cache",
+    "micro-batch cache",
+    "trace cache",
+    "repair cache",
+    "rollback cache",
+    "checkpoint cache",
+    "dedup cache",
+    "hash cache"
+  ],
+  routes: [
+    "/api/cache-memory/solver",
+    "/api/cache-memory/classify",
+    "/api/cache-memory/bench"
+  ],
+  solvers: [
+    "memoization_policy_solver",
+    "result_cache_controller",
+    "solver_cache_hit_benchmark"
+  ]
+};
+
+DICT_CACHE_MEMORY_SOLVER.families.AI_KV_CACHE = {
+  keys: [
+    "kv cache",
+    "key value cache",
+    "attention cache",
+    "context cache",
+    "prompt cache",
+    "prefix cache",
+    "semantic cache",
+    "embedding cache",
+    "vector cache",
+    "rag cache",
+    "retrieval cache",
+    "token cache",
+    "logit cache",
+    "activation cache",
+    "expert cache",
+    "moe cache",
+    "router cache",
+    "lora cache",
+    "adapter cache",
+    "gguf cache",
+    "safetensors cache",
+    "speculative decoding cache",
+    "draft model cache"
+  ],
+  routes: [
+    "/api/cache-memory/ai-kv",
+    "/api/cache-memory/classify"
+  ],
+  solvers: [
+    "kv_cache_classifier",
+    "context_cache_policy_solver",
+    "semantic_cache_router"
+  ]
+};
+
+DICT_CACHE_MEMORY_SOLVER.families.CODEC_CACHE = {
+  keys: [
+    "codec cache",
+    "decode cache",
+    "encode cache",
+    "transcode cache",
+    "frame cache",
+    "packet cache",
+    "gop cache",
+    "bitstream cache",
+    "audio buffer cache",
+    "video buffer cache",
+    "image tile cache",
+    "ffmpeg cache",
+    "filtergraph cache",
+    "resample cache",
+    "scaler cache",
+    "webcodec cache",
+    "wasm codec cache"
+  ],
+  routes: [
+    "/api/cache-memory/codec",
+    "/api/cache-memory/classify"
+  ],
+  solvers: [
+    "codec_cache_router",
+    "frame_buffer_cache_solver",
+    "transcode_cache_guard"
+  ]
+};
+
+DICT_CACHE_MEMORY_SOLVER.families.PROTOTYPE_CACHE = {
+  keys: [
+    "cxl cache",
+    "cxl.cache",
+    "cxl.mem cache",
+    "memory pooling cache",
+    "fabric cache",
+    "near memory cache",
+    "processing in memory cache",
+    "pim cache",
+    "computational memory cache",
+    "memristor cache",
+    "mram cache",
+    "reram cache",
+    "pcm cache",
+    "persistent memory cache",
+    "photonic cache",
+    "neuromorphic cache",
+    "wafer scale cache",
+    "dataflow cache",
+    "systolic cache",
+    "scratchpad memory",
+    "software managed cache"
+  ],
+  routes: [
+    "/api/cache-memory/prototype",
+    "/api/cache-memory/probe"
+  ],
+  solvers: [
+    "prototype_cache_vocabulary_router",
+    "cxl_cache_detector",
+    "scratchpad_cache_classifier"
+  ]
+};
+
+DICT_CACHE_MEMORY_SOLVER.families.LEDGER_CACHE = {
+  keys: [
+    "ledger cache",
+    "audit cache",
+    "jsonl cache",
+    "event cache",
+    "telemetry cache",
+    "metrics cache",
+    "route cache",
+    "health cache",
+    "snapshot cache",
+    "journal cache",
+    "commit log cache",
+    "wal cache",
+    "append only cache",
+    "trace compaction cache",
+    "runtime cache",
+    "module registry cache"
+  ],
+  routes: [
+    "/api/cache-memory/ledger",
+    "/api/cache-memory/classify"
+  ],
+  solvers: [
+    "ledger_cache_policy",
+    "event_cache_compactor",
+    "runtime_cache_ttl_solver"
+  ]
+};
+
+const CACHE_MEMORY_POLICIES = {
+  version: "CACHE_MEMORY_POLICIES_V1",
+  policies: {
+    CPU_CACHE_LOCALITY: {
+      target: "increase locality, reduce cache misses",
+      actions: [
+        "prefer TypedArray and contiguous buffers",
+        "batch small operations",
+        "avoid random object graphs in hot loops",
+        "reduce false sharing between workers",
+        "reuse hot arrays instead of reallocating"
+      ]
+    },
+    TTL_RUNTIME_CACHE: {
+      target: "avoid stale data and useless recomputation",
+      actions: [
+        "use short TTL for live metrics",
+        "use longer TTL for static probes",
+        "tag cached values with age",
+        "never hide unavailable status behind cache"
+      ]
+    },
+    SOLVER_CACHE: {
+      target: "memoize useful states without memory explosion",
+      actions: [
+        "cap max entries",
+        "evict low-value states",
+        "deduplicate equivalent traces",
+        "separate hot working cache from audit ledger"
+      ]
+    },
+    AI_KV_CACHE: {
+      target: "classify AI context cache without fake intelligence",
+      actions: [
+        "track token/context cache as software state",
+        "do not claim infinite context",
+        "separate semantic cache from proof",
+        "clear stale prompt cache"
+      ]
+    },
+    STORAGE_CACHE: {
+      target: "separate memory cache from persistent storage",
+      actions: [
+        "detect page cache and tmpfs",
+        "avoid destructive drop-cache operations",
+        "stream large files",
+        "measure IO before/after when possible"
+      ]
+    }
+  }
+};
+
+function cacheMemNum(x, d = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
+
+function cacheMemMB(x) {
+  return +(cacheMemNum(x) / 1048576).toFixed(3);
+}
+
+function cacheMemGB(x) {
+  return +(cacheMemNum(x) / 1073741824).toFixed(3);
+}
+
+function cacheMemoryClassifyText(input) {
+  const text = String(input || "").toLowerCase();
+  const hits = [];
+
+  for (const [family, cfg] of Object.entries(DICT_CACHE_MEMORY_SOLVER.families)) {
+    let score = 0;
+    const matched = [];
+
+    for (const key of cfg.keys || []) {
+      if (text.includes(String(key).toLowerCase())) {
+        score++;
+        matched.push(key);
+      }
+    }
+
+    if (score > 0) {
+      hits.push({
+        family,
+        score,
+        matched,
+        routes: cfg.routes,
+        solvers: cfg.solvers
+      });
+    }
+  }
+
+  return hits.sort((a, b) => b.score - a.score);
+       }
+
+/* ============================================================
+   CACHE MEMORY REAL PROBES
+============================================================ */
+
+async function cacheMemoryCpuProbe() {
+  const cmds = [
+    "lscpu -C 2>/dev/null || echo lscpu_cache_unavailable",
+    "getconf LEVEL1_DCACHE_SIZE 2>/dev/null || echo l1d_unavailable",
+    "getconf LEVEL1_ICACHE_SIZE 2>/dev/null || echo l1i_unavailable",
+    "getconf LEVEL2_CACHE_SIZE 2>/dev/null || echo l2_unavailable",
+    "getconf LEVEL3_CACHE_SIZE 2>/dev/null || echo l3_unavailable",
+    "cat /sys/devices/system/cpu/cpu0/cache/index*/size 2>/dev/null || true",
+    "cat /sys/devices/system/cpu/cpu0/cache/index*/type 2>/dev/null || true",
+    "cat /sys/devices/system/cpu/cpu0/cache/index*/coherency_line_size 2>/dev/null || true"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 8000)));
+
+  return {
+    time: now(),
+    layer: CACHE_MEMORY_SOLVER.name,
+    cpu_cache_status:
+      /lscpu_cache_unavailable|unavailable/i.test(out[0].out || "")
+        ? "UNAVAILABLE_OR_PARTIAL"
+        : "REAL_CPU_CACHE_INFO_DETECTED",
+    lscpu_cache: safeText(out[0].out, 12000),
+    getconf: {
+      l1d: safeText(out[1].out, 2000),
+      l1i: safeText(out[2].out, 2000),
+      l2: safeText(out[3].out, 2000),
+      l3: safeText(out[4].out, 2000)
+    },
+    sysfs_cache: {
+      sizes: safeText(out[5].out, 4000),
+      types: safeText(out[6].out, 4000),
+      line_sizes: safeText(out[7].out, 4000)
+    },
+    honesty:
+      "CPU cache data is real only if exposed by lscpu/getconf/sysfs. Containers may hide details."
+  };
+}
+
+async function cacheMemoryRuntimeProbe() {
+  const v8 = require("v8");
+  const mu = process.memoryUsage();
+  const hs = v8.getHeapStatistics();
+
+  let moduleCacheSize = null;
+  try {
+    moduleCacheSize = Object.keys(require.cache || {}).length;
+  } catch (e) {
+    moduleCacheSize = null;
+  }
+
+  return {
+    time: now(),
+    layer: CACHE_MEMORY_SOLVER.name,
+    node_cache_status: "REAL_NODE_RUNTIME_CACHE_INFO",
+    require_cache_entries: moduleCacheSize,
+    cache_map_entries: typeof CACHE !== "undefined" && CACHE && typeof CACHE.size === "number"
+      ? CACHE.size
+      : null,
+    jobs_cache_entries: typeof JOBS !== "undefined" && JOBS && typeof JOBS.size === "number"
+      ? JOBS.size
+      : null,
+    process_memory: {
+      rss_MB: cacheMemMB(mu.rss),
+      heap_total_MB: cacheMemMB(mu.heapTotal),
+      heap_used_MB: cacheMemMB(mu.heapUsed),
+      external_MB: cacheMemMB(mu.external),
+      arrayBuffers_MB: cacheMemMB(mu.arrayBuffers || 0)
+    },
+    v8_heap: {
+      total_heap_size_MB: cacheMemMB(hs.total_heap_size),
+      used_heap_size_MB: cacheMemMB(hs.used_heap_size),
+      heap_size_limit_MB: cacheMemMB(hs.heap_size_limit),
+      total_physical_size_MB: cacheMemMB(hs.total_physical_size)
+    },
+    honesty:
+      "Runtime cache reports Node/V8/module/cache-map state. It does not expose CPU L1/L2 hit rates."
+  };
+}
+
+async function cacheMemoryOsPageProbe() {
+  const cmds = [
+    "cat /proc/meminfo 2>/dev/null | grep -Ei 'Cached|Buffers|Dirty|Writeback|Slab|SReclaimable|SUnreclaim|Mapped|AnonPages' || echo meminfo_cache_unavailable",
+    "free -h 2>/dev/null || echo free_unavailable",
+    "vmstat -s 2>/dev/null | grep -Ei 'cache|buffer|swap|page' | head -80 || true"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 8000)));
+
+  return {
+    time: now(),
+    layer: CACHE_MEMORY_SOLVER.name,
+    os_page_cache_status:
+      /meminfo_cache_unavailable/i.test(out[0].out || "")
+        ? "UNAVAILABLE_NOT_DETECTED"
+        : "REAL_OS_PAGE_CACHE_INFO_DETECTED",
+    meminfo_cache: safeText(out[0].out, 12000),
+    free: safeText(out[1].out, 8000),
+    vmstat_cache: safeText(out[2].out, 12000),
+    honesty:
+      "OS page cache comes from /proc/meminfo/free/vmstat when available. No drop-cache operation is executed."
+  };
+}
+
+async function cacheMemoryStorageProbe() {
+  const cmds = [
+    "lsblk -o NAME,TYPE,SIZE,ROTA,DISC-MAX,DISC-GRAN,FSTYPE,MOUNTPOINT 2>/dev/null || echo lsblk_unavailable",
+    "df -hT 2>/dev/null || echo df_unavailable",
+    "mount 2>/dev/null | grep -Ei 'tmpfs|zfs|xfs|ext4|btrfs|lustre|gpfs|nfs|ceph' || true",
+    "cat /sys/block/*/queue/read_ahead_kb 2>/dev/null | head -40 || true"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 8000)));
+
+  return {
+    time: now(),
+    layer: CACHE_MEMORY_SOLVER.name,
+    storage_cache_status:
+      /lsblk_unavailable/i.test(out[0].out || "")
+        ? "UNAVAILABLE_OR_PARTIAL"
+        : "REAL_STORAGE_CACHE_CONTEXT_DETECTED",
+    block_devices: safeText(out[0].out, 12000),
+    filesystems: safeText(out[1].out, 12000),
+    mounts_cache_related: safeText(out[2].out, 12000),
+    read_ahead_kb: safeText(out[3].out, 4000),
+    honesty:
+      "Storage cache context is detected from block devices/filesystems/readahead. Controller cache may not be visible."
+  };
+}
+
+async function cacheMemoryNetworkProbe() {
+  const cmds = [
+    "ss -m 2>/dev/null | head -120 || echo ss_memory_unavailable",
+    "cat /proc/net/sockstat 2>/dev/null || echo sockstat_unavailable",
+    "sysctl net.core.rmem_max net.core.wmem_max net.ipv4.tcp_rmem net.ipv4.tcp_wmem 2>/dev/null || echo sysctl_net_cache_unavailable",
+    "ip -s link 2>/dev/null | head -120 || echo ip_stats_unavailable"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 8000)));
+
+  return {
+    time: now(),
+    layer: CACHE_MEMORY_SOLVER.name,
+    network_cache_status:
+      /ss_memory_unavailable|sockstat_unavailable/i.test((out[0].out || "") + (out[1].out || ""))
+        ? "UNAVAILABLE_OR_PARTIAL"
+        : "REAL_NETWORK_BUFFER_INFO_DETECTED",
+    socket_memory: safeText(out[0].out, 12000),
+    sockstat: safeText(out[1].out, 8000),
+    sysctl_buffers: safeText(out[2].out, 8000),
+    ip_link_stats: safeText(out[3].out, 12000),
+    honesty:
+      "Network buffer/cache data is OS-exposed only; user-space cannot infer all NIC internal caches."
+  };
+}
+
+async function cacheMemoryGpuProbe() {
+  const cmds = [
+    "nvidia-smi --query-gpu=name,memory.total,memory.used,memory.free,utilization.memory --format=csv,noheader 2>/dev/null || echo nvidia_smi_unavailable",
+    "nvidia-smi -q 2>/dev/null | grep -Ei 'L2|BAR1|Memory Usage|FB Memory' | head -100 || true",
+    "rocm-smi --showmeminfo vram 2>/dev/null || echo rocm_smi_unavailable",
+    "ls ~/.cache 2>/dev/null | grep -Ei 'nvidia|mesa|shader|vulkan|cuda|torch|huggingface' || true"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 10000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    layer: CACHE_MEMORY_SOLVER.name,
+    gpu_cache_status:
+      /nvidia_smi_unavailable|rocm_smi_unavailable/.test(raw)
+        ? "UNAVAILABLE_OR_PARTIAL"
+        : "REAL_GPU_MEMORY_TOOL_DETECTED",
+    nvidia_memory: safeText(out[0].out, 12000),
+    nvidia_cache_hints: safeText(out[1].out, 12000),
+    rocm_memory: safeText(out[2].out, 12000),
+    user_shader_caches: safeText(out[3].out, 8000),
+    honesty:
+      "GPU cache internals are rarely fully exposed. VRAM/BAR/shader cache hints are reported only if tools expose them."
+  };
+}
+
+async function cacheMemoryHpcProbe() {
+  const cmds = [
+    "which mpirun 2>/dev/null || which mpiexec 2>/dev/null || echo mpi_unavailable",
+    "ibv_devinfo 2>/dev/null | head -80 || echo ibverbs_unavailable",
+    "ucx_info -v 2>/dev/null || echo ucx_unavailable",
+    "fi_info 2>/dev/null | head -80 || echo libfabric_unavailable",
+    "df -hT 2>/dev/null | grep -Ei 'lustre|gpfs|beegfs|ceph|nfs' || true"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 10000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    layer: CACHE_MEMORY_SOLVER.name,
+    hpc_cache_status: /mpi_unavailable|ibverbs_unavailable|ucx_unavailable|libfabric_unavailable/.test(raw)
+      ? "UNAVAILABLE_OR_PARTIAL"
+      : "REAL_HPC_CACHE_TRANSPORT_HINTS_DETECTED",
+    mpi: safeText(out[0].out, 8000),
+    rdma: safeText(out[1].out, 12000),
+    ucx: safeText(out[2].out, 8000),
+    libfabric: safeText(out[3].out, 12000),
+    parallel_fs: safeText(out[4].out, 12000),
+    honesty:
+      "HPC cache terms are real only when MPI/RDMA/UCX/libfabric or parallel filesystem tools are detected."
+  };
+}
+
+function cacheMemoryLocalBench(size = 1000000, passes = 5) {
+  size = Math.min(Math.max(1024, cacheMemNum(size, 1000000)), 50000000);
+  passes = Math.min(Math.max(1, cacheMemNum(passes, 5)), 30);
+
+  const arr = new Float64Array(size);
+  for (let i = 0; i < size; i++) arr[i] = i % 1024;
+
+  const sequentialStart = Date.now();
+  let seqSum = 0;
+  for (let p = 0; p < passes; p++) {
+    for (let i = 0; i < size; i++) {
+      seqSum += arr[i];
+    }
+  }
+  const sequentialMs = Math.max(1, Date.now() - sequentialStart);
+
+  const stride = 64;
+  const randomLikeStart = Date.now();
+  let strideSum = 0;
+  for (let p = 0; p < passes; p++) {
+    for (let i = 0; i < size; i += stride) {
+      strideSum += arr[(i * 1315423911) % size];
+    }
+  }
+  const strideMs = Math.max(1, Date.now() - randomLikeStart);
+
+  return {
+    time: now(),
+    layer: CACHE_MEMORY_SOLVER.name,
+    benchmark: "LOCALITY_CACHE_MEMORY_BENCH",
+    size,
+    passes,
+    array_MB: cacheMemMB(size * 8),
+    sequential_scan_ms: sequentialMs,
+    random_like_stride_ms: strideMs,
+    sequential_items_per_sec: Math.round((size * passes) / (sequentialMs / 1000)),
+    stride_items_per_sec: Math.round(((size / stride) * passes) / (strideMs / 1000)),
+    locality_ratio_stride_vs_seq:
+      +(strideMs / sequentialMs).toFixed(3),
+    checksum_preview: +(seqSum + strideSum).toFixed(3),
+    honesty:
+      "This is a real local memory locality benchmark. It does not expose hardware cache hit rate directly."
+  };
+}
+
+/* ============================================================
+   CACHE MEMORY GLOBAL PROBE / CLASSIFIER / ROUTES
+============================================================ */
+
+async function cacheMemoryProbe() {
+  const [
+    cpu,
+    runtime,
+    osPage,
+    storage,
+    network,
+    gpu,
+    hpc
+  ] = await Promise.all([
+    cacheMemoryCpuProbe(),
+    cacheMemoryRuntimeProbe(),
+    cacheMemoryOsPageProbe(),
+    cacheMemoryStorageProbe(),
+    cacheMemoryNetworkProbe(),
+    cacheMemoryGpuProbe(),
+    cacheMemoryHpcProbe()
+  ]);
+
+  return {
+    time: now(),
+    layer: CACHE_MEMORY_SOLVER,
+    dict: DICT_CACHE_MEMORY_SOLVER,
+    policies: CACHE_MEMORY_POLICIES,
+    probes: {
+      cpu,
+      runtime,
+      os_page: osPage,
+      storage,
+      network,
+      gpu,
+      hpc
+    },
+    cache_pipeline: [
+      "classify_cache_term",
+      "detect_real_cache_exposure",
+      "separate_hardware_cache_vs_software_cache",
+      "apply_solver_cache_policy",
+      "measure_locality_when_requested",
+      "return_unavailable_when_absent"
+    ],
+    status_rule:
+      "Cache data is real only when exposed by OS/runtime/tools or measured by local benchmark. Supercomputer/prototype cache terms remain vocabulary unless detected."
+  };
+}
+
+async function cacheMemoryClassify(input) {
+  return {
+    time: now(),
+    input: safeText(input, 4000),
+    classification: cacheMemoryClassifyText(input),
+    dict_version: DICT_CACHE_MEMORY_SOLVER.version
+  };
+}
+
+async function cacheMemoryFamilyReport(familyName) {
+  const fam = String(familyName || "").toUpperCase();
+  const family = DICT_CACHE_MEMORY_SOLVER.families[fam];
+
+  if (!family) {
+    return {
+      time: now(),
+      ok: false,
+      error: "unknown_cache_family",
+      requested: familyName,
+      available_families: Object.keys(DICT_CACHE_MEMORY_SOLVER.families)
+    };
+  }
+
+  return {
+    time: now(),
+    family: fam,
+    dict_family: family,
+    policy: CACHE_MEMORY_POLICIES,
+    honesty:
+      "Family report is vocabulary/routing. Use /api/cache-memory/probe for real detection and /api/cache-memory/bench for measured locality."
+  };
+}
+
+/* API ROUTES — additive */
+app.get("/api/cache-memory", async (req, res) => {
+  res.json({
+    time: now(),
+    layer: CACHE_MEMORY_SOLVER,
+    dict: DICT_CACHE_MEMORY_SOLVER,
+    policies: CACHE_MEMORY_POLICIES
+  });
+});
+
+app.get("/api/cache-memory/dict", async (req, res) => {
+  res.json(DICT_CACHE_MEMORY_SOLVER);
+});
+
+app.get("/api/cache-memory/policies", async (req, res) => {
+  res.json(CACHE_MEMORY_POLICIES);
+});
+
+app.get("/api/cache-memory/probe", async (req, res) => {
+  res.json(await cacheMemoryProbe());
+});
+
+app.get("/api/cache-memory/cpu", async (req, res) => {
+  res.json(await cacheMemoryCpuProbe());
+});
+
+app.get("/api/cache-memory/runtime", async (req, res) => {
+  res.json(await cacheMemoryRuntimeProbe());
+});
+
+app.get("/api/cache-memory/node", async (req, res) => {
+  res.json(await cacheMemoryRuntimeProbe());
+});
+
+app.get("/api/cache-memory/os-page", async (req, res) => {
+  res.json(await cacheMemoryOsPageProbe());
+});
+
+app.get("/api/cache-memory/storage", async (req, res) => {
+  res.json(await cacheMemoryStorageProbe());
+});
+
+app.get("/api/cache-memory/network", async (req, res) => {
+  res.json(await cacheMemoryNetworkProbe());
+});
+
+app.get("/api/cache-memory/gpu", async (req, res) => {
+  res.json(await cacheMemoryGpuProbe());
+});
+
+app.get("/api/cache-memory/hpc", async (req, res) => {
+  res.json(await cacheMemoryHpcProbe());
+});
+
+app.get("/api/cache-memory/bench", async (req, res) => {
+  res.json(
+    cacheMemoryLocalBench(
+      req.query.size || 1000000,
+      req.query.passes || 5
+    )
+  );
+});
+
+app.get("/api/cache-memory/classify", async (req, res) => {
+  res.json(await cacheMemoryClassify(req.query.q || req.query.text || ""));
+});
+
+app.post("/api/cache-memory/classify", async (req, res) => {
+  res.json(await cacheMemoryClassify(req.body && (req.body.q || req.body.text) || ""));
+});
+
+app.get("/api/cache-memory/tlb", async (req, res) => {
+  res.json(await cacheMemoryFamilyReport("TLB_CACHE"));
+});
+
+app.get("/api/cache-memory/filesystem", async (req, res) => {
+  res.json(await cacheMemoryFamilyReport("FILESYSTEM_CACHE"));
+});
+
+app.get("/api/cache-memory/solver", async (req, res) => {
+  res.json(await cacheMemoryFamilyReport("SOLVER_CACHE"));
+});
+
+app.get("/api/cache-memory/ai-kv", async (req, res) => {
+  res.json(await cacheMemoryFamilyReport("AI_KV_CACHE"));
+});
+
+app.get("/api/cache-memory/codec", async (req, res) => {
+  res.json(await cacheMemoryFamilyReport("CODEC_CACHE"));
+});
+
+app.get("/api/cache-memory/prototype", async (req, res) => {
+  res.json(await cacheMemoryFamilyReport("PROTOTYPE_CACHE"));
+});
+
+app.get("/api/cache-memory/ledger", async (req, res) => {
+  res.json(await cacheMemoryFamilyReport("LEDGER_CACHE"));
+});
+
+/* Optional registry hook */
+try {
+  if (typeof moduleRegistry === "function") {
+    const __moduleRegistryOriginal_CACHE_MEMORY = moduleRegistry;
+
+    moduleRegistry = function moduleRegistryWithCacheMemory() {
+      const base = __moduleRegistryOriginal_CACHE_MEMORY();
+
+      return {
+        ...base,
+        cache_memory_solver: {
+          layer: CACHE_MEMORY_SOLVER,
+          dict: DICT_CACHE_MEMORY_SOLVER,
+          policies: CACHE_MEMORY_POLICIES,
+          routes: [
+            "/api/cache-memory",
+            "/api/cache-memory/dict",
+            "/api/cache-memory/policies",
+            "/api/cache-memory/probe",
+            "/api/cache-memory/cpu",
+            "/api/cache-memory/runtime",
+            "/api/cache-memory/os-page",
+            "/api/cache-memory/storage",
+            "/api/cache-memory/network",
+            "/api/cache-memory/gpu",
+            "/api/cache-memory/hpc",
+            "/api/cache-memory/bench",
+            "/api/cache-memory/classify",
+            "/api/cache-memory/solver",
+            "/api/cache-memory/ai-kv",
+            "/api/cache-memory/codec",
+            "/api/cache-memory/prototype",
+            "/api/cache-memory/ledger"
+          ]
+        }
+      };
+    };
+  }
+} catch (e) {
+  console.warn("CACHE_MEMORY registry hook unavailable:", e.message);
+}
+
+/* Optional UI buttons — add inside existing .tabs block */
+
+/*
+<button onclick="load('/api/cache-memory')">CACHE MEMORY</button>
+<button onclick="load('/api/cache-memory/dict')">DICT CACHE</button>
+<button onclick="load('/api/cache-memory/probe')">CACHE PROBE</button>
+<button onclick="load('/api/cache-memory/cpu')">CPU CACHE</button>
+<button onclick="load('/api/cache-memory/runtime')">NODE CACHE</button>
+<button onclick="load('/api/cache-memory/os-page')">PAGE CACHE</button>
+<button onclick="load('/api/cache-memory/storage')">STORAGE CACHE</button>
+<button onclick="load('/api/cache-memory/network')">NET CACHE</button>
+<button onclick="load('/api/cache-memory/gpu')">GPU CACHE</button>
+<button onclick="load('/api/cache-memory/hpc')">HPC CACHE</button>
+<button onclick="load('/api/cache-memory/bench?size=2000000&passes=5')">CACHE BENCH</button>
+*/
+
+/* ============================================================
+   TRILLIONS V11.6+ ADDITIVE STRATUM_SHA256_SOLVER LAYER
+   Additive only. Does NOT modify WORLD_HPC / HPC_SIMD /
+   CODEC_CPU / MEMORY_TERMS_CPU_SOLVER / CACHE_MEMORY_SOLVER.
+   Goal: compile Stratum, SHA256, pool, share, job and solver terms.
+   Doctrine: REAL_ONLY_OR_UNAVAILABLE + NO_FAKE_HASHRATE.
+============================================================ */
+
+const STRATUM_SHA256_SOLVER = {
+  name: "STRATUM_SHA256_SOLVER",
+  version: "V11_6_STRATUM_SHA256_DICT_PROTOCOL_SOLVER",
+  additive_only: true,
+  does_not_touch: [
+    "WORLD_HPC",
+    "HPC_ZETA",
+    "HPC_SIMD",
+    "CODEC_CPU",
+    "MEMORY_TERMS_CPU_SOLVER",
+    "CACHE_MEMORY_SOLVER"
+  ],
+  doctrine: [
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_HASHRATE",
+    "NO_FAKE_POOL_CONNECTION",
+    "NO_FAKE_SHARE",
+    "NO_FAKE_MINING_REVENUE",
+    "NO_UNAUTHORIZED_MINING",
+    "MONITORING_AND_DICTIONARY_FIRST",
+    "USER_CONTROL_REQUIRED_FOR_REAL_POOL_CONNECTION"
+  ],
+  protocol_domains: [
+    "STRATUM_V1",
+    "STRATUM_V2",
+    "SHA256D",
+    "POOL_PROTOCOL",
+    "MINING_JOB",
+    "SHARE_VALIDATION",
+    "DIFFICULTY",
+    "EXTRANONCE",
+    "COINBASE_MERKLE",
+    "ASIC_GPU_CPU_ROUTING",
+    "NETWORK_LATENCY",
+    "MINER_TELEMETRY",
+    "SAFETY_LEDGER"
+  ],
+  honesty:
+    "This layer compiles Stratum/SHA256 terms and can measure local SHA256 throughput. It does not claim real mining, pool shares or revenue unless connected and verified by user-controlled endpoints."
+};
+
+const DICT_STRATUM_SHA256_SOLVER = {
+  version: "DICT_STRATUM_SHA256_SOLVER_V1",
+  mode: "STRATUM_PROTOCOL_ROUTING_REAL_OR_UNAVAILABLE",
+  families: {
+    STRATUM_CORE: {
+      keys: [
+        "stratum",
+        "stratum v1",
+        "stratum v2",
+        "mining.subscribe",
+        "mining.authorize",
+        "mining.notify",
+        "mining.set_difficulty",
+        "mining.set_extranonce",
+        "mining.submit",
+        "json-rpc",
+        "tcp pool",
+        "tls pool",
+        "pool endpoint",
+        "pool url",
+        "worker name",
+        "worker password",
+        "session id",
+        "subscription id"
+      ],
+      routes: [
+        "/api/stratum-sha256",
+        "/api/stratum-sha256/dict",
+        "/api/stratum-sha256/classify"
+      ],
+      solvers: [
+        "stratum_message_classifier",
+        "pool_endpoint_parser",
+        "stratum_state_router"
+      ]
+    },
+
+    SHA256D: {
+      keys: [
+        "sha256",
+        "sha-256",
+        "sha256d",
+        "double sha256",
+        "bitcoin hash",
+        "block header",
+        "midstate",
+        "nonce",
+        "nTime",
+        "nBits",
+        "version",
+        "previous block hash",
+        "merkle root",
+        "target",
+        "compact target",
+        "little endian",
+        "big endian",
+        "difficulty target"
+      ],
+      routes: [
+        "/api/stratum-sha256/sha256",
+        "/api/stratum-sha256/bench"
+      ],
+      solvers: [
+        "sha256d_local_benchmark",
+        "block_header_parser",
+        "target_classifier"
+      ]
+    },
+
+    MINING_JOB: {
+      keys: [
+        "job id",
+        "prevhash",
+        "coinb1",
+        "coinb2",
+        "merkle branch",
+        "version",
+        "nbits",
+        "ntime",
+        "clean jobs",
+        "job clean",
+        "new job",
+        "stale job",
+        "job difficulty",
+        "job target",
+        "work unit",
+        "work template",
+        "block template",
+        "getblocktemplate",
+        "gbt"
+      ],
+      routes: [
+        "/api/stratum-sha256/job",
+        "/api/stratum-sha256/classify"
+      ],
+      solvers: [
+        "mining_notify_parser",
+        "job_lifecycle_solver",
+        "stale_job_guard"
+      ]
+    },
+
+    SHARE_VALIDATION: {
+      keys: [
+        "share",
+        "accepted share",
+        "rejected share",
+        "stale share",
+        "low difficulty share",
+        "duplicate share",
+        "invalid nonce",
+        "share target",
+        "pool target",
+        "network target",
+        "submit result",
+        "reject reason",
+        "share latency",
+        "share difficulty",
+        "effective hashrate"
+      ],
+      routes: [
+        "/api/stratum-sha256/share",
+        "/api/stratum-sha256/classify"
+      ],
+      solvers: [
+        "share_status_classifier",
+        "reject_reason_analyzer",
+        "effective_hashrate_estimator"
+      ]
+    },
+
+    DIFFICULTY: {
+      keys: [
+        "difficulty",
+        "diff",
+        "vardiff",
+        "variable difficulty",
+        "set difficulty",
+        "pool difficulty",
+        "network difficulty",
+        "share difficulty",
+        "difficulty 1",
+        "bdiff",
+        "pdiff",
+        "target threshold",
+        "compact bits",
+        "nbits",
+        "target hex"
+      ],
+      routes: [
+        "/api/stratum-sha256/difficulty",
+        "/api/stratum-sha256/classify"
+      ],
+      solvers: [
+        "difficulty_classifier",
+        "target_threshold_router",
+        "vardiff_policy_solver"
+      ]
+    },
+
+    EXTRANONCE: {
+      keys: [
+        "extranonce",
+        "extranonce1",
+        "extranonce2",
+        "extranonce2_size",
+        "nonce range",
+        "nonce space",
+        "nonce rollover",
+        "coinbase nonce",
+        "worker nonce",
+        "session nonce",
+        "nonce partitioning"
+      ],
+      routes: [
+        "/api/stratum-sha256/extranonce",
+        "/api/stratum-sha256/classify"
+      ],
+      solvers: [
+        "extranonce_layout_parser",
+        "nonce_space_allocator",
+        "worker_nonce_partition_solver"
+      ]
+    }
+  },
+  guards: {
+    REAL_ONLY: true,
+    NO_FAKE_HASHRATE: true,
+    NO_FAKE_POOL_CONNECTION: true,
+    NO_FAKE_ACCEPTED_SHARE: true,
+    USER_CONTROL_REQUIRED_FOR_REAL_MINING: true,
+    BENCHMARK_LOCAL_ONLY_BY_DEFAULT: true
+  }
+};
+
+/* ============================================================
+   STRATUM / MINING DICT EXTENSIONS
+============================================================ */
+
+DICT_STRATUM_SHA256_SOLVER.families.POOLS = {
+  keys: [
+    "pool",
+    "mining pool",
+    "nicehash",
+    "foundry",
+    "antpool",
+    "f2pool",
+    "viabtc",
+    "slushpool",
+    "braiins pool",
+    "ocean pool",
+    "luxor",
+    "pool fee",
+    "payout",
+    "payout threshold",
+    "pps",
+    "fpPS",
+    "pplns",
+    "solo mining",
+    "merged mining",
+    "pool latency",
+    "pool failover",
+    "primary pool",
+    "backup pool",
+    "pool reconnect"
+  ],
+  routes: [
+    "/api/stratum-sha256/pools",
+    "/api/stratum-sha256/probe"
+  ],
+  solvers: [
+    "pool_registry_router",
+    "pool_failover_policy",
+    "latency_unavailable_guard"
+  ]
+};
+
+DICT_STRATUM_SHA256_SOLVER.families.COINBASE_MERKLE = {
+  keys: [
+    "coinbase",
+    "coinbase transaction",
+    "coinb1",
+    "coinb2",
+    "merkle",
+    "merkle root",
+    "merkle branch",
+    "merkle path",
+    "witness commitment",
+    "segwit",
+    "coinbase script",
+    "block subsidy",
+    "transaction fees",
+    "generation transaction"
+  ],
+  routes: [
+    "/api/stratum-sha256/merkle",
+    "/api/stratum-sha256/classify"
+  ],
+  solvers: [
+    "coinbase_merkle_classifier",
+    "merkle_branch_router",
+    "coinbase_template_parser"
+  ]
+};
+
+DICT_STRATUM_SHA256_SOLVER.families.MINER_HARDWARE = {
+  keys: [
+    "asic",
+    "antminer",
+    "whatsminer",
+    "avalon",
+    "bitmain",
+    "microbt",
+    "canaan",
+    "hashboard",
+    "control board",
+    "asic chip",
+    "asic frequency",
+    "asic voltage",
+    "asic temperature",
+    "fan speed",
+    "hashrate",
+    "th/s",
+    "gh/s",
+    "mh/s",
+    "w/th",
+    "efficiency",
+    "power limit",
+    "power draw",
+    "psu",
+    "firmware",
+    "braiins os",
+    "vnish"
+  ],
+  routes: [
+    "/api/stratum-sha256/hardware",
+    "/api/stratum-sha256/probe"
+  ],
+  solvers: [
+    "miner_hardware_classifier",
+    "asic_telemetry_router",
+    "efficiency_metric_guard"
+  ]
+};
+
+DICT_STRATUM_SHA256_SOLVER.families.CPU_GPU_ROUTING = {
+  keys: [
+    "cpu mining",
+    "gpu mining",
+    "cuda",
+    "opencl",
+    "rocm",
+    "metal",
+    "avx2",
+    "avx512",
+    "simd",
+    "worker_threads",
+    "thread pool",
+    "batch hash",
+    "hash pipeline",
+    "sha extension",
+    "intel sha",
+    "arm sha",
+    "wasm sha256",
+    "webcrypto",
+    "node crypto",
+    "openssl sha256"
+  ],
+  routes: [
+    "/api/stratum-sha256/cpu-gpu-routing",
+    "/api/stratum-sha256/bench"
+  ],
+  solvers: [
+    "cpu_sha256_router",
+    "simd_sha_probe",
+    "node_crypto_hash_benchmark"
+  ]
+};
+
+DICT_STRATUM_SHA256_SOLVER.families.MULTI_ALGO_REGISTRY = {
+  keys: [
+    "scrypt",
+    "kawpow",
+    "etchash",
+    "ethash",
+    "randomx",
+    "autolykos",
+    "equihash",
+    "zelhash",
+    "blake3",
+    "blake2b",
+    "kheavyhash",
+    "xelishash",
+    "sha3",
+    "groestl",
+    "neoscrypt",
+    "yescrypt",
+    "argon2",
+    "cryptonight"
+  ],
+  routes: [
+    "/api/stratum-sha256/multi-algo",
+    "/api/stratum-sha256/classify"
+  ],
+  solvers: [
+    "multi_algo_dictionary_router",
+    "algo_availability_classifier",
+    "unavailable_if_no_backend"
+  ]
+};
+
+DICT_STRATUM_SHA256_SOLVER.families.NETWORK_SESSION = {
+  keys: [
+    "tcp",
+    "tls",
+    "ssl",
+    "keepalive",
+    "socket",
+    "stratum socket",
+    "reconnect",
+    "heartbeat",
+    "ping",
+    "latency",
+    "dns",
+    "pool ip",
+    "pool port",
+    "proxy",
+    "stratum proxy",
+    "failover",
+    "timeout",
+    "backoff",
+    "disconnect",
+    "stale due latency"
+  ],
+  routes: [
+    "/api/stratum-sha256/network",
+    "/api/stratum-sha256/probe"
+  ],
+  solvers: [
+    "stratum_network_classifier",
+    "latency_guard",
+    "reconnect_policy_solver"
+  ]
+};
+
+DICT_STRATUM_SHA256_SOLVER.families.SAFETY_LEDGER = {
+  keys: [
+    "unauthorized mining",
+    "resource abuse",
+    "consent",
+    "wallet",
+    "address",
+    "private key",
+    "seed phrase",
+    "payout address",
+    "api key",
+    "pool password",
+    "safe mode",
+    "monitor only",
+    "benchmark only",
+    "no auto mining",
+    "human control",
+    "ledger",
+    "audit",
+    "hashrate claim",
+    "revenue claim"
+  ],
+  routes: [
+    "/api/stratum-sha256/safety",
+    "/api/stratum-sha256/classify"
+  ],
+  solvers: [
+    "mining_safety_guard",
+    "wallet_secret_guard",
+    "benchmark_only_policy"
+  ]
+};
+
+const STRATUM_SHA256_POLICIES = {
+  version: "STRATUM_SHA256_POLICIES_V1",
+  policies: {
+    MONITOR_ONLY_DEFAULT: {
+      target: "prevent unauthorized or accidental mining",
+      actions: [
+        "do not auto-connect to pools",
+        "do not start mining from endpoint discovery",
+        "require explicit user control for real pool connection",
+        "never expose wallet/private keys",
+        "label benchmark as local-only"
+      ]
+    },
+    HASHRATE_HONESTY: {
+      target: "avoid fake hashrate and fake shares",
+      actions: [
+        "measure local SHA256 only when benchmark route is called",
+        "separate H/s benchmark from pool hashrate",
+        "do not claim accepted shares without pool response",
+        "do not estimate revenue as fact"
+      ]
+    },
+    STRATUM_PARSER: {
+      target: "understand Stratum messages safely",
+      actions: [
+        "classify mining.subscribe",
+        "classify mining.authorize",
+        "classify mining.notify",
+        "classify mining.set_difficulty",
+        "classify mining.submit",
+        "parse JSON-RPC shape without sending credentials"
+      ]
+    },
+    NETWORK_SAFETY: {
+      target: "keep pool/network actions bounded",
+      actions: [
+        "DNS/TCP probe only if endpoint is explicitly supplied",
+        "timeout all probes",
+        "no credential submission in probe mode",
+        "no persistent mining loop"
+      ]
+    }
+  }
+};
+
+function stratumText(input) {
+  return String(input || "").trim();
+}
+
+function stratumLower(input) {
+  return stratumText(input).toLowerCase();
+}
+
+function stratumSafeNum(x, d = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
+
+function stratumHashRateUnit(hps) {
+  hps = stratumSafeNum(hps, 0);
+  if (hps >= 1e12) return { value: +(hps / 1e12).toFixed(6), unit: "TH/s" };
+  if (hps >= 1e9) return { value: +(hps / 1e9).toFixed(6), unit: "GH/s" };
+  if (hps >= 1e6) return { value: +(hps / 1e6).toFixed(6), unit: "MH/s" };
+  if (hps >= 1e3) return { value: +(hps / 1e3).toFixed(6), unit: "KH/s" };
+  return { value: +hps.toFixed(3), unit: "H/s" };
+}
+
+function stratumClassifyText(input) {
+  const text = stratumLower(input);
+  const hits = [];
+
+  for (const [family, cfg] of Object.entries(DICT_STRATUM_SHA256_SOLVER.families)) {
+    let score = 0;
+    const matched = [];
+
+    for (const key of cfg.keys || []) {
+      if (text.includes(String(key).toLowerCase())) {
+        score++;
+        matched.push(key);
+      }
+    }
+
+    if (score > 0) {
+      hits.push({
+        family,
+        score,
+        matched,
+        routes: cfg.routes,
+        solvers: cfg.solvers
+      });
+    }
+  }
+
+  return hits.sort((a, b) => b.score - a.score);
+         }
+
+/* ============================================================
+   STRATUM / SHA256 REAL PROBES + SAFE LOCAL BENCHMARK
+============================================================ */
+
+async function stratumSha256NodeCryptoProbe() {
+  let hashes = [];
+  try {
+    hashes = crypto.getHashes();
+  } catch (e) {
+    hashes = [];
+  }
+
+  const hasSha256 = hashes.includes("sha256");
+  const hasSha512 = hashes.includes("sha512");
+
+  return {
+    time: now(),
+    layer: STRATUM_SHA256_SOLVER.name,
+    node_crypto_status: hasSha256 ? "REAL_SHA256_AVAILABLE" : "UNAVAILABLE_SHA256_NOT_FOUND",
+    hashes_count: hashes.length,
+    sha256: hasSha256,
+    sha512: hasSha512,
+    blake2: hashes.some(x => x.includes("blake2")),
+    hashes_preview: hashes.slice(0, 80),
+    processor: "node_crypto_openssl_cpu",
+    honesty:
+      "SHA256 availability is detected from Node crypto/OpenSSL. This is not a mining claim."
+  };
+}
+
+async function stratumSha256CpuFlagsProbe() {
+  const cmds = [
+    "lscpu 2>/dev/null | grep -Ei 'sha|avx|sse|aes|flags' | head -80 || true",
+    "cat /proc/cpuinfo 2>/dev/null | grep -m1 -Ei 'flags|features' || true",
+    "openssl version 2>/dev/null || echo openssl_unavailable",
+    "openssl speed sha256 2>/dev/null | tail -20 || echo openssl_speed_unavailable"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 15000)));
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    layer: STRATUM_SHA256_SOLVER.name,
+    cpu_flags_status: raw ? "REAL_OR_PARTIAL_CPU_FLAG_SCAN" : "UNAVAILABLE_NOT_DETECTED",
+    detected_hints: {
+      sha_extensions: /\bsha_ni\b|\bsha\b|sha256/.test(raw),
+      avx2: /\bavx2\b/.test(raw),
+      avx512: /\bavx512/.test(raw),
+      aes: /\baes\b/.test(raw),
+      sse: /\bsse/.test(raw)
+    },
+    raw_cpu_flags: safeText(out[0].out + "\n" + out[1].out, 16000),
+    openssl_version: safeText(out[2].out, 4000),
+    openssl_speed_preview: safeText(out[3].out, 12000),
+    honesty:
+      "CPU/OpenSSL hints are informational. Node crypto may use optimized OpenSSL internally but direct ASIC/GPU mining is not claimed."
+  };
+}
+
+function stratumSha256dHex(hex) {
+  const b = Buffer.from(String(hex || ""), "hex");
+  const h1 = crypto.createHash("sha256").update(b).digest();
+  const h2 = crypto.createHash("sha256").update(h1).digest();
+  return h2.toString("hex");
+}
+
+function stratumSha256LocalBench(iterations = 100000) {
+  iterations = Math.min(Math.max(1000, stratumSafeNum(iterations, 100000)), 5000000);
+
+  const seed = crypto.randomBytes(80);
+  const started = Date.now();
+
+  let digest = null;
+  for (let i = 0; i < iterations; i++) {
+    seed.writeUInt32LE(i >>> 0, 76);
+    const h1 = crypto.createHash("sha256").update(seed).digest();
+    digest = crypto.createHash("sha256").update(h1).digest();
+  }
+
+  const ms = Math.max(1, Date.now() - started);
+  const hps = iterations / (ms / 1000);
+
+  return {
+    time: now(),
+    layer: STRATUM_SHA256_SOLVER.name,
+    benchmark: "LOCAL_SHA256D_CPU_NODE_CRYPTO",
+    iterations,
+    duration_ms: ms,
+    hashes_per_second: Math.round(hps),
+    formatted_hashrate: stratumHashRateUnit(hps),
+    last_digest_preview: digest ? digest.toString("hex").slice(0, 32) : null,
+    honesty:
+      "This is a local CPU/OpenSSL SHA256d benchmark. It is not ASIC hashrate, not pool hashrate and not accepted shares."
+  };
+}
+
+function stratumParseJsonRpcMessage(input) {
+  const raw = stratumText(input);
+  let parsed = null;
+  let error = null;
+
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    error = e.message;
+  }
+
+  if (!parsed) {
+    return {
+      ok: false,
+      error: "invalid_json_rpc",
+      parse_error: error,
+      raw_preview: safeText(raw, 2000),
+      classification: stratumClassifyText(raw)
+    };
+  }
+
+  const method = parsed.method || null;
+  const params = Array.isArray(parsed.params) ? parsed.params : [];
+  const id = Object.prototype.hasOwnProperty.call(parsed, "id") ? parsed.id : null;
+
+  let type = "unknown_json_rpc";
+  if (method === "mining.subscribe") type = "subscribe_request";
+  if (method === "mining.authorize") type = "authorize_request";
+  if (method === "mining.notify") type = "mining_job_notify";
+  if (method === "mining.set_difficulty") type = "difficulty_update";
+  if (method === "mining.set_extranonce") type = "extranonce_update";
+  if (method === "mining.submit") type = "share_submit";
+  if (method === "client.reconnect") type = "client_reconnect";
+  if (method === "client.show_message") type = "pool_message";
+
+  return {
+    ok: true,
+    type,
+    id,
+    method,
+    params_count: params.length,
+    params_preview: params.slice(0, 12),
+    classification: stratumClassifyText(raw + " " + method),
+    safety:
+      method === "mining.authorize" || method === "mining.submit"
+        ? "SENSITIVE: contains or may contain worker credentials/share data; do not log secrets publicly."
+        : "non_sensitive_or_job_metadata",
+    honesty:
+      "Parser classifies Stratum JSON-RPC messages locally. It does not send them to a pool."
+  };
+}
+
+function stratumParsePoolUrl(url) {
+  const raw = stratumText(url);
+
+  if (!raw) {
+    return {
+      ok: false,
+      error: "empty_pool_url"
+    };
+  }
+
+  let normalized = raw;
+  if (!/^[a-z]+:\/\//i.test(normalized)) {
+    normalized = "stratum+tcp://" + normalized;
+  }
+
+  try {
+    const u = new URL(normalized);
+
+    return {
+      ok: true,
+      raw,
+      normalized,
+      protocol: u.protocol.replace(":", ""),
+      hostname: u.hostname,
+      port: u.port ? Number(u.port) : null,
+      username_present: !!u.username,
+      password_present: !!u.password,
+      path: u.pathname,
+      tls_likely: /ssl|tls|stratum\+ssl|stratum\+tls/.test(u.protocol),
+      safety:
+        u.username || u.password
+          ? "URL contains credentials; avoid printing full URL in logs."
+          : "no_credentials_in_url",
+      honesty:
+        "Pool URL parser does not connect. It only classifies endpoint shape."
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e.message,
+      raw
+    };
+  }
+}
+
+async function stratumNetworkProbe(url) {
+  const parsed = stratumParsePoolUrl(url);
+
+  if (!parsed.ok) {
+    return {
+      time: now(),
+      layer: STRATUM_SHA256_SOLVER.name,
+      ok: false,
+      parsed,
+      status: "NO_ENDPOINT_PROVIDED_OR_INVALID",
+      honesty: "No network probe without explicit endpoint."
+    };
+  }
+
+  const host = parsed.hostname;
+  const port = parsed.port || (parsed.tls_likely ? 443 : 3333);
+
+  const cmd = `node -e "
+const net=require('net');
+const start=Date.now();
+const s=net.createConnection({host:${JSON.stringify(host)},port:${JSON.stringify(port)},timeout:5000},()=>{
+ console.log(JSON.stringify({ok:true,host:${JSON.stringify(host)},port:${JSON.stringify(port)},latency_ms:Date.now()-start}));
+ s.destroy();
+});
+s.on('timeout',()=>{console.log(JSON.stringify({ok:false,error:'timeout',host:${JSON.stringify(host)},port:${JSON.stringify(port)}}));s.destroy();});
+s.on('error',e=>{console.log(JSON.stringify({ok:false,error:e.message,host:${JSON.stringify(host)},port:${JSON.stringify(port)}}));});
+"`;
+
+  const r = await sh(cmd, 8000);
+
+  let tcp = null;
+  try {
+    tcp = JSON.parse(String(r.out || "").trim());
+  } catch (e) {
+    tcp = { ok: false, error: "tcp_probe_parse_failed", raw: safeText(r.out + "\n" + r.err, 4000) };
+  }
+
+  return {
+    time: now(),
+    layer: STRATUM_SHA256_SOLVER.name,
+    parsed_endpoint: {
+      protocol: parsed.protocol,
+      hostname: parsed.hostname,
+      port,
+      tls_likely: parsed.tls_likely
+    },
+    tcp_probe: tcp,
+    status: tcp.ok ? "REAL_TCP_ENDPOINT_REACHABLE" : "UNAVAILABLE_OR_UNREACHABLE",
+    safety: "TCP reachability only. No mining.subscribe, authorize or submit sent.",
+    honesty:
+      "This probe only opens a TCP socket to a user-supplied endpoint. It does not mine or authenticate."
+  };
+}
+
+/* ============================================================
+   STRATUM GLOBAL PROBE / CLASSIFIER / ROUTES
+============================================================ */
+
+async function stratumSha256Probe() {
+  const [nodeCrypto, flags] = await Promise.all([
+    stratumSha256NodeCryptoProbe(),
+    stratumSha256CpuFlagsProbe()
+  ]);
+
+  return {
+    time: now(),
+    layer: STRATUM_SHA256_SOLVER,
+    dict: DICT_STRATUM_SHA256_SOLVER,
+    policies: STRATUM_SHA256_POLICIES,
+    probes: {
+      node_crypto: nodeCrypto,
+      cpu_flags: flags
+    },
+    protocol_pipeline: [
+      "classify_stratum_or_sha256_term",
+      "parse_json_rpc_if_supplied",
+      "parse_pool_url_if_supplied",
+      "benchmark_local_sha256d_only_when_requested",
+      "network_probe_only_with_explicit_endpoint",
+      "never_claim_accepted_share_without_pool_response",
+      "never_claim_revenue_without verified external data"
+    ],
+    default_mode: "MONITORING_DICTIONARY_BENCHMARK_ONLY"
+  };
+}
+
+async function stratumFamilyReport(familyName) {
+  const fam = String(familyName || "").toUpperCase();
+  const family = DICT_STRATUM_SHA256_SOLVER.families[fam];
+
+  if (!family) {
+    return {
+      time: now(),
+      ok: false,
+      error: "unknown_stratum_family",
+      requested: familyName,
+      available_families: Object.keys(DICT_STRATUM_SHA256_SOLVER.families)
+    };
+  }
+
+  return {
+    time: now(),
+    family: fam,
+    dict_family: family,
+    policies: STRATUM_SHA256_POLICIES,
+    honesty:
+      "Family report is vocabulary/routing. It does not connect to a pool or submit shares."
+  };
+}
+
+async function stratumClassify(input) {
+  return {
+    time: now(),
+    input: safeText(input, 4000),
+    classification: stratumClassifyText(input),
+    dict_version: DICT_STRATUM_SHA256_SOLVER.version
+  };
+}
+
+/* API ROUTES — additive */
+app.get("/api/stratum-sha256", async (req, res) => {
+  res.json({
+    time: now(),
+    layer: STRATUM_SHA256_SOLVER,
+    dict: DICT_STRATUM_SHA256_SOLVER,
+    policies: STRATUM_SHA256_POLICIES
+  });
+});
+
+app.get("/api/stratum-sha256/dict", async (req, res) => {
+  res.json(DICT_STRATUM_SHA256_SOLVER);
+});
+
+app.get("/api/stratum-sha256/policies", async (req, res) => {
+  res.json(STRATUM_SHA256_POLICIES);
+});
+
+app.get("/api/stratum-sha256/probe", async (req, res) => {
+  res.json(await stratumSha256Probe());
+});
+
+app.get("/api/stratum-sha256/sha256", async (req, res) => {
+  res.json(await stratumSha256NodeCryptoProbe());
+});
+
+app.get("/api/stratum-sha256/cpu-flags", async (req, res) => {
+  res.json(await stratumSha256CpuFlagsProbe());
+});
+
+app.get("/api/stratum-sha256/bench", async (req, res) => {
+  res.json(stratumSha256LocalBench(req.query.iterations || 100000));
+});
+
+app.get("/api/stratum-sha256/classify", async (req, res) => {
+  res.json(await stratumClassify(req.query.q || req.query.text || ""));
+});
+
+app.post("/api/stratum-sha256/classify", async (req, res) => {
+  res.json(await stratumClassify(req.body && (req.body.q || req.body.text) || ""));
+});
+
+app.post("/api/stratum-sha256/parse-message", async (req, res) => {
+  res.json(stratumParseJsonRpcMessage(req.body && (req.body.message || req.body.raw) || ""));
+});
+
+app.get("/api/stratum-sha256/parse-pool", async (req, res) => {
+  res.json(stratumParsePoolUrl(req.query.url || ""));
+});
+
+app.get("/api/stratum-sha256/network-probe", async (req, res) => {
+  res.json(await stratumNetworkProbe(req.query.url || ""));
+});
+
+app.get("/api/stratum-sha256/core", async (req, res) => {
+  res.json(await stratumFamilyReport("STRATUM_CORE"));
+});
+
+app.get("/api/stratum-sha256/job", async (req, res) => {
+  res.json(await stratumFamilyReport("MINING_JOB"));
+});
+
+app.get("/api/stratum-sha256/share", async (req, res) => {
+  res.json(await stratumFamilyReport("SHARE_VALIDATION"));
+});
+
+app.get("/api/stratum-sha256/difficulty", async (req, res) => {
+  res.json(await stratumFamilyReport("DIFFICULTY"));
+});
+
+app.get("/api/stratum-sha256/extranonce", async (req, res) => {
+  res.json(await stratumFamilyReport("EXTRANONCE"));
+});
+
+app.get("/api/stratum-sha256/pools", async (req, res) => {
+  res.json(await stratumFamilyReport("POOLS"));
+});
+
+app.get("/api/stratum-sha256/merkle", async (req, res) => {
+  res.json(await stratumFamilyReport("COINBASE_MERKLE"));
+});
+
+app.get("/api/stratum-sha256/hardware", async (req, res) => {
+  res.json(await stratumFamilyReport("MINER_HARDWARE"));
+});
+
+app.get("/api/stratum-sha256/cpu-gpu-routing", async (req, res) => {
+  res.json(await stratumFamilyReport("CPU_GPU_ROUTING"));
+});
+
+app.get("/api/stratum-sha256/multi-algo", async (req, res) => {
+  res.json(await stratumFamilyReport("MULTI_ALGO_REGISTRY"));
+});
+
+app.get("/api/stratum-sha256/network", async (req, res) => {
+  res.json(await stratumFamilyReport("NETWORK_SESSION"));
+});
+
+app.get("/api/stratum-sha256/safety", async (req, res) => {
+  res.json(await stratumFamilyReport("SAFETY_LEDGER"));
+});
+
+/* Optional registry hook */
+try {
+  if (typeof moduleRegistry === "function") {
+    const __moduleRegistryOriginal_STRATUM_SHA256 = moduleRegistry;
+
+    moduleRegistry = function moduleRegistryWithStratumSha256() {
+      const base = __moduleRegistryOriginal_STRATUM_SHA256();
+
+      return {
+        ...base,
+        stratum_sha256_solver: {
+          layer: STRATUM_SHA256_SOLVER,
+          dict: DICT_STRATUM_SHA256_SOLVER,
+          policies: STRATUM_SHA256_POLICIES,
+          routes: [
+            "/api/stratum-sha256",
+            "/api/stratum-sha256/dict",
+            "/api/stratum-sha256/policies",
+            "/api/stratum-sha256/probe",
+            "/api/stratum-sha256/sha256",
+            "/api/stratum-sha256/cpu-flags",
+            "/api/stratum-sha256/bench",
+            "/api/stratum-sha256/classify",
+            "/api/stratum-sha256/parse-message",
+            "/api/stratum-sha256/parse-pool",
+            "/api/stratum-sha256/network-probe",
+            "/api/stratum-sha256/core",
+            "/api/stratum-sha256/job",
+            "/api/stratum-sha256/share",
+            "/api/stratum-sha256/difficulty",
+            "/api/stratum-sha256/extranonce",
+            "/api/stratum-sha256/pools",
+            "/api/stratum-sha256/merkle",
+            "/api/stratum-sha256/hardware",
+            "/api/stratum-sha256/cpu-gpu-routing",
+            "/api/stratum-sha256/multi-algo",
+            "/api/stratum-sha256/network",
+            "/api/stratum-sha256/safety"
+          ]
+        }
+      };
+    };
+  }
+} catch (e) {
+  console.warn("STRATUM_SHA256 registry hook unavailable:", e.message);
+}
+
+/* Optional UI buttons — add inside existing .tabs block */
+
+/*
+<button onclick="load('/api/stratum-sha256')">STRATUM SHA256</button>
+<button onclick="load('/api/stratum-sha256/dict')">DICT STRATUM</button>
+<button onclick="load('/api/stratum-sha256/probe')">STRATUM PROBE</button>
+<button onclick="load('/api/stratum-sha256/sha256')">SHA256 CPU</button>
+<button onclick="load('/api/stratum-sha256/cpu-flags')">SHA FLAGS</button>
+<button onclick="load('/api/stratum-sha256/bench?iterations=100000')">SHA BENCH</button>
+<button onclick="load('/api/stratum-sha256/core')">STRATUM CORE</button>
+<button onclick="load('/api/stratum-sha256/job')">MINING JOB</button>
+<button onclick="load('/api/stratum-sha256/share')">SHARES</button>
+<button onclick="load('/api/stratum-sha256/difficulty')">DIFFICULTY</button>
+<button onclick="load('/api/stratum-sha256/pools')">POOLS</button>
+<button onclick="load('/api/stratum-sha256/hardware')">ASIC HW</button>
+<button onclick="load('/api/stratum-sha256/safety')">SAFETY</button>
+*/
+
+/* ============================================================
+   TRILLIONS V11.6+ ADDITIVE PROCESSOR_CALC_TYPES_SOLVER LAYER
+   Additive only. Does NOT modify WORLD_HPC / HPC_SIMD /
+   CODEC_CPU / MEMORY_TERMS / CACHE_MEMORY / STRATUM.
+   Goal: compile all calculation types used by processors.
+   Doctrine: REAL_ONLY_OR_UNAVAILABLE + NO_FAKE_COMPUTE.
+============================================================ */
+
+const PROCESSOR_CALC_TYPES_SOLVER = {
+  name: "PROCESSOR_CALC_TYPES_SOLVER",
+  version: "V11_6_ALL_PROCESSOR_CALCULATION_TYPES_DICT",
+  additive_only: true,
+  does_not_touch: [
+    "WORLD_HPC",
+    "HPC_ZETA",
+    "HPC_SIMD",
+    "CODEC_CPU",
+    "MEMORY_TERMS_CPU_SOLVER",
+    "CACHE_MEMORY_SOLVER",
+    "STRATUM_SHA256_SOLVER"
+  ],
+  doctrine: [
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_COMPUTE",
+    "NO_FAKE_FLOPS",
+    "NO_FAKE_TOPS",
+    "NO_FAKE_GPU",
+    "NO_FAKE_NPU",
+    "NO_FAKE_FPGA",
+    "NO_FAKE_ASIC",
+    "NO_FAKE_QUANTUM",
+    "UNAVAILABLE_IF_NOT_DETECTED"
+  ],
+  calculation_domains: [
+    "INTEGER_ALU",
+    "FLOATING_POINT_FPU",
+    "SIMD_VECTOR",
+    "MATRIX_TENSOR",
+    "BITWISE_LOGIC",
+    "CRYPTO_HASH",
+    "MEMORY_ADDRESSING",
+    "BRANCH_CONTROL",
+    "DSP_SIGNAL",
+    "GPU_PARALLEL",
+    "NPU_AI_ACCEL",
+    "FPGA_RECONFIGURABLE",
+    "ASIC_FIXED_FUNCTION",
+    "WASM_VM",
+    "JIT_RUNTIME",
+    "HPC_DISTRIBUTED",
+    "GRAPH_SOLVER",
+    "NUMERIC_SOLVER",
+    "SYMBOLIC_SOLVER",
+    "CODEC_MEDIA",
+    "NETWORK_PACKET",
+    "STORAGE_IO",
+    "QUANTUM_OPTIONAL"
+  ],
+  honesty:
+    "This layer compiles processor calculation vocabulary and probes real local capabilities. Specialized accelerators are vocabulary unless detected."
+};
+
+const DICT_PROCESSOR_CALC_TYPES = {
+  version: "DICT_PROCESSOR_CALC_TYPES_V1",
+  mode: "PROCESSOR_CALCULATION_ROUTING_REAL_OR_UNAVAILABLE",
+  families: {
+    INTEGER_ALU: {
+      keys: [
+        "integer",
+        "int",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "add",
+        "sub",
+        "mul",
+        "div",
+        "mod",
+        "carry",
+        "overflow",
+        "saturating arithmetic",
+        "fixed point",
+        "bignum",
+        "bigint",
+        "arithmetic logic unit",
+        "alu"
+      ],
+      routes: [
+        "/api/processor-calc/integer",
+        "/api/processor-calc/bench",
+        "/api/processor-calc/classify"
+      ],
+      solvers: [
+        "integer_alu_classifier",
+        "bigint_benchmark",
+        "fixed_point_router"
+      ]
+    },
+
+    FLOATING_POINT_FPU: {
+      keys: [
+        "float",
+        "floating point",
+        "fp16",
+        "fp32",
+        "fp64",
+        "float16",
+        "float32",
+        "float64",
+        "half precision",
+        "single precision",
+        "double precision",
+        "bfloat16",
+        "bf16",
+        "fpu",
+        "fma",
+        "multiply add",
+        "sqrt",
+        "sin",
+        "cos",
+        "exp",
+        "log",
+        "denormal",
+        "nan",
+        "infinity",
+        "rounding mode",
+        "ieee754"
+      ],
+      routes: [
+        "/api/processor-calc/floating",
+        "/api/processor-calc/bench",
+        "/api/processor-calc/probe"
+      ],
+      solvers: [
+        "fpu_classifier",
+        "fma_loop_benchmark",
+        "floating_precision_router"
+      ]
+    },
+
+    SIMD_VECTOR: {
+      keys: [
+        "simd",
+        "vector",
+        "sse",
+        "sse2",
+        "sse3",
+        "ssse3",
+        "sse4",
+        "avx",
+        "avx2",
+        "avx512",
+        "neon",
+        "sve",
+        "sve2",
+        "rvv",
+        "fma",
+        "vector lane",
+        "vector width",
+        "packed arithmetic",
+        "typedarray",
+        "wasm simd",
+        "v128"
+      ],
+      routes: [
+        "/api/processor-calc/simd",
+        "/api/hpc-simd/probe",
+        "/api/hpc-simd/bench"
+      ],
+      solvers: [
+        "simd_flag_router",
+        "typedarray_vector_benchmark",
+        "wasm_simd_probe"
+      ]
+    },
+
+    MATRIX_TENSOR: {
+      keys: [
+        "matrix",
+        "tensor",
+        "gemm",
+        "sgemm",
+        "dgemm",
+        "matmul",
+        "dot product",
+        "convolution",
+        "tensor core",
+        "amx",
+        "xmx",
+        "matrix engine",
+        "npu",
+        "tpu",
+        "tops",
+        "int8 inference",
+        "fp16 inference",
+        "bf16 inference",
+        "systolic array",
+        "attention",
+        "transformer",
+        "ml accelerator"
+      ],
+      routes: [
+        "/api/processor-calc/tensor",
+        "/api/processor-calc/probe",
+        "/api/processor-calc/bench"
+      ],
+      solvers: [
+        "tensor_calc_classifier",
+        "matrix_benchmark",
+        "accelerator_availability_guard"
+      ]
+    },
+
+    BITWISE_LOGIC: {
+      keys: [
+        "bitwise",
+        "and",
+        "or",
+        "xor",
+        "not",
+        "shift",
+        "rotate",
+        "rol",
+        "ror",
+        "popcount",
+        "clz",
+        "ctz",
+        "bit scan",
+        "bitset",
+        "mask",
+        "bitmap",
+        "branchless",
+        "boolean algebra",
+        "logic gate",
+        "truth table"
+      ],
+      routes: [
+        "/api/processor-calc/bitwise",
+        "/api/processor-calc/bench",
+        "/api/processor-calc/classify"
+      ],
+      solvers: [
+        "bitwise_logic_classifier",
+        "branchless_calc_router",
+        "bitmap_solver"
+      ]
+    }
+  },
+  guards: {
+    REAL_ONLY: true,
+    NO_FAKE_COMPUTE: true,
+    NO_FAKE_ACCELERATOR: true,
+    NO_FAKE_TOPS: true,
+    NO_FAKE_FLOPS: true,
+    VOCABULARY_UNLESS_DETECTED: true
+  }
+};
+
+/* ============================================================
+   PROCESSOR CALC DICT EXTENSIONS
+============================================================ */
+
+DICT_PROCESSOR_CALC_TYPES.families.CRYPTO_HASH = {
+  keys: [
+    "sha256",
+    "sha256d",
+    "sha512",
+    "sha3",
+    "keccak",
+    "blake2",
+    "blake3",
+    "ripemd160",
+    "md5",
+    "aes",
+    "aes-ni",
+    "chacha20",
+    "poly1305",
+    "hmac",
+    "pbkdf2",
+    "scrypt",
+    "argon2",
+    "randomx",
+    "hash",
+    "digest",
+    "merkle",
+    "nonce",
+    "proof of work"
+  ],
+  routes: [
+    "/api/processor-calc/crypto",
+    "/api/stratum-sha256/bench",
+    "/api/stratum-sha256/probe"
+  ],
+  solvers: [
+    "crypto_hash_router",
+    "node_crypto_probe",
+    "pow_benchmark_guard"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.MEMORY_ADDRESSING = {
+  keys: [
+    "load",
+    "store",
+    "addressing",
+    "pointer",
+    "memory access",
+    "cache",
+    "tlb",
+    "page table",
+    "prefetch",
+    "stride",
+    "gather",
+    "scatter",
+    "aligned load",
+    "unaligned load",
+    "atomic",
+    "compare and swap",
+    "cas",
+    "memory barrier",
+    "fence",
+    "lock free",
+    "wait free"
+  ],
+  routes: [
+    "/api/processor-calc/memory-addressing",
+    "/api/cache-memory/bench",
+    "/api/memory-terms/probe"
+  ],
+  solvers: [
+    "memory_access_classifier",
+    "cache_locality_router",
+    "atomic_operation_guard"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.BRANCH_CONTROL = {
+  keys: [
+    "branch",
+    "jump",
+    "conditional",
+    "if",
+    "switch",
+    "branch prediction",
+    "misprediction",
+    "pipeline",
+    "speculation",
+    "out of order",
+    "ooo",
+    "superscalar",
+    "micro-op",
+    "decode",
+    "dispatch",
+    "retire",
+    "instruction level parallelism",
+    "ilp"
+  ],
+  routes: [
+    "/api/processor-calc/branch",
+    "/api/processor-calc/classify"
+  ],
+  solvers: [
+    "branch_control_classifier",
+    "pipeline_vocabulary_router",
+    "branchless_policy_solver"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.DSP_SIGNAL = {
+  keys: [
+    "dsp",
+    "signal processing",
+    "fft",
+    "ifft",
+    "dct",
+    "fir",
+    "iir",
+    "filter",
+    "convolution",
+    "correlation",
+    "resampling",
+    "audio processing",
+    "image processing",
+    "frequency domain",
+    "spectral",
+    "wavelet",
+    "phase",
+    "amplitude",
+    "iq samples",
+    "radio",
+    "sdr"
+  ],
+  routes: [
+    "/api/processor-calc/dsp",
+    "/api/processor-calc/bench",
+    "/api/codec-cpu/probe"
+  ],
+  solvers: [
+    "dsp_calc_classifier",
+    "fft_vocabulary_router",
+    "codec_signal_router"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.GPU_PARALLEL = {
+  keys: [
+    "gpu",
+    "cuda",
+    "rocm",
+    "hip",
+    "opencl",
+    "metal",
+    "vulkan compute",
+    "shader",
+    "compute shader",
+    "warp",
+    "wavefront",
+    "sm",
+    "cu",
+    "streaming multiprocessor",
+    "thread block",
+    "grid",
+    "occupancy",
+    "shared memory",
+    "global memory",
+    "tensor core",
+    "rt core",
+    "parallel reduction"
+  ],
+  routes: [
+    "/api/processor-calc/gpu",
+    "/api/memory-terms/gpu",
+    "/api/cache-memory/gpu"
+  ],
+  solvers: [
+    "gpu_compute_detector",
+    "gpu_memory_router",
+    "unavailable_if_no_gpu_tool"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.NPU_AI_ACCEL = {
+  keys: [
+    "npu",
+    "neural processing unit",
+    "ai accelerator",
+    "tops",
+    "int8 tops",
+    "onnx",
+    "openvino",
+    "directml",
+    "coreml",
+    "tensorrt",
+    "ncnn",
+    "nnapi",
+    "qnn",
+    "hexagon",
+    "apple neural engine",
+    "intel npu",
+    "amd xdna",
+    "qualcomm ai engine",
+    "inference accelerator"
+  ],
+  routes: [
+    "/api/processor-calc/npu",
+    "/api/processor-calc/probe"
+  ],
+  solvers: [
+    "npu_capability_detector",
+    "ai_accel_vocabulary_router",
+    "tops_honesty_guard"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.FPGA_RECONFIGURABLE = {
+  keys: [
+    "fpga",
+    "lut",
+    "bram",
+    "uram",
+    "dsp slice",
+    "bitstream",
+    "partial reconfiguration",
+    "hls",
+    "verilog",
+    "vhdl",
+    "rtl",
+    "pipeline fabric",
+    "logic fabric",
+    "xilinx",
+    "amd fpga",
+    "intel fpga",
+    "altera",
+    "arria",
+    "stratix",
+    "versal"
+  ],
+  routes: [
+    "/api/processor-calc/fpga",
+    "/api/processor-calc/probe"
+  ],
+  solvers: [
+    "fpga_vocabulary_router",
+    "fpga_toolchain_detector",
+    "unavailable_if_no_fpga_tool"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.ASIC_FIXED_FUNCTION = {
+  keys: [
+    "asic",
+    "fixed function",
+    "sha256 asic",
+    "bitcoin asic",
+    "antminer",
+    "whatsminer",
+    "avalon",
+    "tensor asic",
+    "tpu",
+    "video encoder",
+    "nvenc",
+    "nvdec",
+    "quick sync",
+    "qsv",
+    "vcn",
+    "fixed pipeline",
+    "hardware decoder",
+    "hardware encoder"
+  ],
+  routes: [
+    "/api/processor-calc/asic",
+    "/api/stratum-sha256/hardware",
+    "/api/codec-cpu/ffmpeg"
+  ],
+  solvers: [
+    "asic_fixed_function_router",
+    "hardware_encoder_detector",
+    "no_fake_asic_guard"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.HPC_DISTRIBUTED = {
+  keys: [
+    "mpi",
+    "openmp",
+    "pthread",
+    "worker_threads",
+    "distributed",
+    "cluster",
+    "rdma",
+    "ucx",
+    "libfabric",
+    "allreduce",
+    "broadcast",
+    "scatter",
+    "gather",
+    "reduce",
+    "barrier",
+    "domain decomposition",
+    "halo exchange",
+    "mapreduce",
+    "ray",
+    "dask",
+    "spark",
+    "slurm",
+    "pbs",
+    "kubernetes jobs"
+  ],
+  routes: [
+    "/api/processor-calc/hpc",
+    "/api/memory-terms/hpc",
+    "/api/cache-memory/hpc"
+  ],
+  solvers: [
+    "distributed_calc_classifier",
+    "hpc_runtime_probe",
+    "cluster_manager_router"
+  ]
+};
+
+/* ============================================================
+   PROCESSOR CALC DICT EXTENSIONS — solvers and IO
+============================================================ */
+
+DICT_PROCESSOR_CALC_TYPES.families.GRAPH_SOLVER = {
+  keys: [
+    "graph",
+    "node",
+    "edge",
+    "bfs",
+    "dfs",
+    "dijkstra",
+    "astar",
+    "a star",
+    "pagerank",
+    "centrality",
+    "shortest path",
+    "minimum spanning tree",
+    "mst",
+    "topological sort",
+    "union find",
+    "disjoint set",
+    "flow network",
+    "max flow",
+    "min cut",
+    "matching",
+    "graph neural network",
+    "gnn"
+  ],
+  routes: [
+    "/api/processor-calc/graph",
+    "/api/processor-calc/classify"
+  ],
+  solvers: [
+    "graph_algorithm_classifier",
+    "memory_bound_graph_solver",
+    "queue_frontier_router"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.NUMERIC_SOLVER = {
+  keys: [
+    "numeric",
+    "numerical",
+    "linear algebra",
+    "blas",
+    "lapack",
+    "eigen",
+    "svd",
+    "lu",
+    "qr",
+    "cholesky",
+    "cg",
+    "conjugate gradient",
+    "gmres",
+    "fft",
+    "ode",
+    "pde",
+    "finite difference",
+    "finite element",
+    "monte carlo",
+    "optimization",
+    "gradient descent",
+    "newton",
+    "root finding"
+  ],
+  routes: [
+    "/api/processor-calc/numeric",
+    "/api/hpc-simd/blas",
+    "/api/processor-calc/bench"
+  ],
+  solvers: [
+    "numeric_solver_classifier",
+    "blas_lapack_router",
+    "iterative_solver_policy"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.SYMBOLIC_SOLVER = {
+  keys: [
+    "symbolic",
+    "algebra",
+    "rewrite",
+    "term rewriting",
+    "simplification",
+    "factorization",
+    "polynomial",
+    "groebner",
+    "logic",
+    "sat",
+    "smt",
+    "z3",
+    "proof",
+    "formal",
+    "theorem",
+    "unification",
+    "lambda calculus",
+    "type checking",
+    "constraint solver"
+  ],
+  routes: [
+    "/api/processor-calc/symbolic",
+    "/api/processor-calc/classify"
+  ],
+  solvers: [
+    "symbolic_calc_classifier",
+    "constraint_solver_router",
+    "proof_not_compute_guard"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.CODEC_MEDIA = {
+  keys: [
+    "codec",
+    "encode",
+    "decode",
+    "transcode",
+    "h264",
+    "h265",
+    "hevc",
+    "av1",
+    "vp9",
+    "aac",
+    "opus",
+    "flac",
+    "jpeg",
+    "png",
+    "webp",
+    "avif",
+    "ffmpeg",
+    "filtergraph",
+    "resample",
+    "scale",
+    "motion estimation",
+    "entropy coding"
+  ],
+  routes: [
+    "/api/processor-calc/codec",
+    "/api/codec-cpu/probe",
+    "/api/codec-cpu/ffmpeg"
+  ],
+  solvers: [
+    "codec_compute_classifier",
+    "cpu_codec_router",
+    "hardware_codec_guard"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.NETWORK_PACKET = {
+  keys: [
+    "packet",
+    "checksum",
+    "crc",
+    "tcp",
+    "udp",
+    "ip",
+    "routing",
+    "nat",
+    "firewall",
+    "tls",
+    "http",
+    "websocket",
+    "dns",
+    "serialization",
+    "protobuf",
+    "msgpack",
+    "cbor",
+    "json parse",
+    "packet filter",
+    "xdp",
+    "dpdk"
+  ],
+  routes: [
+    "/api/processor-calc/network",
+    "/api/network",
+    "/api/protocols"
+  ],
+  solvers: [
+    "packet_calc_classifier",
+    "checksum_router",
+    "network_parse_solver"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.STORAGE_IO = {
+  keys: [
+    "io",
+    "i/o",
+    "read",
+    "write",
+    "fsync",
+    "direct io",
+    "aio",
+    "io_uring",
+    "nvme",
+    "ssd",
+    "hdd",
+    "raid",
+    "queue depth",
+    "iops",
+    "throughput",
+    "latency",
+    "compression",
+    "dedup",
+    "checksum",
+    "erasure coding",
+    "parity",
+    "block device",
+    "filesystem"
+  ],
+  routes: [
+    "/api/processor-calc/storage",
+    "/api/cache-memory/storage",
+    "/api/memory-terms/storage"
+  ],
+  solvers: [
+    "storage_io_calc_classifier",
+    "checksum_parity_router",
+    "io_pressure_policy"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.JIT_RUNTIME = {
+  keys: [
+    "jit",
+    "interpreter",
+    "bytecode",
+    "baseline compiler",
+    "optimizing compiler",
+    "deoptimization",
+    "inline cache",
+    "hidden class",
+    "garbage collection",
+    "gc",
+    "v8",
+    "node",
+    "wasm",
+    "webassembly",
+    "hot loop",
+    "monomorphic",
+    "polymorphic",
+    "megamorphic"
+  ],
+  routes: [
+    "/api/processor-calc/jit",
+    "/api/cache-memory/runtime",
+    "/api/memory-terms/runtime"
+  ],
+  solvers: [
+    "jit_runtime_classifier",
+    "hot_loop_policy",
+    "v8_runtime_probe"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.WASM_VM = {
+  keys: [
+    "wasm",
+    "webassembly",
+    "wasm simd",
+    "v128",
+    "wasm threads",
+    "linear memory",
+    "wasmtime",
+    "wasmer",
+    "emscripten",
+    "wasi",
+    "sandbox",
+    "module validate",
+    "module compile",
+    "portable compute"
+  ],
+  routes: [
+    "/api/processor-calc/wasm",
+    "/api/hpc-simd/wasm"
+  ],
+  solvers: [
+    "wasm_capability_probe",
+    "wasm_simd_router",
+    "portable_compute_classifier"
+  ]
+};
+
+DICT_PROCESSOR_CALC_TYPES.families.QUANTUM_OPTIONAL = {
+  keys: [
+    "quantum",
+    "qubit",
+    "qpu",
+    "circuit",
+    "gate",
+    "qasm",
+    "annealing",
+    "quantum sampling",
+    "variational",
+    "qaoa",
+    "vqe",
+    "statevector",
+    "density matrix",
+    "tensor network",
+    "quantum simulator"
+  ],
+  routes: [
+    "/api/processor-calc/quantum",
+    "/api/processor-calc/classify"
+  ],
+  solvers: [
+    "quantum_vocabulary_router",
+    "external_qpu_required_guard",
+    "simulator_not_qpu_guard"
+  ]
+};
+
+const PROCESSOR_CALC_POLICIES = {
+  version: "PROCESSOR_CALC_POLICIES_V1",
+  policies: {
+    REAL_COMPUTE_ONLY: {
+      target: "avoid fake compute claims",
+      actions: [
+        "detect host CPU/GPU/NPU tools first",
+        "separate vocabulary from real capability",
+        "benchmark only local software paths",
+        "never infer accelerator power without detection"
+      ]
+    },
+    CPU_HOT_LOOP: {
+      target: "improve CPU-bound loops",
+      actions: [
+        "prefer TypedArray for numeric arrays",
+        "avoid object churn",
+        "batch arithmetic",
+        "measure wall time",
+        "report local estimate only"
+      ]
+    },
+    SIMD_ROUTING: {
+      target: "route vector compute honestly",
+      actions: [
+        "use CPU flags probe",
+        "use WASM SIMD probe if available",
+        "use BLAS if detected",
+        "do not claim AVX512 without flags"
+      ]
+    },
+    ACCELERATOR_GUARD: {
+      target: "protect GPU/NPU/FPGA/ASIC claims",
+      actions: [
+        "mark unavailable if tools absent",
+        "detect nvidia-smi/rocm-smi/opencl where possible",
+        "detect toolchain for FPGA",
+        "separate ASIC vocabulary from real hardware"
+      ]
+    },
+    SOLVER_ROUTING: {
+      target: "route calculation type to best safe solver",
+      actions: [
+        "classify calculation family",
+        "choose CPU/SIMD/BLAS/GPU/HPC path if available",
+        "fallback to Node CPU when safe",
+        "return unavailable for missing backend"
+      ]
+    }
+  }
+};
+
+/* ============================================================
+   PROCESSOR CALC REAL PROBES + LOCAL BENCHMARKS
+============================================================ */
+
+function processorCalcNum(x, d = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
+
+function processorCalcRound(x, d = 3) {
+  const n = Number(x);
+  return Number.isFinite(n) ? +n.toFixed(d) : null;
+}
+
+function processorCalcClassifyText(input) {
+  const text = String(input || "").toLowerCase();
+  const hits = [];
+
+  for (const [family, cfg] of Object.entries(DICT_PROCESSOR_CALC_TYPES.families)) {
+    let score = 0;
+    const matched = [];
+
+    for (const key of cfg.keys || []) {
+      if (text.includes(String(key).toLowerCase())) {
+        score++;
+        matched.push(key);
+      }
+    }
+
+    if (score > 0) {
+      hits.push({
+        family,
+        score,
+        matched,
+        routes: cfg.routes,
+        solvers: cfg.solvers
+      });
+    }
+  }
+
+  return hits.sort((a, b) => b.score - a.score);
+}
+
+async function processorCalcProbe() {
+  const cmds = [
+    "lscpu 2>/dev/null | head -120 || echo lscpu_unavailable",
+    "cat /proc/cpuinfo 2>/dev/null | grep -m1 -Ei 'flags|features' || true",
+    "nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader 2>/dev/null || echo nvidia_smi_unavailable",
+    "rocm-smi 2>/dev/null | head -80 || echo rocm_smi_unavailable",
+    "clinfo 2>/dev/null | head -80 || echo opencl_unavailable",
+    "python3 - <<'PY'\nimport importlib.util,json\nmods=['numpy','scipy','torch','tensorflow','jax','onnxruntime','numba','cupy']\nprint(json.dumps({m:importlib.util.find_spec(m) is not None for m in mods}))\nPY",
+    "which mpirun 2>/dev/null || which mpiexec 2>/dev/null || echo mpi_unavailable",
+    "which ffmpeg 2>/dev/null || echo ffmpeg_unavailable",
+    "openssl version 2>/dev/null || echo openssl_unavailable"
+  ];
+
+  const out = await Promise.all(cmds.map(c => sh(c, 15000)));
+  let pythonLibs = {};
+  try {
+    pythonLibs = JSON.parse(String(out[5].out || "{}").trim());
+  } catch (e) {
+    pythonLibs = {};
+  }
+
+  const raw = out.map(x => x.out || "").join("\n").toLowerCase();
+
+  return {
+    time: now(),
+    layer: PROCESSOR_CALC_TYPES_SOLVER,
+    dict: DICT_PROCESSOR_CALC_TYPES,
+    policies: PROCESSOR_CALC_POLICIES,
+    runtime: {
+      node: process.version,
+      v8: process.versions && process.versions.v8,
+      arch: process.arch,
+      platform: process.platform,
+      logical_cpus: os.cpus().length || null,
+      ram_GB: processorCalcRound(os.totalmem() / 1073741824, 3)
+    },
+    detected: {
+      cpu_flags_available: !/lscpu_unavailable/.test(raw),
+      avx2: /\bavx2\b/.test(raw),
+      avx512: /\bavx512/.test(raw),
+      fma: /\bfma\b/.test(raw),
+      sha_extensions: /\bsha_ni\b|\bsha\b|sha256/.test(raw),
+      nvidia_gpu_tool: !/nvidia_smi_unavailable/.test(raw),
+      rocm_tool: !/rocm_smi_unavailable/.test(raw),
+      opencl_tool: !/opencl_unavailable/.test(raw),
+      mpi: !/mpi_unavailable/.test(raw),
+      ffmpeg: !/ffmpeg_unavailable/.test(raw),
+      openssl: !/openssl_unavailable/.test(raw),
+      python_libs: pythonLibs
+    },
+    raw_previews: {
+      lscpu: safeText(out[0].out, 12000),
+      cpu_flags: safeText(out[1].out, 12000),
+      nvidia: safeText(out[2].out, 8000),
+      rocm: safeText(out[3].out, 8000),
+      opencl: safeText(out[4].out, 8000),
+      python_libs: pythonLibs,
+      mpi: safeText(out[6].out, 4000),
+      ffmpeg: safeText(out[7].out, 4000),
+      openssl: safeText(out[8].out, 4000)
+    },
+    status_rule:
+      "Calculation family is executable only when CPU/runtime/tool/backend exists. Otherwise vocabulary/router only."
+  };
+}
+
+function processorCalcIntegerBench(iterations = 10000000) {
+  iterations = Math.min(Math.max(10000, processorCalcNum(iterations, 10000000)), 200000000);
+  const started = Date.now();
+
+  let x = 0;
+  for (let i = 0; i < iterations; i++) {
+    x = (x + ((i * 2654435761) >>> 0)) >>> 0;
+    x = (x ^ (x >>> 13)) >>> 0;
+  }
+
+  const ms = Math.max(1, Date.now() - started);
+  const ops = iterations * 3;
+  const opsSec = ops / (ms / 1000);
+
+  return {
+    time: now(),
+    benchmark: "INTEGER_ALU_UINT32_LOOP",
+    iterations,
+    duration_ms: ms,
+    operations_estimated: ops,
+    ops_per_sec: Math.round(opsSec),
+    gops_estimated: processorCalcRound(opsSec / 1e9, 6),
+    checksum: x >>> 0,
+    honesty:
+      "Local integer benchmark in JavaScript. Estimated ops are loop-level arithmetic/logical operations, not certified CPU IPC."
+  };
+}
+
+function processorCalcFloatBench(iterations = 10000000) {
+  iterations = Math.min(Math.max(10000, processorCalcNum(iterations, 10000000)), 200000000);
+  const started = Date.now();
+
+  let x = 1.000001;
+  let y = 0.999999;
+  for (let i = 0; i < iterations; i++) {
+    x = x * 1.0000001 + y;
+    y = y * 0.9999999 + x * 0.00000001;
+  }
+
+  const ms = Math.max(1, Date.now() - started);
+  const ops = iterations * 5;
+  const opsSec = ops / (ms / 1000);
+
+  return {
+    time: now(),
+    benchmark: "FLOAT64_FMA_STYLE_LOOP",
+    iterations,
+    duration_ms: ms,
+    operations_estimated: ops,
+    ops_per_sec: Math.round(opsSec),
+    gops_estimated: processorCalcRound(opsSec / 1e9, 6),
+    checksum: processorCalcRound((x + y) % 1000000, 6),
+    honesty:
+      "Local Float64 benchmark. It may be optimized by V8 but does not prove hardware FMA usage."
+  };
+}
+
+function processorCalcBitwiseBench(iterations = 10000000) {
+  iterations = Math.min(Math.max(10000, processorCalcNum(iterations, 10000000)), 300000000);
+  const started = Date.now();
+
+  let x = 0x12345678;
+  for (let i = 0; i < iterations; i++) {
+    x ^= (x << 13);
+    x ^= (x >>> 17);
+    x ^= (x << 5);
+    x >>>= 0;
+  }
+
+  const ms = Math.max(1, Date.now() - started);
+  const ops = iterations * 6;
+  const opsSec = ops / (ms / 1000);
+
+  return {
+    time: now(),
+    benchmark: "BITWISE_XORSHIFT_LOOP",
+    iterations,
+    duration_ms: ms,
+    operations_estimated: ops,
+    ops_per_sec: Math.round(opsSec),
+    gops_estimated: processorCalcRound(opsSec / 1e9, 6),
+    checksum: x >>> 0,
+    honesty:
+      "Local bitwise benchmark. Useful for relative routing only, not a formal CPU benchmark."
+  };
+}
+
+function processorCalcMatrixBench(n = 128) {
+  n = Math.min(Math.max(16, processorCalcNum(n, 128)), 512);
+
+  const a = new Float64Array(n * n);
+  const b = new Float64Array(n * n);
+  const c = new Float64Array(n * n);
+
+  for (let i = 0; i < n * n; i++) {
+    a[i] = (i % 97) * 0.001;
+    b[i] = (i % 89) * 0.002;
+  }
+
+  const started = Date.now();
+
+  for (let i = 0; i < n; i++) {
+    for (let k = 0; k < n; k++) {
+      const aik = a[i * n + k];
+      for (let j = 0; j < n; j++) {
+        c[i * n + j] += aik * b[k * n + j];
+      }
+    }
+  }
+
+  const ms = Math.max(1, Date.now() - started);
+  const flops = 2 * n * n * n;
+  const gflops = flops / (ms / 1000) / 1e9;
+
+  let checksum = 0;
+  for (let i = 0; i < Math.min(c.length, 2048); i++) checksum += c[i];
+
+  return {
+    time: now(),
+    benchmark: "NAIVE_FLOAT64_MATRIX_MULTIPLY",
+    n,
+    duration_ms: ms,
+    flops_estimated: flops,
+    gflops_estimated: processorCalcRound(gflops, 6),
+    checksum: processorCalcRound(checksum, 6),
+    honesty:
+      "Naive JS matrix multiply. For real optimized GEMM use BLAS if detected in /api/hpc-simd/blas."
+  };
+}
+
+async function processorCalcBench(type = "all", size = 10000000) {
+  const t = String(type || "all").toLowerCase();
+
+  const out = {
+    time: now(),
+    layer: PROCESSOR_CALC_TYPES_SOLVER.name,
+    requested_type: t,
+    results: {}
+  };
+
+  if (t === "all" || t === "integer") {
+    out.results.integer = processorCalcIntegerBench(size);
+  }
+  if (t === "all" || t === "float" || t === "floating") {
+    out.results.floating = processorCalcFloatBench(size);
+  }
+  if (t === "all" || t === "bitwise") {
+    out.results.bitwise = processorCalcBitwiseBench(size);
+  }
+  if (t === "all" || t === "matrix" || t === "tensor") {
+    out.results.matrix = processorCalcMatrixBench(Math.min(256, Math.max(32, Math.floor(Math.sqrt(size / 1000)))));
+  }
+  if (t === "all" || t === "sha256" || t === "crypto") {
+    if (typeof stratumSha256LocalBench === "function") {
+      out.results.sha256d = stratumSha256LocalBench(Math.min(500000, Math.max(10000, size / 100)));
+    } else {
+      out.results.sha256d = { status: "UNAVAILABLE_STRATUM_LAYER_NOT_LOADED" };
+    }
+  }
+
+  out.honesty =
+    "Benchmarks are local JavaScript/Node CPU estimates. They are routing signals, not certified hardware ratings.";
+
+  return out;
+}
+
+/* ============================================================
+   PROCESSOR CALC GLOBAL ROUTES
+============================================================ */
+
+async function processorCalcClassify(input) {
+  return {
+    time: now(),
+    input: safeText(input, 4000),
+    classification: processorCalcClassifyText(input),
+    dict_version: DICT_PROCESSOR_CALC_TYPES.version
+  };
+}
+
+async function processorCalcFamilyReport(familyName) {
+  const fam = String(familyName || "").toUpperCase();
+  const family = DICT_PROCESSOR_CALC_TYPES.families[fam];
+
+  if (!family) {
+    return {
+      time: now(),
+      ok: false,
+      error: "unknown_processor_calc_family",
+      requested: familyName,
+      available_families: Object.keys(DICT_PROCESSOR_CALC_TYPES.families)
+    };
+  }
+
+  return {
+    time: now(),
+    family: fam,
+    dict_family: family,
+    policies: PROCESSOR_CALC_POLICIES,
+    honesty:
+      "Family report is calculation vocabulary/routing. Use /api/processor-calc/probe for detection and /api/processor-calc/bench for local benchmarks."
+  };
+}
+
+app.get("/api/processor-calc", async (req, res) => {
+  res.json({
+    time: now(),
+    layer: PROCESSOR_CALC_TYPES_SOLVER,
+    dict: DICT_PROCESSOR_CALC_TYPES,
+    policies: PROCESSOR_CALC_POLICIES
+  });
+});
+
+app.get("/api/processor-calc/dict", async (req, res) => {
+  res.json(DICT_PROCESSOR_CALC_TYPES);
+});
+
+app.get("/api/processor-calc/policies", async (req, res) => {
+  res.json(PROCESSOR_CALC_POLICIES);
+});
+
+app.get("/api/processor-calc/probe", async (req, res) => {
+  res.json(await processorCalcProbe());
+});
+
+app.get("/api/processor-calc/bench", async (req, res) => {
+  res.json(await processorCalcBench(req.query.type || "all", req.query.size || 10000000));
+});
+
+app.get("/api/processor-calc/classify", async (req, res) => {
+  res.json(await processorCalcClassify(req.query.q || req.query.text || ""));
+});
+
+app.post("/api/processor-calc/classify", async (req, res) => {
+  res.json(await processorCalcClassify(req.body && (req.body.q || req.body.text) || ""));
+});
+
+app.get("/api/processor-calc/integer", async (req, res) => {
+  res.json(await processorCalcFamilyReport("INTEGER_ALU"));
+});
+
+app.get("/api/processor-calc/floating", async (req, res) => {
+  res.json(await processorCalcFamilyReport("FLOATING_POINT_FPU"));
+});
+
+app.get("/api/processor-calc/simd", async (req, res) => {
+  res.json(await processorCalcFamilyReport("SIMD_VECTOR"));
+});
+
+app.get("/api/processor-calc/tensor", async (req, res) => {
+  res.json(await processorCalcFamilyReport("MATRIX_TENSOR"));
+});
+
+app.get("/api/processor-calc/bitwise", async (req, res) => {
+  res.json(await processorCalcFamilyReport("BITWISE_LOGIC"));
+});
+
+app.get("/api/processor-calc/crypto", async (req, res) => {
+  res.json(await processorCalcFamilyReport("CRYPTO_HASH"));
+});
+
+app.get("/api/processor-calc/memory-addressing", async (req, res) => {
+  res.json(await processorCalcFamilyReport("MEMORY_ADDRESSING"));
+});
+
+app.get("/api/processor-calc/branch", async (req, res) => {
+  res.json(await processorCalcFamilyReport("BRANCH_CONTROL"));
+});
+
+app.get("/api/processor-calc/dsp", async (req, res) => {
+  res.json(await processorCalcFamilyReport("DSP_SIGNAL"));
+});
+
+app.get("/api/processor-calc/gpu", async (req, res) => {
+  res.json(await processorCalcFamilyReport("GPU_PARALLEL"));
+});
+
+app.get("/api/processor-calc/npu", async (req, res) => {
+  res.json(await processorCalcFamilyReport("NPU_AI_ACCEL"));
+});
+
+app.get("/api/processor-calc/fpga", async (req, res) => {
+  res.json(await processorCalcFamilyReport("FPGA_RECONFIGURABLE"));
+});
+
+app.get("/api/processor-calc/asic", async (req, res) => {
+  res.json(await processorCalcFamilyReport("ASIC_FIXED_FUNCTION"));
+});
+
+app.get("/api/processor-calc/hpc", async (req, res) => {
+  res.json(await processorCalcFamilyReport("HPC_DISTRIBUTED"));
+});
+
+app.get("/api/processor-calc/graph", async (req, res) => {
+  res.json(await processorCalcFamilyReport("GRAPH_SOLVER"));
+});
+
+app.get("/api/processor-calc/numeric", async (req, res) => {
+  res.json(await processorCalcFamilyReport("NUMERIC_SOLVER"));
+});
+
+app.get("/api/processor-calc/symbolic", async (req, res) => {
+  res.json(await processorCalcFamilyReport("SYMBOLIC_SOLVER"));
+});
+
+app.get("/api/processor-calc/codec", async (req, res) => {
+  res.json(await processorCalcFamilyReport("CODEC_MEDIA"));
+});
+
+app.get("/api/processor-calc/network", async (req, res) => {
+  res.json(await processorCalcFamilyReport("NETWORK_PACKET"));
+});
+
+app.get("/api/processor-calc/storage", async (req, res) => {
+  res.json(await processorCalcFamilyReport("STORAGE_IO"));
+});
+
+app.get("/api/processor-calc/jit", async (req, res) => {
+  res.json(await processorCalcFamilyReport("JIT_RUNTIME"));
+});
+
+app.get("/api/processor-calc/wasm", async (req, res) => {
+  res.json(await processorCalcFamilyReport("WASM_VM"));
+});
+
+app.get("/api/processor-calc/quantum", async (req, res) => {
+  res.json(await processorCalcFamilyReport("QUANTUM_OPTIONAL"));
+});
+
+/* Optional registry hook */
+try {
+  if (typeof moduleRegistry === "function") {
+    const __moduleRegistryOriginal_PROCESSOR_CALC = moduleRegistry;
+
+    moduleRegistry = function moduleRegistryWithProcessorCalc() {
+      const base = __moduleRegistryOriginal_PROCESSOR_CALC();
+
+      return {
+        ...base,
+        processor_calc_types_solver: {
+          layer: PROCESSOR_CALC_TYPES_SOLVER,
+          dict: DICT_PROCESSOR_CALC_TYPES,
+          policies: PROCESSOR_CALC_POLICIES,
+          routes: [
+            "/api/processor-calc",
+            "/api/processor-calc/dict",
+            "/api/processor-calc/policies",
+            "/api/processor-calc/probe",
+            "/api/processor-calc/bench",
+            "/api/processor-calc/classify",
+            "/api/processor-calc/integer",
+            "/api/processor-calc/floating",
+            "/api/processor-calc/simd",
+            "/api/processor-calc/tensor",
+            "/api/processor-calc/bitwise",
+            "/api/processor-calc/crypto",
+            "/api/processor-calc/memory-addressing",
+            "/api/processor-calc/branch",
+            "/api/processor-calc/dsp",
+            "/api/processor-calc/gpu",
+            "/api/processor-calc/npu",
+            "/api/processor-calc/fpga",
+            "/api/processor-calc/asic",
+            "/api/processor-calc/hpc",
+            "/api/processor-calc/graph",
+            "/api/processor-calc/numeric",
+            "/api/processor-calc/symbolic",
+            "/api/processor-calc/codec",
+            "/api/processor-calc/network",
+            "/api/processor-calc/storage",
+            "/api/processor-calc/jit",
+            "/api/processor-calc/wasm",
+            "/api/processor-calc/quantum"
+          ]
+        }
+      };
+    };
+  }
+} catch (e) {
+  console.warn("PROCESSOR_CALC registry hook unavailable:", e.message);
+}
+
+/* Optional UI buttons — add inside existing .tabs block */
+
+/*
+<button onclick="load('/api/processor-calc')">PROCESSOR CALC</button>
+<button onclick="load('/api/processor-calc/dict')">DICT CALC</button>
+<button onclick="load('/api/processor-calc/probe')">CALC PROBE</button>
+<button onclick="load('/api/processor-calc/bench?type=all&size=10000000')">CALC BENCH</button>
+<button onclick="load('/api/processor-calc/integer')">INT ALU</button>
+<button onclick="load('/api/processor-calc/floating')">FPU</button>
+<button onclick="load('/api/processor-calc/simd')">SIMD</button>
+<button onclick="load('/api/processor-calc/tensor')">TENSOR</button>
+<button onclick="load('/api/processor-calc/crypto')">CRYPTO CALC</button>
+<button onclick="load('/api/processor-calc/gpu')">GPU CALC</button>
+<button onclick="load('/api/processor-calc/npu')">NPU</button>
+<button onclick="load('/api/processor-calc/fpga')">FPGA</button>
+<button onclick="load('/api/processor-calc/asic')">ASIC</button>
+<button onclick="load('/api/processor-calc/hpc')">HPC CALC</button>
+<button onclick="load('/api/processor-calc/numeric')">NUMERIC</button>
+<button onclick="load('/api/processor-calc/symbolic')">SYMBOLIC</button>
+*/
