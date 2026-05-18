@@ -3976,3 +3976,222 @@ app.get("/api/x3d-worker-fabric/workers",async(req,res)=>{
     doctrine:["REAL_ONLY_OR_UNAVAILABLE","NO_FAKE_PARALLELISM"]
   });
 });
+
+/* ============================================================
+   TRILLIONS SOFTWARE PROCESSOR CALIBRATOR
+   L1→L6 RAW / 3D-VCACHE RAID / JOKER SECURITY / QN COPROCESSOR
+   REAL_ONLY_OR_UNAVAILABLE
+============================================================ */
+
+const SOFTWARE_PROCESSOR_CALIBRATOR = {
+  version: "SOFTWARE_PROCESSOR_CALIBRATOR_V1",
+
+  doctrine: [
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_CPU",
+    "NO_FAKE_GPU",
+    "NO_FAKE_AVX",
+    "NO_FAKE_VOLTAGE",
+    "NO_FAKE_POWER"
+  ],
+
+  memory_ladder: {
+    L1_MB: 8096,
+    L2_MB: 8096 * 2,
+    L3_MB: 8096 * 4,
+    L4_MB: 8096 * 8,
+    L5_MB: 8096 * 16,
+    L6_RAW_MB: 8096 * 32,
+    L6_role: "RAID_OF_ALL_LAYERS_IN_3D_VCACHE_LOGIC",
+    honesty: "logical calibration ladder, not physical RAM creation"
+  },
+
+  security: {
+    joker_1_0: {
+      status: "ACTIVE",
+      role: "input_guard + route_guard + unsafe_mode_blocker"
+    },
+    joker_2_0: {
+      status: "ACTIVE",
+      role: "runtime_guard + memory_pressure_guard + rollback_guard"
+    }
+  },
+
+  coprocessor: {
+    QN: {
+      status: "LOGICAL_COPROCESSOR_LAYER",
+      role: "queue normalization, numeric routing, benchmark coordination",
+      real_hardware: false
+    }
+  },
+
+  electrical_profile: {
+    solder_voltage_V: 5.46,
+    power_W: 346,
+    status: "DECLARED_PROFILE_ONLY",
+    honesty: "software reports profile only; it does not control voltage or wattage"
+  },
+
+  codex_codecs: {
+    instruction_sets: [
+      "SSE",
+      "SSE2",
+      "SSE3",
+      "SSSE3",
+      "SSE4_1",
+      "SSE4_2",
+      "AVX",
+      "AVX2",
+      "AVX512",
+      "FMA",
+      "AES",
+      "SHA",
+      "BMI1",
+      "BMI2",
+      "NEON",
+      "WASM_SIMD",
+      "GPU_TENSOR",
+      "CUDA",
+      "OpenCL",
+      "WebGPU"
+    ],
+
+    data_codecs: [
+      "raw",
+      "json",
+      "jsonl",
+      "csv",
+      "binary",
+      "buffer",
+      "shared_array_buffer",
+      "typed_array",
+      "base64",
+      "hex",
+      "gzip",
+      "brotli",
+      "zstd_if_available",
+      "lz4_if_available"
+    ],
+
+    media_codecs: [
+      "png",
+      "jpg",
+      "webp",
+      "svg",
+      "mp3",
+      "wav",
+      "ogg",
+      "mp4",
+      "webm",
+      "h264_if_available",
+      "h265_if_available",
+      "av1_if_available"
+    ],
+
+    compute_codecs: [
+      "sha256",
+      "sha512",
+      "blake2",
+      "aes",
+      "wasm",
+      "wasm_simd",
+      "native_napi",
+      "native_avx2",
+      "native_avx512",
+      "gpu_kernel",
+      "tensor_kernel"
+    ]
+  }
+};
+
+function detectCpuFlags(){
+  try{
+    const info = os.cpus().map(c => c.model).join(" | ");
+    return {
+      cpu_model: info,
+      arch: process.arch,
+      platform: process.platform,
+      note: "Node.js cannot expose all CPU flags directly; use lscpu route for real AVX detail"
+    };
+  }catch(e){
+    return {error:String(e)};
+  }
+}
+
+function softwareProcessorCalibration(){
+  const mem = process.memoryUsage();
+  const total = os.totalmem();
+  const free = os.freemem();
+  const pressure = 1 - free / total;
+
+  const logicalCpus = os.cpus().length || 1;
+
+  let recommendedWorkers = Math.max(1, Math.min(logicalCpus, 8));
+  let profile = "BALANCED_SAFE";
+
+  if(pressure > 0.85){
+    recommendedWorkers = Math.max(1, Math.floor(recommendedWorkers / 2));
+    profile = "MEMORY_SAFE";
+  }else if(logicalCpus >= 8 && pressure < 0.60){
+    profile = "HEAVY_LOCAL";
+  }
+
+  return {
+    time: new Date().toISOString(),
+
+    status: "SOFTWARE_PROCESSOR_CALIBRATION_COMPLETE",
+
+    profile,
+
+    recommended: {
+      workers: recommendedWorkers,
+      batch_MB:
+        profile === "HEAVY_LOCAL" ? 256 :
+        profile === "BALANCED_SAFE" ? 128 :
+        64,
+
+      use_shared_array_buffer: typeof SharedArrayBuffer !== "undefined",
+      use_worker_threads: true,
+      use_ramdisk: fs.existsSync("/dev/shm"),
+      use_native_avx2_if_loaded: true,
+      use_native_avx512_if_loaded: true
+    },
+
+    memory: {
+      rss_MB: +(mem.rss / 1048576).toFixed(2),
+      heap_used_MB: +(mem.heapUsed / 1048576).toFixed(2),
+      total_GB: +(total / 1073741824).toFixed(2),
+      free_GB: +(free / 1073741824).toFixed(2),
+      pressure_percent: +(pressure * 100).toFixed(2)
+    },
+
+    cpu: detectCpuFlags(),
+
+    calibrator: SOFTWARE_PROCESSOR_CALIBRATOR,
+
+    honesty:
+      "calibration maps real runtime support; unavailable native/GPU/AVX paths remain unavailable"
+  };
+}
+
+app.get("/api/software-processor/calibrate",(req,res)=>{
+  res.json(softwareProcessorCalibration());
+});
+
+app.get("/api/software-processor/codex",(req,res)=>{
+  res.json({
+    time:new Date().toISOString(),
+    codex_codecs:SOFTWARE_PROCESSOR_CALIBRATOR.codex_codecs,
+    honesty:"registry only; real execution requires runtime/backend support"
+  });
+});
+
+app.get("/api/software-processor/layers",(req,res)=>{
+  res.json({
+    time:new Date().toISOString(),
+    memory_ladder:SOFTWARE_PROCESSOR_CALIBRATOR.memory_ladder,
+    security:SOFTWARE_PROCESSOR_CALIBRATOR.security,
+    coprocessor:SOFTWARE_PROCESSOR_CALIBRATOR.coprocessor,
+    electrical_profile:SOFTWARE_PROCESSOR_CALIBRATOR.electrical_profile
+  });
+});
