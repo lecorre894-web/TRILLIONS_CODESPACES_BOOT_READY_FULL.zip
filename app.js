@@ -4195,3 +4195,124 @@ app.get("/api/software-processor/layers",(req,res)=>{
     electrical_profile:SOFTWARE_PROCESSOR_CALIBRATOR.electrical_profile
   });
 });
+
+/* ============================================================
+   TRILLIONS KERNEL LATENCY BENCH
+   REAL_ONLY_OR_UNAVAILABLE
+============================================================ */
+
+function kernelLatencyBench(samples = 1000){
+
+  return new Promise((resolve)=>{
+
+    const results = [];
+
+    let count = 0;
+
+    function tick(){
+
+      const start = process.hrtime.bigint();
+
+      setImmediate(()=>{
+
+        const end = process.hrtime.bigint();
+
+        const ns = Number(end - start);
+
+        results.push(ns);
+
+        count++;
+
+        if(count >= samples){
+
+          const min = Math.min(...results);
+          const max = Math.max(...results);
+
+          const avg =
+            results.reduce((a,b)=>a+b,0) / results.length;
+
+          const sorted = [...results].sort((a,b)=>a-b);
+
+          const p95 =
+            sorted[Math.floor(sorted.length * 0.95)];
+
+          const p99 =
+            sorted[Math.floor(sorted.length * 0.99)];
+
+          resolve({
+
+            status: "KERNEL_LATENCY_BENCH_COMPLETE",
+
+            samples,
+
+            latency_ns: {
+              min,
+              avg: Math.round(avg),
+              p95,
+              p99,
+              max
+            },
+
+            latency_us: {
+              min: +(min / 1000).toFixed(2),
+              avg: +(avg / 1000).toFixed(2),
+              p95: +(p95 / 1000).toFixed(2),
+              p99: +(p99 / 1000).toFixed(2),
+              max: +(max / 1000).toFixed(2)
+            },
+
+            verdict:
+              avg < 50000
+                ? "EXTREME_LOW_LATENCY"
+                : avg < 150000
+                ? "FAST_RUNTIME"
+                : avg < 500000
+                ? "NORMAL_RUNTIME"
+                : "HIGH_LATENCY_RUNTIME",
+
+            honesty:
+              "Node.js userspace scheduler latency only; not real kernel interrupt latency"
+          });
+
+        }else{
+          tick();
+        }
+
+      });
+
+    }
+
+    tick();
+
+  });
+
+}
+
+/* ============================================================
+   ENDPOINT
+============================================================ */
+
+app.get("/api/kernel-latency", async(req,res)=>{
+
+  const samples =
+    Math.max(
+      100,
+      Math.min(
+        Number(req.query.samples || 1000),
+        20000
+      )
+    );
+
+  const bench =
+    await kernelLatencyBench(samples);
+
+  res.json({
+    time: new Date().toISOString(),
+    bench,
+    doctrine: [
+      "REAL_ONLY_OR_UNAVAILABLE",
+      "NO_FAKE_KERNEL"
+    ]
+  });
+
+});
