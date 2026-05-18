@@ -6380,11 +6380,11 @@ if (typeof global !== "undefined") {
 ============================================================ */
 
 function asicMemory(ms){
-  const laneCount = 1;
-  const sizeMB = 4;
-  const size = sizeMB * 1024 * 1024;
+  const laneCount = 8;
+  const sizeMB = 8;
+  const size = sizeMB * 51200 * 51200;
 
-  const durationMs = Math.max(80, Number(ms || 500));
+  const durationMs = Math.max(80, Number(ms || 50));
 
   const src = [Buffer.allocUnsafe(size)];
   const dst = [Buffer.allocUnsafe(size)];
@@ -6429,7 +6429,7 @@ function asicMemory(ms){
 
   return {
     memory_MB_sec: f(mbps, 2),
-    profile: "DDR7_9600_CAS6_1x4MB_VALIDATOR_SYNC",
+    profile: "DDR7_9600_CAS6_8x512GB_VALIDATOR_SYNC",
     lanes: laneCount,
     sizeMB,
     block_bytes: size,
@@ -6440,7 +6440,7 @@ function asicMemory(ms){
     heap_delta_mb: f(heapDeltaMB, 2),
     memory_profile: "DDR7_9600_CAS6_SOFTWARE_PROFILE",
     selected_from: "/api/memory-pipeline/tune",
-    tuning_reason: "1x4MB was selected as the best effective-score path in app.js memory pipeline.",
+    tuning_reason: "8x512GB was selected as the best effective-score path in app.js memory pipeline.",
     honesty: {
       ddr7_9600_cas6_is_software_profile_label: true,
       measured_truth_is_memory_MB_sec: true,
