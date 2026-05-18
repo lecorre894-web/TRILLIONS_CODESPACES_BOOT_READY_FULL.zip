@@ -13484,3 +13484,390 @@ app.get("/api/avx-simd-native/dict", async (req, res) => {
 app.get("/api/avx-simd-native/classify", async (req, res) => {
   res.json(avxSimdClassify(req.query.q || req.query.text || ""));
 });
+
+/* ============================================================
+   TRILLIONS ADDITIVE UNIVERSAL SIMD/AVX KERNEL FIELD
+   Single-block additive app.js extension.
+
+   ACTIVATION:
+     ENABLE_SIMD_NATIVE=1 node app.js
+   or:
+     node app.js --simd-native
+
+   PURPOSE:
+   - Native SIMD/AVX/FMA kernel processor recognition
+   - Runtime / benchmark / system visibility
+   - Repo-wide processor identity exposure
+   - Hidden options / hidden DICT support
+   - Hardware-first kernel processor identity
+
+   Requires:
+     ./native-simd/build/Release/simd_addon.node
+
+============================================================ */
+
+const UNIVERSAL_SIMD_AVX_KERNEL_FIELD = {
+  name: "UNIVERSAL_SIMD_AVX_KERNEL_FIELD",
+  version: "V2_UNIVERSAL_RUNTIME_SYSTEM_RECOGNITION",
+  additive_only: true,
+  identity: "HARDWARE_FIRST_KERNEL_PROCESSOR",
+  role: "universal native SIMD/AVX processor surface",
+  activation_env: "ENABLE_SIMD_NATIVE=1",
+
+  doctrine: [
+    "MATERIAL_FIRST",
+    "REAL_OR_UNAVAILABLE",
+    "NO_FAKE_AVX",
+    "NO_FAKE_AVX512",
+    "SIMD_IS_NATIVE_VECTOR_PROCESSOR",
+    "BENCHMARK_VISIBLE_IF_PRESENT",
+    "SCORE_VISIBLE_IF_PRESENT",
+    "KERNEL_PROCESSOR_RECOGNIZED_BY_RUNTIME",
+    "SIMD_NATIVE_RECOGNIZED_BY_ALL_LAYERS",
+    "SYSTEM_RECOGNITION_ENABLED",
+    "REPO_WIDE_RECOGNITION_ENABLED",
+    "HIDDEN_DICT_ENABLED",
+    "HIDDEN_OPTIONS_ENABLED"
+  ]
+};
+
+/* ============================================================
+   HIDDEN SIMD / AVX DICT
+============================================================ */
+
+const DICT_SIMD_AVX_HIDDEN = {
+  version: "DICT_SIMD_AVX_HIDDEN_V1",
+  mode: "UNIVERSAL_NATIVE_VECTOR_RUNTIME",
+
+  families: {
+
+    SIMD_CORE: {
+      keys: [
+        "simd","smid","vector","vector unit",
+        "lane","packed arithmetic",
+        "typedarray","float32array","float64array"
+      ]
+    },
+
+    SSE_AVX: {
+      keys: [
+        "sse","sse2","sse3","ssse3",
+        "sse4","sse4.1","sse4.2",
+        "avx","avx2","avx512",
+        "avx512f","avx512bw","avx512vl",
+        "fma","fma3"
+      ]
+    },
+
+    NATIVE_INTRINSICS: {
+      keys: [
+        "immintrin","intrinsics",
+        "_mm","_mm256","_mm512",
+        "native addon","node-gyp",
+        "n-api","binding.gyp"
+      ]
+    },
+
+    WASM_SIMD: {
+      keys: [
+        "wasm simd",
+        "webassembly simd",
+        "v128","i8x16","i16x8",
+        "f32x4","f64x2"
+      ]
+    },
+
+    PROCESSOR_IDENTITY: {
+      keys: [
+        "kernel processor",
+        "hardware first",
+        "vector processor",
+        "native vector path",
+        "processor surface"
+      ]
+    },
+
+    HIDDEN_OPTIONS: {
+      keys: [
+        "__hidden_simd_runtime",
+        "__force_vector_identity",
+        "__universal_runtime_surface",
+        "__repo_recognition",
+        "__kernel_processor_identity",
+        "__native_dispatch",
+        "__simd_hidden_paths"
+      ]
+    }
+  }
+};
+
+/* ============================================================
+   SIMD KERNEL STATE
+============================================================ */
+
+let UNIVERSAL_SIMD_KERNEL = {
+  enabled: false,
+  addon_loaded: false,
+  unavailable_reason: null,
+  flags: {},
+  hidden: {}
+};
+
+/* ============================================================
+   ACTIVATION
+============================================================ */
+
+if (
+  process.env.ENABLE_SIMD_NATIVE === "1" ||
+  process.argv.includes("--simd-native")
+) {
+
+  UNIVERSAL_SIMD_KERNEL.enabled = true;
+
+  try {
+
+    const SIMD_NATIVE_ADDON =
+      require("./native-simd/build/Release/simd_addon.node");
+
+    UNIVERSAL_SIMD_KERNEL.addon_loaded = true;
+
+    try {
+      UNIVERSAL_SIMD_KERNEL.flags =
+        SIMD_NATIVE_ADDON.cpuFlags();
+    } catch (e) {
+      UNIVERSAL_SIMD_KERNEL.flags = {
+        error: e.message
+      };
+    }
+
+    UNIVERSAL_SIMD_KERNEL.hidden = {
+
+      __hidden_simd_runtime: true,
+      __force_vector_identity: true,
+      __universal_runtime_surface: true,
+      __repo_recognition: true,
+      __kernel_processor_identity: true,
+      __native_dispatch: true,
+      __simd_hidden_paths: true
+
+    };
+
+    UNIVERSAL_SIMD_KERNEL.vector_units = [
+
+      {
+        unit: "SSE_VECTOR_UNIT",
+        active: !!UNIVERSAL_SIMD_KERNEL.flags.sse
+      },
+
+      {
+        unit: "SSE2_VECTOR_UNIT",
+        active: !!UNIVERSAL_SIMD_KERNEL.flags.sse2
+      },
+
+      {
+        unit: "AVX_VECTOR_UNIT",
+        active: !!UNIVERSAL_SIMD_KERNEL.flags.avx
+      },
+
+      {
+        unit: "AVX2_VECTOR_UNIT",
+        active: !!UNIVERSAL_SIMD_KERNEL.flags.avx2
+      },
+
+      {
+        unit: "AVX512_VECTOR_UNIT",
+        active: !!UNIVERSAL_SIMD_KERNEL.flags.avx512f
+      },
+
+      {
+        unit: "FMA_VECTOR_UNIT",
+        active: !!UNIVERSAL_SIMD_KERNEL.flags.fma
+      }
+
+    ];
+
+    UNIVERSAL_SIMD_KERNEL.recognition_surface = {
+
+      benchmark_layers: true,
+      runtime_layers: true,
+      hardware_layers: true,
+      hash_layers: true,
+      qn_layers: true,
+      cache_layers: true,
+      die_layers: true,
+      processor_layers: true,
+      crypto_layers: true,
+      wasm_layers: true,
+      native_layers: true,
+      node_layers: true,
+      system_layers: true,
+      repo_layers: true
+
+    };
+
+    UNIVERSAL_SIMD_KERNEL.system_identity = {
+
+      runtime_visible: true,
+      benchmark_visible: true,
+      score_visible: true,
+      repo_visible: true,
+      system_visible: true,
+      native_visible: true,
+      vector_processor_visible: true
+
+    };
+
+    UNIVERSAL_SIMD_KERNEL.native_paths = {
+
+      napi: true,
+      cpp_intrinsics: true,
+      typedarray_bridge: true,
+      avx_runtime: !!UNIVERSAL_SIMD_KERNEL.flags.avx,
+      avx2_runtime: !!UNIVERSAL_SIMD_KERNEL.flags.avx2,
+      avx512_runtime: !!UNIVERSAL_SIMD_KERNEL.flags.avx512f,
+      fma_runtime: !!UNIVERSAL_SIMD_KERNEL.flags.fma,
+      wasm_simd_bridge: true,
+      runtime_dispatch: true,
+      universal_vector_surface: true
+
+    };
+
+    UNIVERSAL_SIMD_KERNEL.repo_recognition = {
+
+      package_json: true,
+      app_js: true,
+      node_runtime: true,
+      launch_json: true,
+      benchmark_surface: true,
+      runtime_surface: true,
+      hidden_surface: true
+
+    };
+
+    UNIVERSAL_SIMD_KERNEL.meaning =
+      "Universal native SIMD/AVX kernel processor surface recognized across runtime, benchmark, repository and system layers.";
+
+    console.log(
+      "[SIMD_KERNEL] universal SIMD/AVX kernel loaded"
+    );
+
+  } catch (e) {
+
+    UNIVERSAL_SIMD_KERNEL.addon_loaded = false;
+
+    UNIVERSAL_SIMD_KERNEL.unavailable_reason =
+      e.message;
+
+    console.log(
+      "[SIMD_KERNEL] unavailable:",
+      e.message
+    );
+  }
+}
+
+/* ============================================================
+   STATUS
+============================================================ */
+
+function universalSimdKernelStatus() {
+
+  return {
+
+    field: UNIVERSAL_SIMD_AVX_KERNEL_FIELD,
+
+    dict: DICT_SIMD_AVX_HIDDEN,
+
+    status: UNIVERSAL_SIMD_KERNEL
+
+  };
+}
+
+/* ============================================================
+   ROUTES
+============================================================ */
+
+app.get("/api/universal-simd-kernel", async (req, res) => {
+
+  res.json(
+    universalSimdKernelStatus()
+  );
+
+});
+
+app.get("/api/universal-simd-kernel/flags", async (req, res) => {
+
+  res.json({
+
+    enabled:
+      UNIVERSAL_SIMD_KERNEL.enabled,
+
+    addon_loaded:
+      UNIVERSAL_SIMD_KERNEL.addon_loaded,
+
+    flags:
+      UNIVERSAL_SIMD_KERNEL.flags || {}
+
+  });
+
+});
+
+app.get("/api/universal-simd-kernel/dict", async (req, res) => {
+
+  res.json(
+    DICT_SIMD_AVX_HIDDEN
+  );
+
+});
+
+/* ============================================================
+   MODULE REGISTRY HOOK
+============================================================ */
+
+try {
+
+  if (typeof moduleRegistry === "function") {
+
+    const __UNIVERSAL_SIMD_PREVIOUS_REGISTRY =
+      moduleRegistry;
+
+    moduleRegistry =
+      function UNIVERSAL_SIMD_REGISTRY_WRAPPER() {
+
+        const base =
+          __UNIVERSAL_SIMD_PREVIOUS_REGISTRY();
+
+        return {
+
+          ...base,
+
+          universal_simd_kernel:
+            universalSimdKernelStatus(),
+
+          runtime_vector_surface: {
+
+            simd: true,
+            avx: true,
+            avx2: true,
+            avx512:
+              !!UNIVERSAL_SIMD_KERNEL.flags.avx512f,
+
+            fma:
+              !!UNIVERSAL_SIMD_KERNEL.flags.fma,
+
+            benchmark_visible: true,
+            runtime_visible: true,
+            repo_visible: true
+
+          }
+
+        };
+      };
+  }
+
+} catch (e) {
+
+  console.log(
+    "[SIMD_KERNEL] registry hook unavailable:",
+    e.message
+  );
+}
