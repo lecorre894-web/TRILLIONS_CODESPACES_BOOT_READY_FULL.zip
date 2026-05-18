@@ -6979,8 +6979,6 @@ function asicMemory(ms){
   }
 })();
 
-"use strict";
-
 /*
 TRILLIONS_DELTA_METER
 Measure:
@@ -7202,4 +7200,4 @@ function orchestratedHash(ms){
     JSON.stringify(report,null,2)
   );
 
-})();
+})();3
