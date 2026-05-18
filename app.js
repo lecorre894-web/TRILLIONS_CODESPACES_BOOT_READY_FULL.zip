@@ -9308,3 +9308,155 @@ try {
 <button onclick="load('/api/processor-calc/numeric')">NUMERIC</button>
 <button onclick="load('/api/processor-calc/symbolic')">SYMBOLIC</button>
 */
+
+/* ============================================================
+   TRILLIONS ADDITIVE KERNEL_BENCH_PROFILE_COMPILER
+   Converts benchmark results into runtime solver policy.
+   Paste after processor/cache/stratum layers.
+============================================================ */
+
+const KERNEL_BENCH_PROFILE_COMPILER = {
+  name: "KERNEL_BENCH_PROFILE_COMPILER",
+  version: "V2_RESULT_TO_SOLVER_POLICY",
+  doctrine: [
+    "READ_LOCAL_BENCH_ONLY",
+    "NO_FAKE_POWER",
+    "NO_PHYSICAL_CPU_CLAIM",
+    "CODESPACES_CONTAINER_AWARE",
+    "ADAPT_SOLVER_TO_MEASURED_KERNEL"
+  ],
+  metrics: [
+    "sha256d_hps",
+    "float64_gops",
+    "integer_gops",
+    "bitwise_gops",
+    "memory_seq_gb_s",
+    "memory_stride_gb_s",
+    "latency_p95_ms"
+  ]
+};
+
+function compileKernelBenchProfile(input = {}) {
+  const s = input.summary || input || {};
+
+  const floatG = Number(s.avg_float64_gops ?? s.float64_gops ?? 0);
+  const intG = Number(s.avg_integer_gops ?? s.integer_gops ?? 0);
+  const bitG = Number(s.avg_bitwise_gops ?? s.bitwise_gops ?? 0);
+  const memSeq = Number(s.avg_memory_seq_gb_s ?? s.memory_seq_gb_s ?? 0);
+  const memStride = Number(s.avg_memory_stride_gb_s ?? s.memory_stride_gb_s ?? 0);
+  const sha = Number(s.avg_sha256d_hps ?? s.sha256d_hps ?? 0);
+  const lat = Number(s.latency_p95_ms ?? s.p95_ms ?? 0);
+
+  const bestCalc = [
+    ["BITWISE", bitG],
+    ["INTEGER", intG],
+    ["FLOAT64", floatG]
+  ].sort((a, b) => b[1] - a[1])[0];
+
+  const memoryClass =
+    memSeq >= 8 ? "HIGH_MEMORY_BANDWIDTH" :
+    memSeq >= 3 ? "MEDIUM_MEMORY_BANDWIDTH" :
+    memSeq >= 1 ? "LIMITED_MEMORY_BANDWIDTH" :
+    "VERY_LIMITED_MEMORY_BANDWIDTH";
+
+  const strideClass =
+    memStride >= 2 ? "GOOD_RANDOM_ACCESS" :
+    memStride >= 0.5 ? "LIMITED_RANDOM_ACCESS" :
+    "WEAK_RANDOM_ACCESS";
+
+  const latencyClass =
+    !lat ? "LATENCY_UNKNOWN" :
+    lat <= 2 ? "LOW_LATENCY" :
+    lat <= 10 ? "NORMAL_LATENCY" :
+    lat <= 30 ? "HIGH_LATENCY" :
+    "VERY_HIGH_LATENCY";
+
+  const calcScore =
+    (bitG * 120) +
+    (intG * 100) +
+    (floatG * 80) +
+    (memSeq * 10) +
+    (memStride * 20) +
+    (sha / 100000);
+
+  const verdict =
+    calcScore >= 700 ? "EXCELLENT_KERNEL" :
+    calcScore >= 400 ? "VERY_GOOD_KERNEL" :
+    calcScore >= 200 ? "GOOD_KERNEL" :
+    calcScore >= 100 ? "MODERATE_KERNEL" :
+    "LIMITED_KERNEL";
+
+  const policies = {
+    primary_compute_path: bestCalc[0],
+    crypto_hash_path: bitG >= intG ? "BITWISE_FIRST_THEN_INTEGER" : "INTEGER_FIRST_THEN_BITWISE",
+    stratum_sha256_path: sha > 0 ? "NODE_CRYPTO_SHA256D_CPU" : "UNAVAILABLE_NO_SHA_BENCH",
+    parser_path: "BITWISE_INTEGER_TYPEDARRAY",
+    numeric_float_path:
+      floatG >= 1 ? "FLOAT64_JS_OK" :
+      "FLOAT64_JS_LIMITED_USE_BLAS_WASM_PYTHON_IF_AVAILABLE",
+    memory_policy:
+      memSeq < 3
+        ? "SMALL_BATCH_STREAMING_TTL_CACHE"
+        : "MEDIUM_BATCH_CACHE_ALLOWED",
+    random_access_policy:
+      memStride < 0.5
+        ? "AVOID_RANDOM_STRIDE_USE_SEQUENTIAL_LAYOUT"
+        : "RANDOM_ACCESS_ACCEPTABLE",
+    worker_threads_policy:
+      memSeq >= 3 && (!lat || lat < 15)
+        ? "WORKERS_ALLOWED_WITH_LIMIT"
+        : "WORKERS_CONSERVATIVE",
+    cache_policy:
+      memSeq < 3
+        ? "SHORT_TTL_LOW_MEMORY_PRESSURE"
+        : "NORMAL_TTL",
+    solver_policy:
+      bestCalc[0] === "BITWISE"
+        ? "HASH_PARSER_PROTOCOL_SOLVER_PRIORITY"
+        : "GENERAL_INTEGER_SOLVER_PRIORITY"
+  };
+
+  return {
+    time: now(),
+    compiler: KERNEL_BENCH_PROFILE_COMPILER,
+    input_summary: s,
+    normalized_metrics: {
+      float64_gops: floatG,
+      integer_gops: intG,
+      bitwise_gops: bitG,
+      memory_seq_gb_s: memSeq,
+      memory_stride_gb_s: memStride,
+      sha256d_hps: sha,
+      latency_p95_ms: lat
+    },
+    classes: {
+      best_calc: bestCalc[0],
+      memory: memoryClass,
+      stride: strideClass,
+      latency: latencyClass
+    },
+    score: +calcScore.toFixed(3),
+    verdict,
+    policies,
+    honesty:
+      "Profile is derived from local kernel benchmark only. It is not a physical CPU rating."
+  };
+}
+
+app.post("/api/kernel-bench/profile/compile", async (req, res) => {
+  res.json(compileKernelBenchProfile(req.body || {}));
+});
+
+app.get("/api/kernel-bench/profile/example-v2", async (req, res) => {
+  res.json(compileKernelBenchProfile({
+    summary: {
+      avg_float64_gops: 0.217,
+      avg_integer_gops: 0.722,
+      avg_bitwise_gops: 2.797,
+      avg_memory_seq_gb_s: 1.949,
+      avg_memory_stride_gb_s: 0.217,
+      avg_sha256d_hps: 0,
+      latency_p95_ms: 0
+    }
+  }));
+});
