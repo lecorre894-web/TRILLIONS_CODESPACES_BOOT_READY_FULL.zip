@@ -1,0 +1,1340 @@
+{
+  "file": "app.js",
+  "exists": true,
+  "bytes": 380224,
+  "lines": 6981,
+  "hash": "486fa744a8c82e17",
+  "routes": [
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/full"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ping"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/heartbeat"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/clients"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/runtime/status"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/reconnect"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ai-chat"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/ai-chat"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ai-chat/history"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ai-chat/providers"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ai-chat/trace"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/power"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/experimental"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/exponential"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/cockpit"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/capacity"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/dict"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/dict/classify"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/modules"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/legacy"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ai-kernel"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/ai-kernel/plan"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ai-kernel/plan"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/solver/strategic"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/solver/strategic"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/jobs/create"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/jobs/start"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/jobs"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/repair"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/repair/report"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/repair/risk"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/routes/test"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/self/audit"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/batch"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/system"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/network"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/repo"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/blockchain"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/workload"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/launch"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/iot"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/protocols"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/security"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/supercompute"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/tech"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ai"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/shell"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/imperial"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestrator"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/space"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/space/catalog"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/space/iss"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/space/iss/position"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/max-tech"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/max-tech/scan"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/max-tech/no-flicage"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/network-situation"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/timing"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/timing/terminal"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/terminal-v11"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/terminal-v11/catalog"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/terminal-v11/run"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/polyglot/catalog"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/processor"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/performance-profile"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/support-accelerator"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/max-expansion"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/how-far-can-it-go"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/v11-plus"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/runtime/dictionaries"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/memory/pressure"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/energy/value"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/providers/smart"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/correlation/super"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/reasoning/multilayer"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/jobs/priority"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/jobs/create-priority"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/latency/guard"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestration-direction"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestration-258/search-parameters"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestration-258/activation-script"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestration-258/reports"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/flops-libre"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/flops-libre/dict"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/flops-libre/report"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/instant-score"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/power-catalog"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/wasm-simd/probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/shared-array-buffer/probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/gpu/probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/native-addon/probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/flops-libre/warmup"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/flops-libre/vectorized"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/flops-libre/workers"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/flops-libre/boost"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/flops-libre/boost-report"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/flops-libre/power-history"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestrator-intelligent/catalog"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestrator-intelligent/health"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestrator-intelligent/score"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestrator-intelligent/stress"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestrator-intelligent/history"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/orchestrator-intelligent/script"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hpc-zeta/catalog"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hpc-zeta/probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hpc-zeta/health"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hpc-zeta/stress"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hpc-zeta/gpu-probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hpc-zeta/cpu-vector-probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hpc-zeta/memory-pool-probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hpc-zeta/thermal"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hpc-zeta/worker-pool-probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/v11-super"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/boot/self-test"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/routes/health-matrix"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/timings"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/providers/score"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/memory/pressure-v2"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/shell/capabilities"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/energy/value-v2"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/correlation/super-v2"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/reasoning/multilayer-v2"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/reasoning/multilayer-v2"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/repair/playbook"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/v11-3"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/auth/status"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/rate-limit/status"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/routes/health-matrix"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/boot/self-test"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/providers/score"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/jobs/dependency-graph"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/memory/ledger"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/energy/value-v3"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/websocket/flow"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/tests/heavy-workload"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/gains/report-258"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/weaknesses/positive"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/performance/augmentor"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/performance/baseline"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/performance/mastery"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/performance/workers"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/performance/scheduler"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/performance/cache-efficiency"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/performance/job-efficiency"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/performance/micro-benchmark"
+    },
+    {
+      "object": "app",
+      "method": "POST",
+      "path": "/api/performance/compute-run"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/performance/gain-report"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/workloads-runtime"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/dashboard/workloads-runtime"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/workload-runtime/status"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/workload-runtime/dashboard"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/workload-runtime/memory"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/workload-runtime/energy"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/workload-runtime/scripts"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/workload-runtime/solver"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/positive-runtime"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/positive-runtime/status"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/positive-runtime/baseline"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/positive-runtime/cache/optimize"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/positive-runtime/provider"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/positive-runtime/routes"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/positive-runtime/heavy-route-check"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/positive-runtime/stress-plan"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/positive-runtime/stress-script"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-score"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-score/report"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-score/history"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-score/dict"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-score/engine"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-score/level4-guard"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-score/provider"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-score/recovery"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-score/stress-plan"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-score/stress-script"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/engine"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/dict"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/plan"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/report"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/maximal-guard"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/verdict"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/history"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/script"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/stress-script"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/recovery-engine"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/recovery-dict"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/ram-recovery"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/heap-cooldown"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/post-stress-window"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/cache-prune"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/full-recovery"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/full-report"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/full-history"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/complete-script"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/frontier-kernel/full-stress-script"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-6y/catalog"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/dict/benchmark-support"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/benchmark/all-needs"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-6y/support"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-6y/score"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-6y/stress-plan"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/memory-safe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/memory-guard"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/catalog"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/phase1"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/phase2"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/phase3"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/phase4"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/stress"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/score"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/history"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/hybrid-hpc/script"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/dicts"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/catalog"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/cache"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/cache/warm"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/wasm-simd"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/shared-memory"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/workers"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/workers/recycle"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/workers/steal"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/native-avx"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/gpu"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/orchestrate"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/stress"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/ultimate-hpc/history"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/catalog"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/mpi"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/rdma"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/numa"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/cluster"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/storage"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/native"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/gpu"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/watchdog"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/thermal-power"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/probe"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/readiness"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/orchestrate"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/world-hpc/stress"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/memory-fabric"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/memory-fabric/bench"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/x3d-worker-fabric"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/x3d-worker-fabric/shared-buffer"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/x3d-worker-fabric/workers"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/calibrate"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/codex"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/layers"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/kernel-latency"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/next-layer"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/heatmap"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/adaptive-batch"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/arena/alloc"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/arena/status"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/arena/clear"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/matrix"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/safe-repair"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/die"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/ddr7"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/cache-totals"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/software-processor/ddr7-512"
+    },
+    {
+      "object": "app",
+      "method": "GET",
+      "path": "/api/trillions/host-sync-coprocessor"
+    }
+  ],
+  "route_count": 263,
+  "listen_expressions": [
+    "PORT"
+  ],
+  "port_refs_sample": [
+    "PORT",
+    "process.env.PORT",
+    "localhost:3000"
+  ],
+  "has_global_app": true,
+  "has_express": true,
+  "has_socketio": true,
+  "has_stratum": true,
+  "has_memory_pipeline": true,
+  "has_bench": true,
+  "has_dict": true
+}

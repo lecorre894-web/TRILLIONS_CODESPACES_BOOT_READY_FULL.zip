@@ -1,0 +1,15 @@
+{
+  "node": "v24.14.0",
+  "v8": "13.6.233.17-node.41",
+  "platform": "linux",
+  "arch": "x64",
+  "logical_cpus": 2,
+  "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+  "total_ram_gb": 7.76,
+  "free_ram_gb": 4.99,
+  "cwd": "/workspaces/TRILLIONS_CODESPACES_BOOT_READY_FULL.zip",
+  "npm_version": "11.9.0",
+  "git_branch": "main",
+  "git_remote": "origin\thttps://github.com/lecorre894-web/TRILLIONS_CODESPACES_BOOT_READY_FULL.zip (fetch)\norigin\thttps://github.com/lecorre894-web/TRILLIONS_CODESPACES_BOOT_READY_FULL.zip (push)",
+  "disk": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/loop4       32G  9.9G   20G  34% /workspaces"
+}

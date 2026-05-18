@@ -1,0 +1,308 @@
+# TRILLIONS Repo AutoConfig Report
+
+## Runtime
+- Node: v24.14.0
+- V8: 13.6.233.17-node.41
+- Platform: linux x64
+- CPU visible: Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
+- Logical CPUs: 2
+- RAM total/free: 7.76 GB / 4.99 GB
+- Branch: main
+
+## Main
+- Primary app file: app.js
+- JS files: 40
+- HTML files: 2
+- JSON files: 19
+
+## Package
+- package.json: yes
+- Express: yes
+- Socket.io: yes
+- Scripts: start, dev
+
+## Routes
+- Route count: 263
+- GET /
+- GET /api/full
+- GET /api/ping
+- GET /api/heartbeat
+- GET /api/clients
+- GET /api/runtime/status
+- GET /api/reconnect
+- GET /api/ai-chat
+- POST /api/ai-chat
+- GET /api/ai-chat/history
+- GET /api/ai-chat/providers
+- GET /api/ai-chat/trace
+- GET /api/power
+- GET /api/experimental
+- GET /api/exponential
+- GET /api/cockpit
+- GET /api/capacity
+- GET /api/dict
+- POST /api/dict/classify
+- GET /api/modules
+- GET /api/legacy
+- GET /api/ai-kernel
+- POST /api/ai-kernel/plan
+- GET /api/ai-kernel/plan
+- GET /api/solver/strategic
+- POST /api/solver/strategic
+- POST /api/jobs/create
+- POST /api/jobs/start
+- GET /api/jobs
+- GET /api/repair
+- GET /api/repair/report
+- POST /api/repair/risk
+- GET /api/routes/test
+- GET /api/self/audit
+- POST /api/batch
+- GET /api/system
+- GET /api/network
+- GET /api/repo
+- GET /api/blockchain
+- GET /api/workload
+- GET /api/launch
+- GET /api/iot
+- GET /api/protocols
+- GET /api/security
+- GET /api/supercompute
+- GET /api/tech
+- GET /api/ai
+- POST /api/shell
+- GET /api/imperial
+- GET /api/orchestrator
+- GET /api/space
+- GET /api/space/catalog
+- GET /api/space/iss
+- GET /api/space/iss/position
+- GET /api/max-tech
+- GET /api/max-tech/scan
+- GET /api/max-tech/no-flicage
+- GET /api/network-situation
+- GET /api/timing
+- POST /api/timing/terminal
+- GET /api/terminal-v11
+- GET /api/terminal-v11/catalog
+- POST /api/terminal-v11/run
+- GET /api/polyglot/catalog
+- GET /api/processor
+- GET /api/performance-profile
+- GET /api/support-accelerator
+- GET /api/max-expansion
+- GET /api/how-far-can-it-go
+- GET /api/v11-plus
+- GET /api/runtime/dictionaries
+- GET /api/memory/pressure
+- GET /api/energy/value
+- GET /api/providers/smart
+- GET /api/correlation/super
+- GET /api/reasoning/multilayer
+- GET /api/jobs/priority
+- POST /api/jobs/create-priority
+- GET /api/latency/guard
+- GET /api/orchestration-direction
+- GET /api/orchestration-258/search-parameters
+- GET /api/orchestration-258/activation-script
+- GET /api/orchestration-258/reports
+- GET /api/benchmark/flops-libre
+- GET /api/benchmark/flops-libre/dict
+- GET /api/benchmark/flops-libre/report
+- GET /api/benchmark/instant-score
+- GET /api/benchmark/power-catalog
+- GET /api/benchmark/wasm-simd/probe
+- GET /api/benchmark/shared-array-buffer/probe
+- GET /api/benchmark/gpu/probe
+- GET /api/benchmark/native-addon/probe
+- GET /api/benchmark/flops-libre/warmup
+- GET /api/benchmark/flops-libre/vectorized
+- GET /api/benchmark/flops-libre/workers
+- GET /api/benchmark/flops-libre/boost
+- GET /api/benchmark/flops-libre/boost-report
+- GET /api/benchmark/flops-libre/power-history
+- GET /api/orchestrator-intelligent/catalog
+- GET /api/orchestrator-intelligent/health
+- GET /api/orchestrator-intelligent/score
+- GET /api/orchestrator-intelligent/stress
+- GET /api/orchestrator-intelligent/history
+- GET /api/orchestrator-intelligent/script
+- GET /api/hpc-zeta/catalog
+- GET /api/hpc-zeta/probe
+- GET /api/hpc-zeta/health
+- GET /api/hpc-zeta/stress
+- GET /api/hpc-zeta/gpu-probe
+- GET /api/hpc-zeta/cpu-vector-probe
+- GET /api/hpc-zeta/memory-pool-probe
+- GET /api/hpc-zeta/thermal
+- GET /api/hpc-zeta/worker-pool-probe
+- GET /api/v11-super
+- GET /api/boot/self-test
+- GET /api/routes/health-matrix
+- GET /api/timings
+- GET /api/providers/score
+- GET /api/memory/pressure-v2
+- GET /api/shell/capabilities
+- GET /api/energy/value-v2
+- GET /api/correlation/super-v2
+- GET /api/reasoning/multilayer-v2
+- POST /api/reasoning/multilayer-v2
+- GET /api/repair/playbook
+- GET /api/v11-3
+- GET /api/auth/status
+- GET /api/rate-limit/status
+- GET /api/routes/health-matrix
+- GET /api/boot/self-test
+- GET /api/providers/score
+- GET /api/jobs/dependency-graph
+- GET /api/memory/ledger
+- GET /api/energy/value-v3
+- GET /api/websocket/flow
+- GET /api/tests/heavy-workload
+- GET /api/gains/report-258
+- GET /api/weaknesses/positive
+- GET /api/performance/augmentor
+- GET /api/performance/baseline
+- GET /api/performance/mastery
+- GET /api/performance/workers
+- GET /api/performance/scheduler
+- GET /api/performance/cache-efficiency
+- GET /api/performance/job-efficiency
+- GET /api/performance/micro-benchmark
+- POST /api/performance/compute-run
+- GET /api/performance/gain-report
+- GET /workloads-runtime
+- GET /dashboard/workloads-runtime
+- GET /api/workload-runtime/status
+- GET /api/workload-runtime/dashboard
+- GET /api/workload-runtime/memory
+- GET /api/workload-runtime/energy
+- GET /api/workload-runtime/scripts
+- GET /api/workload-runtime/solver
+- GET /api/positive-runtime
+- GET /api/positive-runtime/status
+- GET /api/positive-runtime/baseline
+- GET /api/positive-runtime/cache/optimize
+- GET /api/positive-runtime/provider
+- GET /api/positive-runtime/routes
+- GET /api/positive-runtime/heavy-route-check
+- GET /api/positive-runtime/stress-plan
+- GET /api/positive-runtime/stress-script
+- GET /api/kernel-score
+- GET /api/kernel-score/report
+- GET /api/kernel-score/history
+- GET /api/kernel-score/dict
+- GET /api/kernel-score/engine
+- GET /api/kernel-score/level4-guard
+- GET /api/kernel-score/provider
+- GET /api/kernel-score/recovery
+- GET /api/kernel-score/stress-plan
+- GET /api/kernel-score/stress-script
+- GET /api/frontier-kernel/engine
+- GET /api/frontier-kernel/dict
+- GET /api/frontier-kernel/plan
+- GET /api/frontier-kernel/report
+- GET /api/frontier-kernel/maximal-guard
+- GET /api/frontier-kernel/verdict
+- GET /api/frontier-kernel/history
+- GET /api/frontier-kernel/script
+- GET /api/frontier-kernel/stress-script
+- GET /api/frontier-kernel/recovery-engine
+- GET /api/frontier-kernel/recovery-dict
+- GET /api/frontier-kernel/ram-recovery
+- GET /api/frontier-kernel/heap-cooldown
+- GET /api/frontier-kernel/post-stress-window
+- GET /api/frontier-kernel/cache-prune
+- GET /api/frontier-kernel/full-recovery
+- GET /api/frontier-kernel/full-report
+- GET /api/frontier-kernel/full-history
+- GET /api/frontier-kernel/complete-script
+- GET /api/frontier-kernel/full-stress-script
+- GET /api/kernel-6y/catalog
+- GET /api/dict/benchmark-support
+- GET /api/benchmark/all-needs
+- GET /api/kernel-6y/support
+- GET /api/kernel-6y/score
+- GET /api/kernel-6y/stress-plan
+- GET /api/hybrid-hpc/memory-safe
+- GET /api/hybrid-hpc/memory-guard
+- GET /api/hybrid-hpc/catalog
+- GET /api/hybrid-hpc/probe
+- GET /api/hybrid-hpc/phase1
+- GET /api/hybrid-hpc/phase2
+- GET /api/hybrid-hpc/phase3
+- GET /api/hybrid-hpc/phase4
+- GET /api/hybrid-hpc/stress
+- GET /api/hybrid-hpc/score
+- GET /api/hybrid-hpc/history
+- GET /api/hybrid-hpc/script
+- GET /api/ultimate-hpc/dicts
+- GET /api/ultimate-hpc/catalog
+- GET /api/ultimate-hpc/cache
+- GET /api/ultimate-hpc/cache/warm
+- GET /api/ultimate-hpc/wasm-simd
+- GET /api/ultimate-hpc/shared-memory
+- GET /api/ultimate-hpc/workers
+- GET /api/ultimate-hpc/workers/recycle
+- GET /api/ultimate-hpc/workers/steal
+- GET /api/ultimate-hpc/native-avx
+- GET /api/ultimate-hpc/gpu
+- GET /api/ultimate-hpc/orchestrate
+- GET /api/ultimate-hpc/stress
+- GET /api/ultimate-hpc/history
+- GET /api/world-hpc/catalog
+- GET /api/world-hpc/mpi
+- GET /api/world-hpc/rdma
+- GET /api/world-hpc/numa
+- GET /api/world-hpc/cluster
+- GET /api/world-hpc/storage
+- GET /api/world-hpc/native
+- GET /api/world-hpc/gpu
+- GET /api/world-hpc/watchdog
+- GET /api/world-hpc/thermal-power
+- GET /api/world-hpc/probe
+- GET /api/world-hpc/readiness
+- GET /api/world-hpc/orchestrate
+- GET /api/world-hpc/stress
+- GET /api/memory-fabric
+- GET /api/memory-fabric/bench
+- GET /api/x3d-worker-fabric
+- GET /api/x3d-worker-fabric/shared-buffer
+- GET /api/x3d-worker-fabric/workers
+- GET /api/software-processor/calibrate
+- GET /api/software-processor/codex
+- GET /api/software-processor/layers
+- GET /api/kernel-latency
+- GET /api/software-processor/next-layer
+- GET /api/software-processor/heatmap
+- GET /api/software-processor/adaptive-batch
+- GET /api/software-processor/arena/alloc
+- GET /api/software-processor/arena/status
+- GET /api/software-processor/arena/clear
+- GET /api/software-processor/matrix
+- GET /api/software-processor/safe-repair
+- GET /api/software-processor/die
+- GET /api/software-processor/ddr7
+- GET /api/software-processor/cache-totals
+- GET /api/software-processor/ddr7-512
+- GET /api/trillions/host-sync-coprocessor
+
+## Detected Modules
+- global.app: yes
+- Stratum: yes
+- Memory Pipeline: yes
+- Bench: yes
+- DiCT: yes
+
+## Ports
+- 3000
+- 3333
+- 9229
+
+## Recommendations
+- Garder submit_enabled:false dans Stratum tant que wallet/pool/worker ne sont pas validés.
+- Garder HONESTY_LOCK : EH/s réel uniquement via pool/ASIC telemetry.
+
+## Honesty
+This scanner configures the repo metadata and recommendations only.
+It does not fake EH/s, CPU power, RAM speed or mining telemetry.
