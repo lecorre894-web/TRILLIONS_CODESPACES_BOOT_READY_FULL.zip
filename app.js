@@ -4874,3 +4874,76 @@ app.get("/api/software-processor/ddr7",(req,res)=>{
   );
 
 });
+
+/* ============================================================
+   CACHE DIE TOTALS EXTENSION
+============================================================ */
+
+const CACHE_DIE_TOTALS_EXTENSION = {
+
+  totals:{
+
+    total_MB:
+      8096+
+      32192+
+      128384+
+      512768+
+      2049536+
+      8195072,
+
+    total_GB:
+      +(
+        (
+          8096+
+          32192+
+          128384+
+          512768+
+          2049536+
+          8195072
+        )/1024
+      ).toFixed(2),
+
+    total_TB:
+      +(
+        (
+          8096+
+          32192+
+          128384+
+          512768+
+          2049536+
+          8195072
+        )/1048576
+      ).toFixed(2)
+
+  },
+
+  scaling:"EXPONENTIAL",
+
+  memory_model:[
+    "HOT_PATH",
+    "VECTOR_CACHE",
+    "SHARED_BUFFER",
+    "RAMDISK_LAYER",
+    "NVME_CACHE_LAYER",
+    "RAW_RAID_LAYER"
+  ],
+
+  runtime_profile:{
+    mode:"3D_VCACHE_RAID_MEMORY_FABRIC",
+    topology:"L1_TO_L6_EXPONENTIAL",
+    orchestration:"QN_ASSISTED"
+  },
+
+  honesty:
+    "logical totals extension only"
+
+};
+
+app.get("/api/software-processor/cache-totals",(req,res)=>{
+
+  res.json({
+    time:new Date().toISOString(),
+    extension:CACHE_DIE_TOTALS_EXTENSION
+  });
+
+});
