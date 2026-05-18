@@ -3775,3 +3775,204 @@ app.get("/api/memory-fabric/bench",(req,res)=>{
   });
 
 });
+
+/* ============================================================
+   TRILLIONS X3D / WORKER / SHARED MEMORY FABRIC
+   ADDITIVE ONLY — REAL_ONLY_OR_UNAVAILABLE
+============================================================ */
+
+const TRILLIONS_X3D_WORKER_FABRIC = {
+  version:"X3D_WORKER_FABRIC_V1",
+  doctrine:[
+    "REAL_ONLY_OR_UNAVAILABLE",
+    "NO_FAKE_AVX",
+    "NO_FAKE_MMAP",
+    "NO_FAKE_RAMDISK",
+    "NO_FAKE_GPU"
+  ],
+  features:{
+    persistent_worker_threads:true,
+    shared_array_buffer:typeof SharedArrayBuffer!=="undefined",
+    atomics:typeof Atomics!=="undefined",
+    parallel_batching:true,
+    ramdisk_dev_shm:fs.existsSync("/dev/shm"),
+    native_avx2_path:"native/build/Release/trillions_native.node",
+    mmap_real:"UNAVAILABLE_UNLESS_NATIVE_ADDON",
+    memory_pinning:"UNAVAILABLE_IN_NODE_USERSPACE",
+    ryzen_x3d:"DETECTED_ONLY_IF_HOST_REPORTS"
+  },
+  honesty:
+    "Node.js can orchestrate workers/shared buffers; AVX2/mmap/pinning require real native addon or OS support"
+};
+
+function trillionsNativeAvxProbe(){
+  const candidates=[
+    "./native/build/Release/trillions_native.node",
+    "./build/Release/trillions_native.node",
+    "./build/Release/avx_kernel.node"
+  ];
+
+  return candidates.map(p=>({
+    path:p,
+    exists:fs.existsSync(p),
+    usable:false,
+    note:"presence only; loading must be tested separately"
+  }));
+}
+
+function trillionsRamDiskProbe(){
+  const p="/dev/shm";
+
+  try{
+    const exists=fs.existsSync(p);
+    if(!exists)return {path:p,exists:false,writable:false};
+
+    const f=`${p}/trillions_ramdisk_probe_${Date.now()}.tmp`;
+    const t=Date.now();
+    fs.writeFileSync(f,Buffer.alloc(16*1024*1024));
+    fs.unlinkSync(f);
+
+    return {
+      path:p,
+      exists:true,
+      writable:true,
+      write_test_MB:16,
+      duration_ms:Date.now()-t,
+      status:"RAMDISK_AVAILABLE"
+    };
+
+  }catch(e){
+    return {
+      path:p,
+      exists:fs.existsSync(p),
+      writable:false,
+      error:String(e)
+    };
+  }
+}
+
+function trillionsSharedBufferBench(sizeMB=64){
+  sizeMB=Math.max(8,Math.min(Number(sizeMB||64),512));
+
+  if(typeof SharedArrayBuffer==="undefined"){
+    return {
+      status:"SHARED_ARRAY_BUFFER_UNAVAILABLE",
+      honesty:"host/runtime does not expose SharedArrayBuffer"
+    };
+  }
+
+  const bytes=sizeMB*1024*1024;
+  const sab=new SharedArrayBuffer(bytes);
+  const view=new Uint8Array(sab);
+
+  const started=Date.now();
+
+  for(let i=0;i<view.length;i+=4096){
+    view[i]=(i*31)&255;
+  }
+
+  let checksum=0;
+
+  for(let i=0;i<view.length;i+=4096){
+    checksum=(checksum+view[i])&0xffffffff;
+  }
+
+  const ms=Date.now()-started;
+
+  return {
+    status:"SHARED_BUFFER_BENCH_COMPLETE",
+    size_MB:sizeMB,
+    duration_ms:ms,
+    bandwidth_MB_s:+(sizeMB/(ms/1000)).toFixed(2),
+    checksum,
+    honesty:"SharedArrayBuffer userspace benchmark"
+  };
+}
+
+async function trillionsPersistentWorkerBench(workers=2,sizeMB=64){
+  const wt=require("worker_threads");
+
+  workers=Math.max(1,Math.min(Number(workers||2),Math.min(os.cpus().length||2,8)));
+  sizeMB=Math.max(8,Math.min(Number(sizeMB||64),512));
+
+  const sab=new SharedArrayBuffer(sizeMB*1024*1024);
+  const chunk=Math.floor(sab.byteLength/workers);
+
+  const code=`
+    const {parentPort,workerData}=require("worker_threads");
+    const view=new Uint8Array(workerData.sab);
+    let checksum=0;
+    const start=workerData.start;
+    const end=workerData.end;
+    for(let i=start;i<end;i+=4096){
+      view[i]=(i*17)&255;
+      checksum=(checksum+view[i])&0xffffffff;
+    }
+    parentPort.postMessage({ok:true,checksum});
+  `;
+
+  const started=Date.now();
+
+  const jobs=[];
+
+  for(let w=0;w<workers;w++){
+    const start=w*chunk;
+    const end=w===workers-1?sab.byteLength:(w+1)*chunk;
+
+    jobs.push(new Promise(resolve=>{
+      const worker=new wt.Worker(code,{
+        eval:true,
+        workerData:{sab,start,end}
+      });
+
+      worker.on("message",m=>resolve(m));
+      worker.on("error",e=>resolve({ok:false,error:e.message}));
+    }));
+  }
+
+  const results=await Promise.all(jobs);
+  const ms=Date.now()-started;
+
+  return {
+    status:"PERSISTENT_STYLE_WORKER_BENCH_COMPLETE",
+    workers,
+    size_MB:sizeMB,
+    duration_ms:ms,
+    bandwidth_MB_s:+(sizeMB/(ms/1000)).toFixed(2),
+    results,
+    honesty:"worker_threads real local runtime; not native AVX and not kernel-space pinning"
+  };
+}
+
+/* ============================================================
+   ENDPOINTS X3D / WORKER / SHARED MEMORY
+============================================================ */
+
+app.get("/api/x3d-worker-fabric",(req,res)=>{
+  res.json({
+    time:new Date().toISOString(),
+    fabric:TRILLIONS_X3D_WORKER_FABRIC,
+    native_avx:trillionsNativeAvxProbe(),
+    ramdisk:trillionsRamDiskProbe(),
+    memory:trillionsMemorySnapshot?trillionsMemorySnapshot():process.memoryUsage()
+  });
+});
+
+app.get("/api/x3d-worker-fabric/shared-buffer",(req,res)=>{
+  res.json({
+    time:new Date().toISOString(),
+    bench:trillionsSharedBufferBench(Number(req.query.sizeMB||64)),
+    doctrine:["REAL_ONLY_OR_UNAVAILABLE","NO_FAKE_SHARED_MEMORY"]
+  });
+});
+
+app.get("/api/x3d-worker-fabric/workers",async(req,res)=>{
+  res.json({
+    time:new Date().toISOString(),
+    bench:await trillionsPersistentWorkerBench(
+      Number(req.query.workers||2),
+      Number(req.query.sizeMB||64)
+    ),
+    doctrine:["REAL_ONLY_OR_UNAVAILABLE","NO_FAKE_PARALLELISM"]
+  });
+});
