@@ -13871,3 +13871,152 @@ try {
     e.message
   );
 }
+
+/* ============================================================
+   TRILLIONS ADDITIVE NATIVE_VECTOR_PROCESSOR_CORE
+   C++ .node addon + CPU intrinsics + CPUID + aligned memory
+   + native dispatch + vector lane scheduler + DICT hidden.
+============================================================ */
+
+const NATIVE_VECTOR_PROCESSOR_CORE = {
+  name: "NATIVE_VECTOR_PROCESSOR_CORE",
+  version: "V1_CPP_NODE_INTRINSICS_CPUID_DISPATCH",
+  additive_only: true,
+  identity: "HARDWARE_FIRST_KERNEL_PROCESSOR",
+  role: "native AVX/SIMD/FMA vector processor core",
+  activation: "ENABLE_SIMD_NATIVE=1 node app.js or node app.js --simd-native",
+  doctrine: [
+    "MATERIAL_FIRST",
+    "REAL_OR_UNAVAILABLE",
+    "CPU_INTRINSICS",
+    "CPUID_RUNTIME_DETECTION",
+    "ALIGNED_MEMORY_SURFACE",
+    "NATIVE_DISPATCH",
+    "VECTOR_LANE_SCHEDULER",
+    "BENCHMARK_VISIBLE_IF_PRESENT",
+    "SYSTEM_RECOGNIZED",
+    "REPO_RECOGNIZED"
+  ]
+};
+
+const DICT_NATIVE_VECTOR_HIDDEN = {
+  version: "DICT_NATIVE_VECTOR_HIDDEN_V1",
+  hidden_options: [
+    "__native_vector_core",
+    "__cpuid_dispatch",
+    "__aligned_memory_surface",
+    "__vector_lane_scheduler",
+    "__avx2_intrinsics",
+    "__fma_path",
+    "__repo_wide_recognition",
+    "__benchmark_recognition_surface"
+  ],
+  families: {
+    CPUID: ["cpuid", "cpu flags", "avx", "avx2", "avx512f", "sse", "sse2", "fma"],
+    INTRINSICS: ["immintrin.h", "_mm256", "_mm512", "_mm256_fmadd_ps", "_mm256_loadu_ps"],
+    ALIGNED_MEMORY: ["aligned memory", "alignment", "32 bytes", "vector memory", "typedarray bridge"],
+    DISPATCH: ["native dispatch", "runtime dispatch", "scalar fallback", "avx2 path", "fma path"],
+    LANE_SCHEDULER: ["vector lanes", "lanes_f32", "vector chunks", "scalar tail"]
+  }
+};
+
+let NATIVE_VECTOR_ADDON = null;
+let NATIVE_VECTOR_STATE = {
+  enabled: false,
+  addon_loaded: false,
+  unavailable_reason: null,
+  flags: {},
+  dispatch: {},
+  aligned: {},
+  hidden: {}
+};
+
+if (process.env.ENABLE_SIMD_NATIVE === "1" || process.argv.includes("--simd-native")) {
+  NATIVE_VECTOR_STATE.enabled = true;
+  try {
+    NATIVE_VECTOR_ADDON = require("./native-simd/build/Release/simd_addon.node");
+    NATIVE_VECTOR_STATE.addon_loaded = true;
+    NATIVE_VECTOR_STATE.flags = NATIVE_VECTOR_ADDON.cpuFlags();
+    NATIVE_VECTOR_STATE.dispatch = NATIVE_VECTOR_ADDON.dispatchPlan();
+    NATIVE_VECTOR_STATE.aligned = NATIVE_VECTOR_ADDON.alignedInfo();
+    NATIVE_VECTOR_STATE.hidden = {
+      __native_vector_core: true,
+      __cpuid_dispatch: true,
+      __aligned_memory_surface: true,
+      __vector_lane_scheduler: true,
+      __avx2_intrinsics: !!NATIVE_VECTOR_STATE.flags.avx2,
+      __fma_path: !!NATIVE_VECTOR_STATE.flags.fma,
+      __repo_wide_recognition: true,
+      __benchmark_recognition_surface: true
+    };
+    console.log("[NATIVE_VECTOR] C++ .node SIMD core loaded");
+  } catch (e) {
+    NATIVE_VECTOR_STATE.unavailable_reason = e.message;
+    console.log("[NATIVE_VECTOR] unavailable:", e.message);
+  }
+}
+
+function nativeVectorStatus() {
+  return {
+    field: NATIVE_VECTOR_PROCESSOR_CORE,
+    dict: DICT_NATIVE_VECTOR_HIDDEN,
+    status: NATIVE_VECTOR_STATE,
+    recognition_surface: {
+      app_js: true,
+      repo: true,
+      runtime: true,
+      benchmark_if_present: true,
+      system_if_present: true,
+      hardware_first: true
+    }
+  };
+}
+
+app.get("/api/native-vector-core", async (req, res) => {
+  res.json(nativeVectorStatus());
+});
+
+app.get("/api/native-vector-core/flags", async (req, res) => {
+  res.json({
+    enabled: NATIVE_VECTOR_STATE.enabled,
+    addon_loaded: NATIVE_VECTOR_STATE.addon_loaded,
+    flags: NATIVE_VECTOR_STATE.flags,
+    dispatch: NATIVE_VECTOR_STATE.dispatch,
+    aligned: NATIVE_VECTOR_STATE.aligned
+  });
+});
+
+app.get("/api/native-vector-core/lanes", async (req, res) => {
+  if (!NATIVE_VECTOR_ADDON) return res.json({ ok:false, status:"UNAVAILABLE_NATIVE_VECTOR_ADDON" });
+  res.json({
+    ok: true,
+    lanes: NATIVE_VECTOR_ADDON.vectorLaneScheduler(Number(req.query.len || 1024))
+  });
+});
+
+app.post("/api/native-vector-core/add", async (req, res) => {
+  if (!NATIVE_VECTOR_ADDON) return res.json({ ok:false, status:"UNAVAILABLE_NATIVE_VECTOR_ADDON" });
+  const len = Math.max(1, Number(req.body && req.body.len || 32));
+  const a = new Float32Array(len), b = new Float32Array(len);
+  for (let i=0;i<len;i++){ a[i]=i; b[i]=i*2; }
+  const out = NATIVE_VECTOR_ADDON.vectorAddFloat32(a,b);
+  res.json({ ok:true, len, preview:Array.from(out.slice(0,16)), lanes:NATIVE_VECTOR_ADDON.vectorLaneScheduler(len) });
+});
+
+app.post("/api/native-vector-core/mul", async (req, res) => {
+  if (!NATIVE_VECTOR_ADDON) return res.json({ ok:false, status:"UNAVAILABLE_NATIVE_VECTOR_ADDON" });
+  const len = Math.max(1, Number(req.body && req.body.len || 32));
+  const a = new Float32Array(len), b = new Float32Array(len);
+  for (let i=0;i<len;i++){ a[i]=i; b[i]=i*2; }
+  const out = NATIVE_VECTOR_ADDON.vectorMulFloat32(a,b);
+  res.json({ ok:true, len, preview:Array.from(out.slice(0,16)), lanes:NATIVE_VECTOR_ADDON.vectorLaneScheduler(len) });
+});
+
+app.post("/api/native-vector-core/fma", async (req, res) => {
+  if (!NATIVE_VECTOR_ADDON) return res.json({ ok:false, status:"UNAVAILABLE_NATIVE_VECTOR_ADDON" });
+  const len = Math.max(1, Number(req.body && req.body.len || 32));
+  const a = new Float32Array(len), b = new Float32Array(len), c = new Float32Array(len);
+  for (let i=0;i<len;i++){ a[i]=i; b[i]=2; c[i]=1; }
+  const out = NATIVE_VECTOR_ADDON.fmaFloat32(a,b,c);
+  res.json({ ok:true, len, preview:Array.from(out.slice(0,16)), lanes:NATIVE_VECTOR_ADDON.vectorLaneScheduler(len) });
+});
