@@ -9460,3 +9460,853 @@ app.get("/api/kernel-bench/profile/example-v2", async (req, res) => {
     }
   }));
 });
+
+/* ============================================================
+   TRILLIONS ADDITIVE LATENCY_MIN_FIELD
+   Purpose: lowest possible latency field across structures.
+   Additive only. No new police. No score-rally.
+   Uses existing LOGIC_GUARD / REAL_OR_UNAVAILABLE.
+============================================================ */
+
+const LATENCY_MIN_FIELD = {
+  name: "LATENCY_MIN_FIELD",
+  version: "V1_LOWEST_LATENCY_TRANSVERSE_FIELD",
+  additive_only: true,
+  role: "minimum latency transverse field across processor, memory, cache, network, IO, solver",
+  relies_on_existing_guards: [
+    "LOGIC_GUARD",
+    "REAL_OR_UNAVAILABLE",
+    "NO_FAKE_METRICS",
+    "NO_FAKE_POWER"
+  ],
+  doctrine: [
+    "LATENCY_AS_SIGNAL",
+    "MINIMIZE_WAIT_PATHS",
+    "NO_SCORE_RALLY",
+    "NO_NEW_POLICE_LAYER",
+    "CROSS_STRUCTURE_LATENCY",
+    "MEASURE_REAL_OR_UNAVAILABLE",
+    "P50_P95_P99_JITTER_VISIBLE"
+  ],
+  latency_domains: [
+    "EVENT_LOOP",
+    "MICROTASK",
+    "TIMER",
+    "IMMEDIATE",
+    "NEXT_TICK",
+    "PROMISE",
+    "WORKER_THREAD",
+    "MESSAGE_PASSING",
+    "MEMORY_ACCESS",
+    "CACHE_LOCALITY",
+    "FILESYSTEM_IO",
+    "NETWORK_TCP",
+    "HTTP_ROUTE",
+    "WEBSOCKET",
+    "DNS",
+    "SHELL_COMMAND",
+    "SOLVER_QUEUE",
+    "JOB_SCHEDULER",
+    "AI_PROVIDER",
+    "STRATUM_POOL",
+    "HPC_MPI",
+    "RDMA_OPTIONAL"
+  ]
+};
+
+const DICT_LATENCY_MIN = {
+  version: "DICT_LATENCY_MIN_V1",
+  mode: "LOWEST_LATENCY_TERMS_REAL_OR_UNAVAILABLE",
+  families: {
+    EVENT_LOOP: {
+      keys: [
+        "event loop", "event-loop", "loop delay", "event loop delay",
+        "latency p50", "latency p95", "latency p99", "jitter",
+        "setImmediate", "setTimeout", "nextTick", "microtask",
+        "promise latency", "tick latency", "callback latency",
+        "queue delay", "loop lag", "uv loop", "libuv"
+      ],
+      routes: [
+        "/api/latency-min/event-loop",
+        "/api/latency-min/probe"
+      ],
+      solvers: [
+        "event_loop_delay_probe",
+        "microtask_latency_probe",
+        "timer_jitter_probe"
+      ]
+    },
+
+    CPU_LATENCY: {
+      keys: [
+        "cpu latency", "instruction latency", "branch latency",
+        "pipeline latency", "context switch", "syscall latency",
+        "scheduler latency", "wake latency", "thread wake",
+        "spin wait", "busy wait", "yield", "cpu affinity",
+        "turbo latency", "frequency scaling", "c-state", "p-state"
+      ],
+      routes: [
+        "/api/latency-min/cpu",
+        "/api/latency-min/probe"
+      ],
+      solvers: [
+        "cpu_latency_classifier",
+        "scheduler_latency_probe",
+        "context_switch_hint"
+      ]
+    },
+
+    MEMORY_LATENCY: {
+      keys: [
+        "memory latency", "ram latency", "cache latency",
+        "l1 latency", "l2 latency", "l3 latency",
+        "tlb latency", "page fault latency", "random access",
+        "sequential access", "stride latency", "pointer chase",
+        "cache miss", "cache hit", "numa latency",
+        "local memory", "remote memory"
+      ],
+      routes: [
+        "/api/latency-min/memory",
+        "/api/latency-min/probe"
+      ],
+      solvers: [
+        "memory_latency_probe",
+        "stride_latency_probe",
+        "random_access_guard"
+      ]
+    },
+
+    WORKER_LATENCY: {
+      keys: [
+        "worker latency", "worker_threads latency", "message latency",
+        "postMessage", "thread startup", "worker startup",
+        "worker pool", "thread pool latency", "parallel overhead",
+        "serialization latency", "transfer latency",
+        "sharedarraybuffer", "atomics wait", "atomics notify"
+      ],
+      routes: [
+        "/api/latency-min/workers",
+        "/api/latency-min/probe"
+      ],
+      solvers: [
+        "worker_roundtrip_probe",
+        "worker_startup_probe",
+        "message_passing_latency_probe"
+      ]
+    },
+
+    IO_LATENCY: {
+      keys: [
+        "io latency", "i/o latency", "fs latency", "filesystem latency",
+        "read latency", "write latency", "fsync latency",
+        "stat latency", "open latency", "tmpfs latency",
+        "nvme latency", "ssd latency", "queue depth",
+        "direct io", "page cache latency", "storage latency"
+      ],
+      routes: [
+        "/api/latency-min/io",
+        "/api/latency-min/probe"
+      ],
+      solvers: [
+        "filesystem_latency_probe",
+        "tmp_write_read_probe",
+        "page_cache_latency_probe"
+      ]
+    }
+  }
+};
+
+function latNum(x, d = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
+
+function latRound(x, d = 3) {
+  const n = Number(x);
+  return Number.isFinite(n) ? +n.toFixed(d) : null;
+}
+
+function latPercentiles(values) {
+  const a = (values || []).filter(Number.isFinite).sort((x, y) => x - y);
+  if (!a.length) return { count: 0, min: null, p50: null, p95: null, p99: null, max: null, avg: null };
+  const pick = q => a[Math.min(a.length - 1, Math.floor(a.length * q))];
+  return {
+    count: a.length,
+    min: latRound(a[0], 6),
+    p50: latRound(pick(0.50), 6),
+    p95: latRound(pick(0.95), 6),
+    p99: latRound(pick(0.99), 6),
+    max: latRound(a[a.length - 1], 6),
+    avg: latRound(a.reduce((s, x) => s + x, 0) / a.length, 6),
+    jitter_p99_min: latRound(pick(0.99) - a[0], 6)
+  };
+}
+
+function latencyClass(p95) {
+  p95 = Number(p95);
+  if (!Number.isFinite(p95)) return "UNAVAILABLE";
+  if (p95 <= 0.25) return "ULTRA_LOW";
+  if (p95 <= 1) return "VERY_LOW";
+  if (p95 <= 5) return "LOW";
+  if (p95 <= 15) return "MEDIUM";
+  if (p95 <= 40) return "HIGH";
+  return "VERY_HIGH";
+}
+
+function latencyDictClassify(input) {
+  const text = String(input || "").toLowerCase();
+  const hits = [];
+  for (const [family, cfg] of Object.entries(DICT_LATENCY_MIN.families)) {
+    let score = 0;
+    const matched = [];
+    for (const key of cfg.keys || []) {
+      if (text.includes(String(key).toLowerCase())) {
+        score++;
+        matched.push(key);
+      }
+    }
+    if (score > 0) hits.push({ family, score, matched, routes: cfg.routes, solvers: cfg.solvers });
+  }
+  return hits.sort((a, b) => b.score - a.score);
+}
+
+/* ============================================================
+   LATENCY DICT EXTENSIONS
+============================================================ */
+
+DICT_LATENCY_MIN.families.NETWORK_LATENCY = {
+  keys: [
+    "network latency", "tcp latency", "udp latency", "ping",
+    "rtt", "round trip", "dns latency", "connect latency",
+    "tls latency", "http latency", "fetch latency",
+    "pool latency", "socket latency", "keepalive",
+    "nagle", "tcp_nodelay", "backoff", "reconnect latency",
+    "packet delay", "jitter", "loss", "timeout"
+  ],
+  routes: [
+    "/api/latency-min/network",
+    "/api/latency-min/probe"
+  ],
+  solvers: [
+    "tcp_connect_latency_probe",
+    "dns_latency_probe",
+    "http_latency_probe"
+  ]
+};
+
+DICT_LATENCY_MIN.families.WEBSOCKET_LATENCY = {
+  keys: [
+    "websocket latency", "socket.io latency", "ws latency",
+    "ping pong", "heartbeat", "socket roundtrip",
+    "websocket jitter", "message delay",
+    "backpressure", "socket buffer", "reconnect",
+    "transport polling", "transport websocket"
+  ],
+  routes: [
+    "/api/latency-min/websocket",
+    "/api/latency-min/probe"
+  ],
+  solvers: [
+    "websocket_runtime_hint",
+    "socketio_client_count",
+    "heartbeat_latency_router"
+  ]
+};
+
+DICT_LATENCY_MIN.families.SHELL_LATENCY = {
+  keys: [
+    "shell latency", "command latency", "exec latency",
+    "spawn latency", "terminal latency", "bash latency",
+    "node startup latency", "npm latency", "process startup",
+    "cold start", "warm start"
+  ],
+  routes: [
+    "/api/latency-min/shell",
+    "/api/latency-min/probe"
+  ],
+  solvers: [
+    "shell_exec_latency_probe",
+    "node_startup_probe",
+    "command_overhead_classifier"
+  ]
+};
+
+DICT_LATENCY_MIN.families.SOLVER_LATENCY = {
+  keys: [
+    "solver latency", "job latency", "queue latency",
+    "scheduler latency", "dispatch latency",
+    "completion latency", "time to first result",
+    "ttfr", "batch latency", "microbatch latency",
+    "cache hit latency", "cache miss latency",
+    "ledger latency", "trace latency"
+  ],
+  routes: [
+    "/api/latency-min/solver",
+    "/api/latency-min/classify"
+  ],
+  solvers: [
+    "solver_queue_latency_map",
+    "cache_latency_shape",
+    "job_dispatch_latency_router"
+  ]
+};
+
+DICT_LATENCY_MIN.families.AI_PROVIDER_LATENCY = {
+  keys: [
+    "ai latency", "provider latency", "llm latency",
+    "first token latency", "time to first token",
+    "ttft", "tokens per second",
+    "pollinations latency", "openai latency",
+    "ollama latency", "provider timeout",
+    "provider fallback", "routing latency"
+  ],
+  routes: [
+    "/api/latency-min/ai-provider",
+    "/api/ai-chat/providers"
+  ],
+  solvers: [
+    "provider_latency_probe",
+    "ttft_classifier",
+    "fallback_latency_router"
+  ]
+};
+
+DICT_LATENCY_MIN.families.STRATUM_LATENCY = {
+  keys: [
+    "stratum latency", "pool latency", "share latency",
+    "stale latency", "mining latency", "tcp pool latency",
+    "submit latency", "job latency", "notify latency",
+    "vardiff latency", "reconnect pool"
+  ],
+  routes: [
+    "/api/latency-min/stratum",
+    "/api/stratum-sha256/network-probe"
+  ],
+  solvers: [
+    "stratum_tcp_latency_probe",
+    "pool_endpoint_latency_classifier",
+    "stale_latency_guard"
+  ]
+};
+
+DICT_LATENCY_MIN.families.HPC_LATENCY = {
+  keys: [
+    "hpc latency", "mpi latency", "rdma latency",
+    "infiniband latency", "ucx latency", "libfabric latency",
+    "allreduce latency", "barrier latency",
+    "broadcast latency", "collective latency",
+    "node latency", "cluster latency", "slurm latency",
+    "scheduler queue latency"
+  ],
+  routes: [
+    "/api/latency-min/hpc",
+    "/api/memory-terms/hpc"
+  ],
+  solvers: [
+    "hpc_latency_vocabulary_router",
+    "mpi_latency_probe_if_available",
+    "rdma_latency_unavailable_guard"
+  ]
+};
+
+const LATENCY_MIN_TECHNIQUES = {
+  version: "LATENCY_MIN_TECHNIQUES_V1",
+  techniques: {
+    EVENT_LOOP: [
+      "reduce blocking synchronous work",
+      "split heavy jobs into chunks",
+      "prefer setImmediate for cooperative yielding",
+      "measure p50/p95/p99 not only average",
+      "avoid unbounded Promise storms"
+    ],
+    MEMORY: [
+      "prefer contiguous TypedArray",
+      "avoid random stride when possible",
+      "compact graph state before compute",
+      "keep hot data small",
+      "avoid allocating inside hot loops"
+    ],
+    CACHE: [
+      "short TTL for live telemetry",
+      "static TTL for hardware probes",
+      "avoid stale cache hiding unavailable state",
+      "cache expensive detection only"
+    ],
+    NETWORK: [
+      "reuse connections when possible",
+      "use timeouts",
+      "avoid unnecessary DNS/probe loops",
+      "prefer local routes for cockpit",
+      "backoff reconnect"
+    ],
+    WORKERS: [
+      "avoid worker startup per tiny task",
+      "reuse worker pool",
+      "transfer buffers when useful",
+      "avoid too many workers for memory-bound jobs"
+    ],
+    IO: [
+      "prefer tmpfs for temporary latency tests",
+      "batch small writes",
+      "avoid fsync in hot path",
+      "stream large files"
+    ]
+  }
+};
+
+/* ============================================================
+   LATENCY REAL PROBES
+============================================================ */
+
+async function latencyEventLoopProbe(samples = 200) {
+  const { monitorEventLoopDelay, performance } = require("perf_hooks");
+  samples = Math.min(Math.max(20, latNum(samples, 200)), 2000);
+
+  const delay = monitorEventLoopDelay({ resolution: 1 });
+  delay.enable();
+
+  const immediate = [];
+  let last = performance.now();
+
+  await new Promise(resolve => {
+    let n = 0;
+    const tick = () => {
+      const t = performance.now();
+      immediate.push(t - last);
+      last = t;
+      if (++n >= samples) return resolve();
+      setImmediate(tick);
+    };
+    setImmediate(tick);
+  });
+
+  const timeout0 = [];
+  last = performance.now();
+
+  await new Promise(resolve => {
+    let n = 0;
+    const tick = () => {
+      const t = performance.now();
+      timeout0.push(t - last);
+      last = t;
+      if (++n >= Math.min(samples, 200)) return resolve();
+      setTimeout(tick, 0);
+    };
+    setTimeout(tick, 0);
+  });
+
+  delay.disable();
+
+  const imm = latPercentiles(immediate);
+  const tout = latPercentiles(timeout0);
+
+  return {
+    time: now(),
+    layer: LATENCY_MIN_FIELD.name,
+    event_loop_status: "REAL_NODE_EVENT_LOOP_MEASURED",
+    setImmediate_ms: imm,
+    setTimeout0_ms: tout,
+    monitor_delay_ms: {
+      mean: latRound(delay.mean / 1e6, 6),
+      max: latRound(delay.max / 1e6, 6),
+      min: latRound(delay.min / 1e6, 6),
+      p50: latRound(delay.percentile(50) / 1e6, 6),
+      p95: latRound(delay.percentile(95) / 1e6, 6),
+      p99: latRound(delay.percentile(99) / 1e6, 6)
+    },
+    latency_class: latencyClass(imm.p95),
+    note: "Measures Node event loop scheduling latency inside current runtime."
+  };
+}
+
+async function latencyMicrotaskProbe(samples = 1000) {
+  const { performance } = require("perf_hooks");
+  samples = Math.min(Math.max(50, latNum(samples, 1000)), 10000);
+
+  const nextTickArr = [];
+  const promiseArr = [];
+
+  for (let i = 0; i < samples; i++) {
+    const t = performance.now();
+    await new Promise(resolve => process.nextTick(resolve));
+    nextTickArr.push(performance.now() - t);
+  }
+
+  for (let i = 0; i < samples; i++) {
+    const t = performance.now();
+    await Promise.resolve();
+    promiseArr.push(performance.now() - t);
+  }
+
+  return {
+    time: now(),
+    layer: LATENCY_MIN_FIELD.name,
+    microtask_status: "REAL_MICROTASK_LATENCY_MEASURED",
+    nextTick_ms: latPercentiles(nextTickArr),
+    promise_resolve_ms: latPercentiles(promiseArr),
+    latency_class: latencyClass(latPercentiles(promiseArr).p95)
+  };
+}
+
+function latencyMemoryProbe(sizeMB = 64) {
+  const { performance } = require("perf_hooks");
+  sizeMB = Math.min(Math.max(4, latNum(sizeMB, 64)), 512);
+
+  const len = Math.floor(sizeMB * 1048576 / 8);
+  const a = new Float64Array(len);
+  for (let i = 0; i < len; i++) a[i] = i & 1023;
+
+  const seq = [];
+  for (let p = 0; p < 10; p++) {
+    let s = 0;
+    const t = performance.now();
+    for (let i = 0; i < len; i += 8) s += a[i];
+    seq.push(performance.now() - t);
+  }
+
+  const stride = [];
+  for (let p = 0; p < 10; p++) {
+    let s = 0;
+    const t = performance.now();
+    for (let i = 0; i < len; i += 64) {
+      const idx = (Math.imul(i, 2654435761) >>> 0) % len;
+      s += a[idx];
+    }
+    stride.push(performance.now() - t);
+  }
+
+  const seqP = latPercentiles(seq);
+  const strP = latPercentiles(stride);
+
+  return {
+    time: now(),
+    layer: LATENCY_MIN_FIELD.name,
+    memory_latency_status: "REAL_MEMORY_ACCESS_LATENCY_SHAPE_MEASURED",
+    array_MB: sizeMB,
+    sequential_pass_ms: seqP,
+    random_stride_pass_ms: strP,
+    access_shape: strP.p50 > seqP.p50 * 2 ? "RANDOM_STRIDE_MORE_LATENT" : "RANDOM_STRIDE_ACCEPTABLE",
+    note: "Shape probe: compares sequential and pseudo-random stride pass latency."
+  };
+}
+
+async function latencyWorkerProbe(rounds = 50) {
+  rounds = Math.min(Math.max(5, latNum(rounds, 50)), 500);
+
+  const code = `
+    const { parentPort } = require("worker_threads");
+    parentPort.on("message", m => parentPort.postMessage(m));
+  `;
+
+  const startCreate = Date.now();
+  const w = new Worker(code, { eval: true });
+  const startupMs = Date.now() - startCreate;
+
+  const samples = [];
+  await new Promise(resolve => {
+    let n = 0;
+    w.on("message", msg => {
+      samples.push(Date.now() - msg.t);
+      if (++n >= rounds) {
+        w.terminate().then(resolve);
+      } else {
+        w.postMessage({ t: Date.now(), n });
+      }
+    });
+    w.postMessage({ t: Date.now(), n: 0 });
+  });
+
+  return {
+    time: now(),
+    layer: LATENCY_MIN_FIELD.name,
+    worker_latency_status: "REAL_WORKER_ROUNDTRIP_MEASURED",
+    worker_startup_ms: startupMs,
+    message_roundtrip_ms: latPercentiles(samples),
+    latency_class: latencyClass(latPercentiles(samples).p95),
+    note: "Worker latency includes message passing overhead, not only compute."
+  };
+}
+
+async function latencyIoProbe(sizeKB = 64) {
+  const { performance } = require("perf_hooks");
+  sizeKB = Math.min(Math.max(1, latNum(sizeKB, 64)), 8192);
+
+  const file = path.join(os.tmpdir(), "trillions_latency_io_" + process.pid + ".tmp");
+  const buf = crypto.randomBytes(sizeKB * 1024);
+
+  const write = [];
+  const read = [];
+  const stat = [];
+
+  for (let i = 0; i < 20; i++) {
+    let t = performance.now();
+    fs.writeFileSync(file, buf);
+    write.push(performance.now() - t);
+
+    t = performance.now();
+    fs.statSync(file);
+    stat.push(performance.now() - t);
+
+    t = performance.now();
+    fs.readFileSync(file);
+    read.push(performance.now() - t);
+  }
+
+  try { fs.unlinkSync(file); } catch (e) {}
+
+  return {
+    time: now(),
+    layer: LATENCY_MIN_FIELD.name,
+    io_latency_status: "REAL_TMP_IO_LATENCY_MEASURED",
+    sizeKB,
+    write_ms: latPercentiles(write),
+    read_ms: latPercentiles(read),
+    stat_ms: latPercentiles(stat),
+    note: "Temporary file IO latency. May hit page cache/tmpfs depending on environment."
+  };
+     }
+
+async function latencyNetworkProbe(target = "127.0.0.1", port = null) {
+  const net = require("net");
+  const dns = require("dns").promises;
+  const { performance } = require("perf_hooks");
+
+  const out = {
+    time: now(),
+    layer: LATENCY_MIN_FIELD.name,
+    target,
+    port: port ? Number(port) : null,
+    dns_ms: null,
+    tcp_connect_ms: null,
+    status: "STARTED"
+  };
+
+  try {
+    const t = performance.now();
+    await dns.lookup(target);
+    out.dns_ms = latRound(performance.now() - t, 6);
+  } catch (e) {
+    out.dns_error = e.message;
+  }
+
+  if (!port) {
+    out.status = "DNS_ONLY_NO_PORT";
+    return out;
+  }
+
+  await new Promise(resolve => {
+    const t = performance.now();
+    const s = net.createConnection({ host: target, port: Number(port), timeout: 5000 }, () => {
+      out.tcp_connect_ms = latRound(performance.now() - t, 6);
+      out.status = "REAL_TCP_CONNECT_MEASURED";
+      s.destroy();
+      resolve();
+    });
+    s.on("timeout", () => {
+      out.status = "TCP_TIMEOUT";
+      s.destroy();
+      resolve();
+    });
+    s.on("error", e => {
+      out.status = "TCP_ERROR";
+      out.tcp_error = e.message;
+      resolve();
+    });
+  });
+
+  return out;
+}
+
+async function latencyShellProbe() {
+  const cmds = [
+    "node -e \"console.log('ok')\"",
+    "bash -lc 'true'",
+    "pwd"
+  ];
+
+  const results = [];
+  for (const cmd of cmds) {
+    const t = Date.now();
+    const r = await sh(cmd, 8000);
+    results.push({
+      cmd,
+      ok: r.ok,
+      ms: Date.now() - t,
+      out: safeText(r.out, 1000),
+      err: safeText(r.err, 1000)
+    });
+  }
+
+  return {
+    time: now(),
+    layer: LATENCY_MIN_FIELD.name,
+    shell_latency_status: "REAL_SHELL_COMMAND_LATENCY_MEASURED",
+    results,
+    percentiles_ms: latPercentiles(results.map(x => x.ms))
+  };
+}
+
+async function latencyMinProbe() {
+  const [
+    eventLoop,
+    microtask,
+    memory,
+    worker,
+    io,
+    shell
+  ] = await Promise.all([
+    latencyEventLoopProbe(200),
+    latencyMicrotaskProbe(500),
+    Promise.resolve(latencyMemoryProbe(64)),
+    latencyWorkerProbe(30),
+    latencyIoProbe(64),
+    latencyShellProbe()
+  ]);
+
+  return {
+    time: now(),
+    field: LATENCY_MIN_FIELD,
+    dict: DICT_LATENCY_MIN,
+    techniques: LATENCY_MIN_TECHNIQUES,
+    probes: {
+      event_loop: eventLoop,
+      microtask,
+      memory,
+      worker,
+      io,
+      shell
+    },
+    lowest_latency_expression: {
+      local_fastest_paths: [
+        "process.nextTick / Promise microtask for tiny internal scheduling",
+        "setImmediate for cooperative event-loop yielding",
+        "contiguous memory for lower access latency",
+        "reuse workers instead of spawning per task",
+        "cache static probes, short TTL for live telemetry",
+        "avoid random stride when low latency matters"
+      ],
+      unavailable_paths: [
+        "RDMA unless device/tool exists",
+        "MPI unless runtime exists",
+        "GPU/NPU latency unless tool/backend exists"
+      ]
+    },
+    output_meaning:
+      "Latency field exposes real p50/p95/p99/jitter signals; it does not impose a policy or score."
+  };
+}
+
+async function latencyMinClassify(input) {
+  return {
+    time: now(),
+    input: safeText(input, 4000),
+    classification: latencyDictClassify(input),
+    dict_version: DICT_LATENCY_MIN.version
+  };
+}
+
+/* API ROUTES — additive */
+app.get("/api/latency-min", async (req, res) => {
+  res.json({
+    time: now(),
+    field: LATENCY_MIN_FIELD,
+    dict: DICT_LATENCY_MIN,
+    techniques: LATENCY_MIN_TECHNIQUES
+  });
+});
+
+app.get("/api/latency-min/dict", async (req, res) => {
+  res.json(DICT_LATENCY_MIN);
+});
+
+app.get("/api/latency-min/techniques", async (req, res) => {
+  res.json(LATENCY_MIN_TECHNIQUES);
+});
+
+app.get("/api/latency-min/probe", async (req, res) => {
+  res.json(await latencyMinProbe());
+});
+
+app.get("/api/latency-min/event-loop", async (req, res) => {
+  res.json(await latencyEventLoopProbe(req.query.samples || 200));
+});
+
+app.get("/api/latency-min/microtask", async (req, res) => {
+  res.json(await latencyMicrotaskProbe(req.query.samples || 500));
+});
+
+app.get("/api/latency-min/memory", async (req, res) => {
+  res.json(latencyMemoryProbe(req.query.mb || 64));
+});
+
+app.get("/api/latency-min/workers", async (req, res) => {
+  res.json(await latencyWorkerProbe(req.query.rounds || 50));
+});
+
+app.get("/api/latency-min/io", async (req, res) => {
+  res.json(await latencyIoProbe(req.query.kb || 64));
+});
+
+app.get("/api/latency-min/shell", async (req, res) => {
+  res.json(await latencyShellProbe());
+});
+
+app.get("/api/latency-min/network", async (req, res) => {
+  res.json(await latencyNetworkProbe(req.query.host || "127.0.0.1", req.query.port || null));
+});
+
+app.get("/api/latency-min/classify", async (req, res) => {
+  res.json(await latencyMinClassify(req.query.q || req.query.text || ""));
+});
+
+app.post("/api/latency-min/classify", async (req, res) => {
+  res.json(await latencyMinClassify(req.body && (req.body.q || req.body.text) || ""));
+});
+
+/* Optional registry hook */
+try {
+  if (typeof moduleRegistry === "function") {
+    const __moduleRegistryOriginal_LATENCY_MIN = moduleRegistry;
+    moduleRegistry = function moduleRegistryWithLatencyMin() {
+      const base = __moduleRegistryOriginal_LATENCY_MIN();
+      return {
+        ...base,
+        latency_min_field: {
+          field: LATENCY_MIN_FIELD,
+          dict: DICT_LATENCY_MIN,
+          techniques: LATENCY_MIN_TECHNIQUES,
+          routes: [
+            "/api/latency-min",
+            "/api/latency-min/dict",
+            "/api/latency-min/techniques",
+            "/api/latency-min/probe",
+            "/api/latency-min/event-loop",
+            "/api/latency-min/microtask",
+            "/api/latency-min/memory",
+            "/api/latency-min/workers",
+            "/api/latency-min/io",
+            "/api/latency-min/shell",
+            "/api/latency-min/network",
+            "/api/latency-min/classify"
+          ]
+        }
+      };
+    };
+  }
+} catch (e) {
+  console.warn("LATENCY_MIN registry hook unavailable:", e.message);
+}
+
+/* Optional UI buttons — add inside .tabs */
+
+/*
+<button onclick="load('/api/latency-min')">LATENCY MIN</button>
+<button onclick="load('/api/latency-min/dict')">DICT LATENCY</button>
+<button onclick="load('/api/latency-min/probe')">LAT PROBE</button>
+<button onclick="load('/api/latency-min/event-loop')">EVENT LOOP</button>
+<button onclick="load('/api/latency-min/microtask')">MICROTASK</button>
+<button onclick="load('/api/latency-min/memory')">MEM LAT</button>
+<button onclick="load('/api/latency-min/workers')">WORKER LAT</button>
+<button onclick="load('/api/latency-min/io')">IO LAT</button>
+<button onclick="load('/api/latency-min/shell')">SHELL LAT</button>
+*/
