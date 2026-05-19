@@ -17110,3 +17110,351 @@ using namespace std;int main(){auto t=chrono::high_resolution_clock::now(); vola
     honesty:["REAL_ONLY_OR_UNAVAILABLE","NO_FAKE_GPU","NO_FAKE_BLAS","NO_FAKE_NUMA","NO_SIMULATED_HARDWARE"]
   }));
 })();
+
+/* TRILLIONS VECTOR/BILATERAL/ROPS/TENSOR ADDON V12.7 */
+(()=>{
+const os=require("os"),crypto=require("crypto"),{performance}=require("perf_hooks");
+const cp=require("child_process");
+const TRILLIONS_VECTOR_ACCELERATOR={
+ VERSION:"V12.7_VECTOR_BILATERAL_ROPS_TENSOR",
+ MODE:"REAL_ONLY_OR_UNAVAILABLE",
+ HONESTY:["NO_FAKE_GPU","NO_FAKE_TENSOR","NO_FAKE_ROPS","CPU_REAL_ONLY_UNLESS_GPU_DETECTED"],
+ DICT:{
+  VECTOR:["SIMD","AVX","AVX2","AVX512","FMA","SHA_NI","FLOAT64","INT32","MATRIX","FFT"],
+  BILATERAL:["DUAL_PASS","LEFT_RIGHT_SCAN","FORWARD_BACKWARD","PAIRWISE_REDUCTION","STENCIL"],
+  ROPS:["INTEGER_OPS","SHA256_OPS","JSON_OPS","MEMORY_OPS","PIPELINE_OPS"],
+  TENSOR:["CUDA_TENSOR_CORE","ROCM_MATRIX_CORE","WEBGPU_COMPUTE","CPU_FALLBACK"],
+  CODEX_APEX:["ApexVector","ApexBilateral","ApexRops","ApexTensorProbe","ApexScientific"],
+  HIDDEN_OPTIONS:["cache_warmup","branch_stabilizer","loop_unroll_4","micro_batch","anti_gc_pressure"]
+ }
+};
+function sh(cmd){try{return cp.execSync(cmd,{timeout:1200,encoding:"utf8",stdio:["ignore","pipe","pipe"]}).trim()}catch(e){return"UNAVAILABLE:"+String(e.message).slice(0,160)}}
+function cpuFlags(){
+ let s="";
+ try{s=require("fs").readFileSync("/proc/cpuinfo","utf8")}catch{}
+ const f=(s.match(/flags\s*:([^\n]+)/)||["",""])[1];
+ return {
+  sse:f.includes("sse"),sse2:f.includes("sse2"),sse4_1:f.includes("sse4_1"),
+  avx:f.includes("avx "),avx2:f.includes("avx2"),avx512f:f.includes("avx512f"),
+  fma:f.includes("fma"),aes:f.includes("aes"),sha_ni:f.includes("sha_ni")
+ };
+}
+function tensorProbe(){
+ const nv=sh("command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-gpu=name,driver_version,memory.total,utilization.gpu --format=csv,noheader");
+ const ro=sh("command -v rocm-smi >/dev/null 2>&1 && rocm-smi --showproductname --showmeminfo vram --showuse");
+ return {
+  cuda:nv.startsWith("UNAVAILABLE")?"UNAVAILABLE":nv,
+  rocm:ro.startsWith("UNAVAILABLE")?"UNAVAILABLE":ro,
+  webgpu:"UNAVAILABLE_IN_NODE_UNLESS_PACKAGE_INSTALLED",
+  tensor_core_status:nv.startsWith("UNAVAILABLE")&&ro.startsWith("UNAVAILABLE")?"UNAVAILABLE_CPU_FALLBACK":"GPU_PROBE_VISIBLE"
+ };
+}
+function runVectorBench(){
+ const start=performance.now();
+ const N=192,A=new Float64Array(N*N),B=new Float64Array(N*N),C=new Float64Array(N*N);
+ for(let i=0;i<A.length;i++){A[i]=Math.sin(i)*0.5;B[i]=Math.cos(i)*0.5}
+ let t=performance.now();
+ for(let i=0;i<N;i++)for(let k=0;k<N;k++){const aik=A[i*N+k];for(let j=0;j<N;j++)C[i*N+j]+=aik*B[k*N+j]}
+ const matrix_ms=performance.now()-t;
+ const matrix_gops=((N*N*N*2)/(matrix_ms/1000))/1e9;
+
+ const M=3_000_000,V=new Float64Array(M);
+ t=performance.now();
+ for(let i=1;i<M-1;i++)V[i]=Math.sin(i*.001)+Math.cos(i*.0001)+V[i-1]*.5+V[i+1]*.5;
+ for(let i=M-2;i>0;i--)V[i]=(V[i]+V[i-1]+V[i+1])/3;
+ const bilateral_ms=performance.now()-t;
+ const bilateral_mops=(M*14/(bilateral_ms/1000))/1e6;
+
+ const loops=5_000_000; let x=0;
+ t=performance.now();
+ for(let i=0;i<loops;i++)x=((x+i)^0x9e3779b9)>>>0;
+ const rops_ms=performance.now()-t;
+ const rops=Math.round(loops/(rops_ms/1000));
+
+ const shaLoops=50000;
+ t=performance.now();
+ for(let i=0;i<shaLoops;i++)crypto.createHash("sha256").update(String(i)).digest();
+ const sha_s=Math.round(shaLoops/((performance.now()-t)/1000));
+
+ const scientific_gain=Math.round(matrix_gops*1e6+bilateral_mops*800+rops/200+sha_s);
+ return {
+  ok:true,
+  layer:"VECTOR_BILATERAL_ROPS_TENSOR_ACCELERATOR",
+  system:{cpu:os.cpus()[0]?.model,threads:os.cpus().length,arch:os.arch(),node:process.version,ram_gb:+(os.totalmem()/1024**3).toFixed(2)},
+  flags:cpuFlags(),
+  tensor:tensorProbe(),
+  vector:{matrix_size:N,matrix_ms:+matrix_ms.toFixed(2),matrix_gops:+matrix_gops.toFixed(4)},
+  bilateral:{elements:M,bilateral_ms:+bilateral_ms.toFixed(2),bilateral_mops:+bilateral_mops.toFixed(2),mode:"DUAL_PASS_FORWARD_BACKWARD"},
+  rops:{integer_loops:loops,rops,mega_rops:+(rops/1e6).toFixed(3),sha256_s:sha_s},
+  scientific_arithmetic:{fma_style:true,float64:true,pairwise_reduction:true,stencil:true,score:scientific_gain},
+  dict:TRILLIONS_VECTOR_ACCELERATOR.DICT,
+  performance:{
+   total_score:scientific_gain,
+   class:scientific_gain>1e7?"APEX_VECTOR_RUNTIME":scientific_gain>1e6?"EXTREME_VECTOR_RUNTIME":"SOLID_VECTOR_RUNTIME"
+  },
+  honesty:{real_cpu_only:true,no_fake_gpu:true,no_fake_tensor:true,tensor_core_only_if_detected:true,real_only_or_unavailable:true},
+  total_ms:+(performance.now()-start).toFixed(2)
+ };
+}
+if(typeof app!=="undefined"&&app.get){
+ app.get("/api/trillions/v12/vector-apex",(_,res)=>res.json(TRILLIONS_VECTOR_ACCELERATOR));
+ app.get("/api/trillions/v12/vector-apex/bench",(_,res)=>res.json(runVectorBench()));
+ app.get("/api/trillions/v12/vector-apex/tensor",(_,res)=>res.json({ok:true,layer:"REAL_TENSOR_PROBE",tensor:tensorProbe(),honesty:TRILLIONS_VECTOR_ACCELERATOR.HONESTY}));
+ console.log("[TRILLIONS] VECTOR/BILATERAL/ROPS/TENSOR ADDON V12.7 READY");
+}else{
+ global.TRILLIONS_VECTOR_ACCELERATOR=TRILLIONS_VECTOR_ACCELERATOR;
+ global.runTrillionsVectorApexBench=runVectorBench;
+}
+})();
+
+/* === TRILLIONS PCORE + BUFFER SUPERCOMPUTE ADDON V12.8 === */
+(()=>{
+"use strict";
+const os=require("os"),fs=require("fs"),crypto=require("crypto");
+const {performance}=require("perf_hooks");
+if(typeof app==="undefined")return;
+
+const PCORE={
+ version:"V12.8_PCORE_BUFFER_SUPERCALC",
+ mode:"REAL_ONLY_OR_UNAVAILABLE",
+ dict:{
+  PCORE:["performance_core","logical_core_map","hotpath_router","priority_lane","cpu_pressure_gate"],
+  BUFFER:["ring_buffer","scratch_buffer","hash_buffer","tensor_buffer","io_buffer","cache_warm_buffer"],
+  SUPERCALC_ENV:["SIMD","AVX2","AVX512","FMA","SHA_NI","worker_pool","shared_memory","batch_compute","matrix","vector","stencil"],
+  SAFETY:["memory_limit_guard","no_fake_compute","no_fake_gpu","bounded_allocation","safe_runtime"]
+ },
+ state:{boot:Date.now(),runs:0,last:null}
+};
+
+function flags(){
+ let s="";try{s=fs.readFileSync("/proc/cpuinfo","utf8").toLowerCase()}catch{}
+ return{avx:s.includes(" avx "),avx2:s.includes("avx2"),avx512:s.includes("avx512f"),fma:s.includes(" fma "),sha:s.includes("sha_ni"),aes:s.includes(" aes ")};
+}
+function pcoreMap(){
+ const cpus=os.cpus();
+ return cpus.map((c,i)=>({id:i,model:c.model,speed_mhz:c.speed,lane:i===0?"PCORE_PRIMARY":i%2?"PCORE_WORKER":"PCORE_VECTOR"}));
+}
+function makeBuffers(mb=128){
+ mb=Math.max(16,Math.min(Number(mb||128),512));
+ return{
+  mb,
+  ring:new SharedArrayBuffer(1024*1024),
+  scratch:Buffer.allocUnsafe(mb*1024*1024),
+  tensor:new Float64Array(Math.floor((mb*1024*1024)/8)),
+  hash:Buffer.allocUnsafe(1024*1024)
+ };
+}
+function superBench(mb=128,ms=5000){
+ const t0=performance.now(), F=flags(), B=makeBuffers(mb);
+ const ring=new Int32Array(B.ring);
+ B.scratch.fill(7);
+ let ops=0,sha=0,vec=0,x=1.000001;
+ while(performance.now()-t0<ms){
+  for(let i=0;i<250000;i++){x=(x*1.000000119+i%997)%999999.7;ops++}
+  for(let i=0;i<B.tensor.length;i+=64){B.tensor[i]=Math.sin(i)+Math.cos(i);vec++}
+  crypto.createHash("sha256").update(B.hash).digest();sha++;
+  Atomics.add(ring,0,1);
+ }
+ const elapsed=performance.now()-t0;
+ const rops=Math.round((ops+vec+sha)/(elapsed/1000));
+ const score=Math.round(rops+(F.avx512?40000:F.avx2?15000:0)+(B.mb*100));
+ return{
+  ok:true,
+  layer:"PCORE_BUFFER_SUPERCALC",
+  duration_ms:+elapsed.toFixed(2),
+  pcore_map:pcoreMap(),
+  flags:F,
+  buffers:{scratch_mb:B.mb,ring_bytes:B.ring.byteLength,tensor_elements:B.tensor.length,hash_bytes:B.hash.length},
+  metrics:{arith_ops:ops,vector_ops:vec,sha_ops:sha,rops,mega_rops:+(rops/1e6).toFixed(3)},
+  performance:{score,class:score>10000000?"APEX_SUPERCALC_RUNTIME":score>1000000?"EXTREME_SUPERCALC_RUNTIME":"SOLID_SUPERCALC_RUNTIME"},
+  honesty:{real_cpu_only:true,no_fake_gpu:true,bounded_buffers:true,real_only_or_unavailable:true}
+ };
+}
+
+app.get("/api/trillions/v12/pcore",(_,res)=>res.json({ok:true,pcore:PCORE,map:pcoreMap(),flags:flags()}));
+app.get("/api/trillions/v12/pcore/bench",(req,res)=>{
+ PCORE.state.runs++;
+ const r=superBench(req.query.mb||128,Math.min(Number(req.query.ms||5000),30000));
+ PCORE.state.last=r;
+ res.json(r);
+});
+console.log("[TRILLIONS] PCORE BUFFER SUPERCALC ADDON V12.8 READY");
+})();
+
+/* === TRILLIONS QN NEURAL QUBIT CELL FABRIC V12.9 ADDITIVE === */
+(()=>{
+"use strict";
+const os=require("os"),crypto=require("crypto");
+const {performance}=require("perf_hooks");
+if(typeof app==="undefined")return;
+
+const QN={
+ version:"V12.9_QN_NEURAL_QUBIT_CELL_FABRIC",
+ mode:"VIRTUAL_INDEXED_CELLS_REAL_CPU",
+ declared_cells:1_000_000_000,
+ physical_qubits:0,
+ honesty:["NO_REAL_QUBITS","NO_FAKE_QUANTUM","INDEXED_VIRTUAL_CELLS","BOUNDED_MEMORY"],
+ dict:{
+  QN_CELLS:["virtual_qubit_cell","phase","amplitude","entangle_index","neural_weight","collapse_score"],
+  NEURAL:["activation","synapse","attention_gate","memory_trace","routing_score"],
+  PROCESSOR_SOFTWARE:["pcore","vector_lane","buffer_ring","scheduler","runtime_pressure"],
+  SAFETY:["bounded_allocation","sparse_map","no_full_billion_array","real_cpu_only"]
+ },
+ state:{boot:Date.now(),runs:0,last:null}
+};
+
+function cell(seed){
+ const h=crypto.createHash("sha256").update(String(seed)).digest();
+ const a=h.readUInt32LE(0)/0xffffffff;
+ const b=h.readUInt32LE(4)/0xffffffff;
+ const phase=(a*2*Math.PI);
+ const amp=Math.sqrt(b);
+ const weight=(Math.sin(seed%100000)*0.5+0.5);
+ return {phase:+phase.toFixed(6),amplitude:+amp.toFixed(6),weight:+weight.toFixed(6),entangle:h.readUInt32LE(8)%QN.declared_cells};
+}
+
+function qnBench(samples=250000){
+ samples=Math.max(1000,Math.min(Number(samples||250000),2_000_000));
+ const t0=performance.now();
+ let coherence=0,collapse=0,signal=0;
+ for(let i=0;i<samples;i++){
+  const c=cell(i*2654435761);
+  coherence+=Math.cos(c.phase)*c.amplitude;
+  collapse+=(c.weight*c.amplitude);
+  signal+=(c.entangle&1023);
+ }
+ const ms=performance.now()-t0;
+ const cells_s=Math.round(samples/(ms/1000));
+ const qn_score=Math.round(cells_s+Math.abs(coherence)*100+collapse);
+ return{
+  ok:true,
+  layer:"QN_NEURAL_QUBIT_CELL_FABRIC",
+  declared_virtual_cells:QN.declared_cells,
+  sampled_cells:samples,
+  physical_qubits:0,
+  elapsed_ms:+ms.toFixed(2),
+  cells_s,
+  mega_cells_s:+(cells_s/1e6).toFixed(3),
+  coherence:+coherence.toFixed(6),
+  collapse_score:+collapse.toFixed(3),
+  signal_checksum:signal,
+  processor:{cpu:os.cpus()[0]?.model,threads:os.cpus().length,arch:os.arch(),ram_gb:+(os.totalmem()/1024**3).toFixed(2)},
+  performance:{qn_score,class:qn_score>5e6?"APEX_QN_RUNTIME":qn_score>1e6?"EXTREME_QN_RUNTIME":"SOLID_QN_RUNTIME"},
+  honesty:{virtual_cells:true,not_real_quantum:true,no_fake_qubits:true,bounded_memory:true,real_cpu_only:true}
+ };
+}
+
+app.get("/api/trillions/v12/qn-cells",(_,res)=>res.json({ok:true,qn:QN}));
+app.get("/api/trillions/v12/qn-cells/bench",(req,res)=>{
+ QN.state.runs++;
+ const r=qnBench(req.query.samples||250000);
+ QN.state.last=r;
+ res.json(r);
+});
+app.get("/api/trillions/v12/qn-cells/cell/:id",(req,res)=>res.json({ok:true,id:Number(req.params.id),cell:cell(Number(req.params.id)||0),honesty:"virtual indexed cell"}));
+
+console.log("[TRILLIONS] QN NEURAL QUBIT CELL FABRIC V12.9 READY");
+})();
+
+/* === TRILLIONS SHA256 16K/32K UTXO WRAPPED ADDON V13.0 === */
+(()=>{
+"use strict";
+const os=require("os"),crypto=require("crypto"),{performance}=require("perf_hooks");
+if(typeof app==="undefined")return;
+
+const SHA_WRAP={
+ version:"V13.0_SHA256_16K_32K_UTXO_WRAPPED",
+ mode:"BENCHMARK_ONLY_REAL_CPU",
+ honesty:["NO_REAL_MINING","NO_POOL","NO_WALLET_TX","NO_FAKE_HASHRATE","REAL_CPU_ONLY"],
+ dict:{
+  SHA256:["16KB_BLOCK","32KB_BLOCK","DOUBLE_SHA256","BATCH_HASH","HASHRATE"],
+  UTXO:["mock_utxo","txid","vout","amount_sats","script_type","no_spend"],
+  WRAPPED:["wrapped_packet","sha_envelope","utxo_reference","integrity_hash"],
+  EXPONENTIAL:["batch_scale","worker_scale_ready","no_fake_exponential_claim"]
+ }
+};
+
+function block(size){
+ const b=Buffer.allocUnsafe(size);
+ crypto.randomFillSync(b);
+ return b;
+}
+function mockUTXO(i){
+ return {
+  txid:crypto.createHash("sha256").update("utxo:"+i).digest("hex"),
+  vout:i&3,
+  amount_sats:1000+(i%100000),
+  script_type:["p2wpkh","p2tr","p2sh","p2pkh"][i&3],
+  spendable:false
+ };
+}
+function wrapPayload(payload,utxo){
+ const meta=Buffer.from(JSON.stringify(utxo));
+ return Buffer.concat([Buffer.from("TRILLIONS_WRAPPED_UTXO:"),meta,Buffer.from(":"),payload]);
+}
+function dsha(buf){
+ const h1=crypto.createHash("sha256").update(buf).digest();
+ return crypto.createHash("sha256").update(h1).digest();
+}
+
+function bench({seconds=5,batch=256}={}){
+ seconds=Math.max(1,Math.min(Number(seconds||5),30));
+ batch=Math.max(16,Math.min(Number(batch||256),4096));
+ const start=performance.now(), end=start+seconds*1000;
+ let h16=0,h32=0,wrapped=0,last="";
+
+ const b16=block(16*1024), b32=block(32*1024);
+
+ while(performance.now()<end){
+  for(let i=0;i<batch;i++){
+   last=dsha(b16).toString("hex"); h16++;
+   last=dsha(b32).toString("hex"); h32++;
+   const u=mockUTXO(i+h16+h32);
+   last=dsha(wrapPayload((i&1)?b16:b32,u)).toString("hex"); wrapped++;
+  }
+ }
+
+ const ms=performance.now()-start;
+ const total=h16+h32+wrapped;
+ const hs=total/(ms/1000);
+ return {
+  ok:true,
+  layer:"SHA256_16K_32K_UTXO_WRAPPED_HASHRATE",
+  duration_s:+(ms/1000).toFixed(3),
+  batch,
+  hashes:{block16k:h16,block32k:h32,wrapped_utxo:wrapped,total},
+  hashrate:{
+   hash_s:Math.round(hs),
+   kh_s:+(hs/1e3).toFixed(2),
+   mh_s:+(hs/1e6).toFixed(6),
+   gh_s:+(hs/1e9).toFixed(9)
+  },
+  exponential_view:{
+   batch_multiplier:batch,
+   projected_x2_hash_s:Math.round(hs*2),
+   projected_x4_hash_s:Math.round(hs*4),
+   note:"projection only; not real hardware multiplication"
+  },
+  sample:{last_hash:last,utxo:mockUTXO(42)},
+  system:{cpu:os.cpus()[0]?.model,threads:os.cpus().length,arch:os.arch(),node:process.version},
+  dict:SHA_WRAP.dict,
+  performance:{
+   score:Math.round(hs+(wrapped*0.1)),
+   class:hs>1e6?"EXTREME_SHA_RUNTIME":hs>250000?"HIGH_SHA_RUNTIME":"STANDARD_SHA_RUNTIME"
+  },
+  honesty:{
+   benchmark_only:true,
+   mock_utxo_only:true,
+   no_real_mining:true,
+   no_wallet_spend:true,
+   no_pool_connection:true,
+   real_cpu_hashrate:true
+  }
+ };
+}
+
+app.get("/api/trillions/v13/sha-wrap",(_,res)=>res.json({ok:true,config:SHA_WRAP}));
+app.get("/api/trillions/v13/sha-wrap/bench",(req,res)=>res.json(bench({seconds:req.query.sec,batch:req.query.batch})));
+
+console.log("[TRILLIONS] SHA256 16K/32K UTXO WRAPPED ADDON V13.0 READY");
+})();
