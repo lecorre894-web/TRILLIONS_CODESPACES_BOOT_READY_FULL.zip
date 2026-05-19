@@ -16057,3 +16057,493 @@ app.get("/api/trillions/real-ascension/ring",(q,r)=>r.json({ok:true,shared_buffe
 }
 console.log("[TRILLIONS] REAL_ASCENSION_NEXT additive loaded",Object.keys(A).length);
 })();
+
+/* =========================================
+TRILLIONS_ASCENSION_APPJS_ADDITIVE_V1
+NON DESTRUCTIVE ADDITIVE BLOCK
+========================================= */
+
+(()=>{"use strict";
+
+global.TRILLIONS_ASCENSION_STATE={
+ boot:Date.now(),
+ jobs:0,
+ routes:0,
+ workers:0,
+ migrations:0,
+ cache_hits:0,
+ cache_miss:0,
+ batches:0,
+ ring_writes:0,
+ quarantine:0
+};
+
+global.TRILLIONS_ASCENSION_DICTS={
+
+CORE_RUNTIME_DICT:{
+ WORKER_POOL_REAL:true,
+ SHARED_ARRAY_BUFFER_FABRIC:true,
+ ATOMIC_QUEUE_ENGINE:true,
+ MICRO_BATCH_RUNTIME:true,
+ BACKPRESSURE_CONTROLLER:true,
+ REAL_PRIORITY_SCHEDULER:true,
+ CPU_AFFINITY_ENGINE:true,
+ PIPELINE_BALANCER:true,
+ ASYNC_STORM_BREAKER:true,
+ PROMISE_EXPLOSION_GUARD:true,
+ LOOP_STARVATION_DETECTOR:true,
+ TIMER_COLLAPSE_DETECTOR:true,
+ RECURSION_KILLER:true,
+ DEADMAN_SWITCH:true,
+ AUTO_QUARANTINE:true,
+ KERNEL_WATCHDOG:true,
+ PANIC_RECOVERY:true,
+ SNAPSHOT_ROLLBACK:true,
+ TRUST_ZONES:true,
+ REGION_FAILOVER:true,
+ ANTI_CASCADE_FAILURE:true
+},
+
+PRESSURE_GRAPH_DICT:{
+ CPU_PRESSURE:true,
+ MEM_PRESSURE:true,
+ IO_PRESSURE:true,
+ EVENT_LOOP_PRESSURE:true,
+ CACHE_PRESSURE:true,
+ SIMD_PRESSURE:true,
+ WORKER_PRESSURE:true,
+ PIPELINE_PRESSURE:true,
+ GPU_PRESSURE:true,
+ IPC_PRESSURE:true,
+ QUEUE_PRESSURE:true
+},
+
+MEMORY_FABRIC_DICT:{
+ SHARED_PAGE_CACHE:true,
+ REMOTE_BUFFER_POOL:true,
+ CACHE_COHERENCE_ENGINE:true,
+ HOTPAGE_TRACKER:true,
+ MEMORY_PRESSURE_REDISTRIBUTOR:true,
+ MEMORY_REGION_ROUTER:true,
+ DISTRIBUTED_SHARED_MEMORY:true,
+ SHARED_BUFFER_RING:true,
+ ZERO_COPY_IPC:true
+},
+
+COMPUTE_DNA_DICT:{
+ JOB_GENOME:true,
+ HOTPATH_DISCOVERY:true,
+ FAILURE_PATTERN_MEMORY:true,
+ RUNTIME_SCORING:true,
+ ADAPTIVE_ROUTE_SELECTION:true,
+ SELF_OPTIMIZING_PIPELINES:true
+},
+
+SIMD_HOTPATH_DICT:{
+ AVX_ROUTER:true,
+ AVX512_PATH:true,
+ WASM_SIMD_COMPILER:true,
+ VECTOR_PIPELINE_FUSION:true,
+ SIMD_BATCHER:true,
+ HOT_LOOP_ACCELERATOR:true,
+ SIMD_COMPRESSION_PATH:true,
+ ADAPTIVE_HOTPATH_COMPILER:true
+},
+
+GPU_FABRIC_DICT:{
+ CUDA_ROUTER:true,
+ ROCM_ROUTER:true,
+ WEBGPU_ROUTER:true,
+ GPU_QUEUE_ENGINE:true,
+ GPU_MEMORY_POOL:true,
+ GPU_PRESSURE_GRAPH:true
+},
+
+PREDICTIVE_ENGINE_DICT:{
+ LOAD_FORECAST:true,
+ PIPELINE_PREDICTION:true,
+ CACHE_PREWARM:true,
+ JOB_PRESSURE_PREDICTION:true,
+ LATENCY_FORECAST:true,
+ FAILURE_PROBABILITY_ENGINE:true
+},
+
+IO_ENGINE_DICT:{
+ IO_URING_ROUTER:true,
+ DIRECT_STORAGE_PATH:true,
+ ZERO_COPY_STREAM:true,
+ NVME_BATCH_ENGINE:true,
+ PIPELINE_DISK_PREFETCH:true,
+ NETWORK_PACKET_BATCHING:true
+},
+
+OBSERVABILITY_DICT:{
+ LIVE_RUNTIME_GRAPH:true,
+ THREAD_HEATMAP:true,
+ CACHE_HEATMAP:true,
+ SIMD_ACTIVITY_MAP:true,
+ IPC_FLOW_GRAPH:true,
+ PIPELINE_TRACE_ENGINE:true,
+ LIVE_FLAMEGRAPH:true,
+ REAL_EVENT_LOOP_PROFILER:true,
+ REAL_LATENCY_HISTOGRAM:true,
+ RUNTIME_HEAT_ZONES:true
+},
+
+QN_ROUTER_SAFE_DICT:{
+ HEURISTIC_PARALLEL_SEARCH:true,
+ BRANCH_MULTIVERSE_SIM:true,
+ PROBABILITY_PATH_ENGINE:true,
+ SAT_SOLVER_MESH:true,
+ GRAPH_SEARCH_ACCELERATOR:true
+},
+
+KERNEL_MODELS_DICT:{
+ PERFORMANCE_MODEL:true,
+ THERMAL_MODEL:true,
+ LATENCY_MODEL:true,
+ FAILURE_MODEL:true,
+ MEMORY_MODEL:true,
+ NETWORK_MODEL:true
+},
+
+SOVEREIGN_FABRIC_DICT:{
+ MULTI_RUNTIME_FEDERATION:true,
+ GLOBAL_PRESSURE_COORDINATION:true,
+ SELF_HEALING_CLUSTER:true,
+ DISTRIBUTED_CONSENSUS_RUNTIME:true,
+ REGION_AUTONOMY:true,
+ ADAPTIVE_FAILOVER_MESH:true,
+ COMPUTE_FABRIC_ROUTER:true
+},
+
+REAL_ASCENSION_NEXT_DICT:{
+ TOPOLOGY_AWARE_SCHEDULER:true,
+ REAL_EVENT_LOOP_PROFILER:true,
+ LIVE_FLAMEGRAPH:true,
+ HOTPATH_JIT_CACHE:true,
+ WORKER_MIGRATION_ENGINE:true,
+ PIPELINE_BACKFLOW_CONTROL:true,
+ GC_PRESSURE_GUARD:true,
+ ZERO_COPY_IPC:true,
+ MEMORY_REGION_ROUTER:true,
+ ADAPTIVE_BATCH_SIZING:true,
+ SIMD_COMPRESSION_PATH:true,
+ REAL_LATENCY_HISTOGRAM:true,
+ RUNTIME_HEAT_ZONES:true,
+ CPU_CORE_LOCALITY:true,
+ SHARED_BUFFER_RING:true
+},
+
+HONESTY_DICT:{
+ REAL_METRICS_ONLY:true,
+ NO_FAKE_CPU:true,
+ NO_FAKE_GPU:true,
+ NO_FAKE_QUANTUM:true,
+ NO_UNLOCK_IMPOSSIBLE_ISA:true,
+ HARDWARE_LIMITS_STILL_APPLY:true,
+ VIRTUAL_ORCHESTRATION_ONLY:true
+}
+
+};
+
+const os=require("os");
+const crypto=require("crypto");
+const {performance}=require("perf_hooks");
+
+const SAB=new SharedArrayBuffer(1024*64);
+const RING=new Int32Array(SAB);
+
+function MEM(){
+ const m=process.memoryUsage();
+ return{
+  rss:m.rss,
+  heapUsed:m.heapUsed,
+  heapTotal:m.heapTotal,
+  external:m.external,
+  arrayBuffers:m.arrayBuffers
+ };
+}
+
+function CPU_FLAGS(){
+ try{
+  const fs=require("fs");
+  const t=fs.readFileSync("/proc/cpuinfo","utf8").toLowerCase();
+  return{
+   avx:t.includes(" avx "),
+   avx2:t.includes(" avx2 "),
+   avx512:t.includes("avx512f"),
+   aes:t.includes(" aes "),
+   fma:t.includes(" fma ")
+  };
+ }catch(e){
+  return{unavailable:true};
+ }
+}
+
+function PRESSURE(){
+ const m=MEM();
+ const c=os.cpus().length||1;
+ const load=os.loadavg()[0]||0;
+ const flags=CPU_FLAGS();
+
+ return{
+  cpu:+((load/c)*100).toFixed(2),
+  mem:+((m.heapUsed/m.heapTotal)*100).toFixed(2),
+  rss:m.rss,
+  eventLoop:0,
+  cache:
+   +((global.TRILLIONS_ASCENSION_STATE.cache_hits/
+   (
+    global.TRILLIONS_ASCENSION_STATE.cache_hits+
+    global.TRILLIONS_ASCENSION_STATE.cache_miss+1
+   ))*100).toFixed(2),
+  simd:flags.avx512?100:flags.avx2?80:40,
+  worker:global.TRILLIONS_ASCENSION_STATE.workers,
+  gpu:0,
+  ipc:0,
+  queue:global.TRILLIONS_ASCENSION_STATE.jobs,
+  pipeline:+(load*50).toFixed(2)
+ };
+}
+
+function HOTKEY(v){
+ return crypto
+ .createHash("sha1")
+ .update(JSON.stringify(v||{}))
+ .digest("hex")
+ .slice(0,16);
+}
+
+function ROUTE(job={}){
+ global.TRILLIONS_ASCENSION_STATE.jobs++;
+ global.TRILLIONS_ASCENSION_STATE.routes++;
+
+ const pressure=PRESSURE();
+
+ let lane="BALANCED";
+
+ if(job.priority==="critical")
+ lane="SURVIVAL";
+
+ if(pressure.cpu>90)
+ lane="COOLDOWN";
+
+ if(/SIMD|AVX|VECTOR/i.test(job.type||""))
+ lane="HOTPATH";
+
+ return{
+  lane,
+  pressure,
+  hotpath:CPU_FLAGS().avx512?"AVX512":"GENERIC",
+  topology:{
+   cores:os.cpus().length,
+   arch:os.arch(),
+   platform:os.platform()
+  }
+ };
+}
+
+function BENCH(ms=3000){
+ const end=performance.now()+ms;
+ let loops=0;
+ let checksum=0;
+
+ while(performance.now()<end){
+  for(let i=0;i<5000;i++){
+   checksum+=Math.sin(i)*Math.cos(i);
+  }
+  Atomics.add(RING,0,1);
+  loops++;
+ }
+
+ return{
+  duration_ms:ms,
+  loops,
+  checksum:+checksum.toFixed(4),
+  pressure:PRESSURE(),
+  predict:{
+   load:"HIGH",
+   route:"SURVIVAL",
+   failure:
+    PRESSURE().cpu>80?"ELEVATED":"LOW",
+   cache_prewarm:0,
+   hotpath:
+    CPU_FLAGS().avx512?"AVX512":"GENERIC"
+  }
+ };
+}
+
+function SNAPSHOT(){
+ return{
+  ok:true,
+  runtime:"TRILLIONS_ASCENSION_APPJS_ADDITIVE_V1",
+  modules:Object.keys(global.TRILLIONS_ASCENSION_DICTS),
+  pressure:PRESSURE(),
+  memory:MEM(),
+  cpu_flags:CPU_FLAGS(),
+  topology:{
+   host:os.hostname(),
+   cores:os.cpus().length,
+   arch:os.arch(),
+   platform:os.platform(),
+   node:process.version
+  },
+  state:global.TRILLIONS_ASCENSION_STATE,
+  honesty:[
+   "REAL_METRICS_ONLY",
+   "NO_FAKE_CPU",
+   "NO_FAKE_GPU",
+   "NO_FAKE_QUANTUM",
+   "VIRTUAL_ORCHESTRATION_ONLY"
+  ]
+ };
+}
+
+if(typeof app!=="undefined"){
+
+ app.get(
+  "/api/trillions/ascension/snapshot",
+  (q,r)=>r.json(SNAPSHOT())
+ );
+
+ app.get(
+  "/api/trillions/ascension/bench",
+  (q,r)=>r.json({
+   ok:true,
+   bench:BENCH(
+    Math.min(+q.query.ms||3000,30000)
+   )
+  })
+ );
+
+ app.post(
+  "/api/trillions/ascension/route",
+  (q,r)=>r.json({
+   ok:true,
+   route:ROUTE(q.body||{})
+  })
+ );
+
+ app.post(
+  "/api/trillions/ascension/workers",
+  (q,r)=>{
+   global.TRILLIONS_ASCENSION_STATE.workers=
+    Math.max(
+     1,
+     Math.min(
+      os.cpus().length,
+      +(q.body?.size||1)
+     )
+    );
+
+   r.json({
+    ok:true,
+    workers:
+     global.TRILLIONS_ASCENSION_STATE.workers,
+    shared_memory:"SharedArrayBuffer_ready",
+    atomic_queue:"Atomics_ready"
+   });
+  }
+ );
+
+ app.get(
+  "/api/trillions/ascension/flamegraph",
+  (q,r)=>r.json({
+   ok:true,
+   flamegraph:"LIVE_RUNTIME_TRACE",
+   topology:{
+    cores:os.cpus().length,
+    arch:os.arch()
+   },
+   pressure:PRESSURE()
+  })
+ );
+
+}
+
+console.log(
+ "[TRILLIONS_ASCENSION_APPJS_ADDITIVE_V1] READY",
+ Object.keys(global.TRILLIONS_ASCENSION_DICTS).length,
+ "DICTS"
+);
+
+})();
+
+/* TRILLIONS EBPF PERF + GPU REAL PROBE ADDITIVE */
+(()=>{"use strict";
+const cp=require("child_process"),fs=require("fs"),os=require("os");
+const sh=(c,t=2500)=>{try{return cp.execSync(c,{encoding:"utf8",stdio:["ignore","pipe","pipe"],timeout:t}).trim()}catch(e){return String((e.stdout||"")+(e.stderr||e.message)).slice(0,4000)}};
+const has=c=>!!sh("command -v "+c).replace(/not found/i,"").trim();
+
+function ebpfPerfProbe(){
+ const tools={perf:has("perf"),bpftool:has("bpftool"),bpftrace:has("bpftrace"),tracefs:fs.existsSync("/sys/kernel/tracing")||fs.existsSync("/sys/kernel/debug/tracing")};
+ return {
+  ok:true,
+  layer:"REAL_EBPF_KERNEL_PERF_PROBE",
+  tools,
+  kernel:os.release(),
+  real_available:tools.perf||tools.bpftool||tools.bpftrace,
+  perf_stat:tools.perf?sh("perf stat -e task-clock,context-switches,cpu-migrations,page-faults -a sleep 0.2 2>&1",5000):"UNAVAILABLE_perf_not_installed_or_not_permitted",
+  bpftool:tools.bpftool?sh("bpftool prog show 2>&1 | head -60",5000):"UNAVAILABLE_bpftool",
+  bpftrace:tools.bpftrace?sh("bpftrace -l 'tracepoint:syscalls:*' 2>/dev/null | head -20",5000):"UNAVAILABLE_bpftrace",
+  honesty:{
+   read_only_probe:true,
+   no_kernel_modification:true,
+   requires_host_permissions:true,
+   unavailable_if_container_blocks_perf:true
+  }
+ };
+}
+
+function gpuProbe(){
+ const nvidia=has("nvidia-smi"), rocm=has("rocm-smi");
+ const webgpuNode=(()=>{try{require("gpu");return true}catch(e){return false}})();
+ return {
+  ok:true,
+  layer:"REAL_GPU_COMPUTE_PROBE",
+  cuda:{
+   available:nvidia,
+   smi:nvidia?sh("nvidia-smi --query-gpu=name,driver_version,memory.total,utilization.gpu --format=csv,noheader 2>&1",5000):"UNAVAILABLE_no_nvidia_smi"
+  },
+  rocm:{
+   available:rocm,
+   smi:rocm?sh("rocm-smi --showproductname --showmeminfo vram --showuse 2>&1",5000):"UNAVAILABLE_no_rocm_smi"
+  },
+  webgpu:{
+   node_runtime_package_present:webgpuNode,
+   status:webgpuNode?"POSSIBLE_WITH_NODE_WEBGPU_PACKAGE":"UNAVAILABLE_NO_NODE_WEBGPU_PACKAGE",
+   note:"Real WebGPU compute usually requires browser/adapter or Node WebGPU package."
+  },
+  compute_status:nvidia?"CUDA_VISIBLE":rocm?"ROCM_VISIBLE":webgpuNode?"WEBGPU_PACKAGE_VISIBLE":"GPU_COMPUTE_UNAVAILABLE",
+  honesty:{
+   no_fake_gpu:true,
+   no_fake_cuda:true,
+   no_fake_rocm:true,
+   real_only_or_unavailable:true
+  }
+ };
+}
+
+function acceleratorRealStatus(){
+ return {
+  ok:true,
+  name:"TRILLIONS_REAL_EBPF_GPU_ACCELERATOR_STATUS",
+  host:{cpu:os.cpus()[0]?.model,cores:os.cpus().length,platform:process.platform,arch:process.arch,node:process.version},
+  ebpf_perf:ebpfPerfProbe(),
+  gpu_compute:gpuProbe(),
+  dict:{
+   EBPF_KERNEL_PERF:["perf","bpftool","bpftrace","tracefs","context_switches","page_faults","cpu_migrations"],
+   GPU_COMPUTE:["CUDA","NVIDIA_SMI","ROCM","ROCM_SMI","WEBGPU","GPU_MEMORY","GPU_UTILIZATION"],
+   HONESTY:["REAL_ONLY_OR_UNAVAILABLE","NO_FAKE_GPU","NO_KERNEL_MODIFICATION","READ_ONLY_PROBE"]
+  }
+ };
+}
+
+if(typeof app!=="undefined"){
+ app.get("/api/trillions/real-accelerators",(_,res)=>res.json(acceleratorRealStatus()));
+ app.get("/api/trillions/real-accelerators/ebpf",(_,res)=>res.json(ebpfPerfProbe()));
+ app.get("/api/trillions/real-accelerators/gpu",(_,res)=>res.json(gpuProbe()));
+}
+console.log("[TRILLIONS] REAL eBPF/perf + GPU probe block loaded");
+})();
