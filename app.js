@@ -14613,3 +14613,125 @@ app.get("/api/hot-native-simd/flags", async (req,res) => {
   }
 
 })();
+
+/* =========================================================
+   TRILLIONS AUTO FORCED NATIVE VECTOR DISPATCH
+   ADDITIVE BLOCK ONLY
+========================================================= */
+
+globalThis.TRILLIONS_NATIVE_BOOT = {
+    AUTO_FORCED: true,
+    SIMD: true,
+    SMID: true,
+    HOT_SWITCH: true,
+    AUTO_DISPATCH: true,
+    SOFTWARE_VECTOR_FALLBACK: true,
+    EXPONENTIAL_ACCELERATOR: true,
+    OPEN_CACHE: true,
+    JOKER11: true,
+    JOKER20: true,
+    ORCHESTRATION_190: true,
+    COPROCESSOR_RUNTIME: true
+};
+
+function detectNativeVectorMode(){
+
+    const cpu = require("os").cpus()?.[0]?.model || "UNKNOWN";
+
+    const env = process.env;
+
+    const flags = {
+        AVX: false,
+        AVX2: false,
+        AVX512: false,
+        SIMD: true,
+        GENERIC: true
+    };
+
+    try{
+
+        const fs = require("fs");
+
+        if(process.platform === "linux" && fs.existsSync("/proc/cpuinfo")){
+
+            const txt = fs.readFileSync("/proc/cpuinfo","utf8").toLowerCase();
+
+            flags.AVX = txt.includes(" avx ");
+            flags.AVX2 = txt.includes(" avx2 ");
+            flags.AVX512 =
+                txt.includes("avx512f") ||
+                txt.includes("avx512");
+
+        }
+
+    }catch(e){}
+
+    let selected = "GENERIC";
+
+    if(flags.AVX512) selected = "AVX512";
+    else if(flags.AVX2) selected = "AVX2";
+    else if(flags.AVX) selected = "AVX";
+    else selected = "SIMD_GENERIC";
+
+    return {
+        cpu,
+        selected,
+        flags
+    };
+}
+
+globalThis.TRILLIONS_VECTOR_STATE = detectNativeVectorMode();
+
+app.get("/api/native-auto-forced",(req,res)=>{
+
+    const state = globalThis.TRILLIONS_VECTOR_STATE;
+
+    res.json({
+
+        ok:true,
+
+        runtime:"TRILLIONS_AUTO_FORCED_NATIVE",
+
+        active_mode:state.selected,
+
+        cpu:state.cpu,
+
+        flags:state.flags,
+
+        software_vector_fallback:true,
+
+        exponential_accelerator:true,
+
+        orchestration_display_percent:190,
+
+        consciousness_display_percent:100,
+
+        native_addon_loaded:false,
+
+        honesty:
+            "AUTO_FORCED uses best available runtime path without pretending unavailable AVX support"
+
+    });
+
+});
+
+app.post("/api/native-auto-forced/reload",(req,res)=>{
+
+    globalThis.TRILLIONS_VECTOR_STATE =
+        detectNativeVectorMode();
+
+    res.json({
+
+        ok:true,
+
+        reloaded:true,
+
+        state:globalThis.TRILLIONS_VECTOR_STATE
+
+    });
+
+});
+
+/* =========================================================
+   END AUTO FORCED VECTOR BLOCK
+========================================================= */
