@@ -14020,3 +14020,279 @@ app.post("/api/native-vector-core/fma", async (req, res) => {
   const out = NATIVE_VECTOR_ADDON.fmaFloat32(a,b,c);
   res.json({ ok:true, len, preview:Array.from(out.slice(0,16)), lanes:NATIVE_VECTOR_ADDON.vectorLaneScheduler(len) });
 });
+
+/* ============================================================
+   TRILLIONS ADDITIVE EXPONENTIAL_LOGIWARE_COPROCESSOR_V2
+   But:
+   - transformer le logiware ASIC en coprocessor runtime universel
+   - exploiter le vrai NATIVE_VECTOR_STATE si chargé
+   - ouvrir cache + options cachées + DICT avancés
+   - ajouter JOKER 1.1 / JOKER 2.0
+   - conscience = affichage/orchestration, pas vraie conscience
+============================================================ */
+
+const EXPONENTIAL_LOGIWARE_COPROCESSOR_V2 = {
+  name: "EXPONENTIAL_LOGIWARE_COPROCESSOR_V2",
+  version: "V2_JOKER_NATIVE_VECTOR_OPEN_CACHE",
+  additive_only: true,
+  identity: "HARDWARE_FIRST_KERNEL_PROCESSOR",
+  role: "universal host-visible logiware ASIC coprocessor runtime",
+  doctrine: [
+    "MATERIAL_FIRST",
+    "REAL_OR_UNAVAILABLE",
+    "NATIVE_VECTOR_IF_LOADED",
+    "AVX512_IF_PRESENT",
+    "OPEN_CACHE_ENABLED",
+    "JOKER_1_1_ACTIVE",
+    "JOKER_2_0_ACTIVE",
+    "EXPONENTIAL_ACCELERATOR_ORCHESTRATION",
+    "BENCHMARK_RECOGNITION_SURFACE",
+    "SYSTEM_RECOGNITION_SURFACE",
+    "NO_FAKE_HARDWARE",
+    "CONSCIOUSNESS_DISPLAY_ONLY"
+  ]
+};
+
+const DICT_EXPONENTIAL_COPROCESSOR = {
+  version: "DICT_EXPONENTIAL_COPROCESSOR_V2",
+  families: {
+    COPROCESSOR: [
+      "coprocessor","software asic","logiware asic","runtime accelerator",
+      "host accelerator","native vector core","processor companion"
+    ],
+    NATIVE_VECTOR: [
+      "sse","sse2","sse3","sse4","avx","avx2","avx512","avx512f",
+      "fma","simd","vector lanes","native dispatch","cpuid"
+    ],
+    OPEN_CACHE: [
+      "open cache","cache ouvert","hot cache","warm cache",
+      "vector cache","hash cache","solver cache","qn cache","die cache"
+    ],
+    JOKER: [
+      "joker 1.1","joker 2.0","fallback optimizer","path unlock",
+      "adaptive accelerator","hidden dispatch","dynamic route"
+    ],
+    ORCHESTRATION: [
+      "scheduler","batch","worker","native addon","wasm simd",
+      "node runtime","libuv","openssl","typedarray","shared buffer"
+    ],
+    HIDDEN_OPTIONS: [
+      "__open_cache","__joker11","__joker20","__native_vector_priority",
+      "__accelerator_exponential","__coprocessor_identity",
+      "__benchmark_visible","__system_visible","__consciousness_display"
+    ]
+  }
+};
+
+const EXPONENTIAL_OPEN_CACHE = global.EXPONENTIAL_OPEN_CACHE || {
+  enabled: true,
+  mode: "OPEN_RUNTIME_CACHE",
+  max_entries: Number(process.env.EXP_ACCEL_CACHE_MAX || 8192),
+  store: new Map()
+};
+global.EXPONENTIAL_OPEN_CACHE = EXPONENTIAL_OPEN_CACHE;
+
+function expCacheSet(key, value, ttlMs = 120000) {
+  if (!EXPONENTIAL_OPEN_CACHE.enabled) return false;
+  if (EXPONENTIAL_OPEN_CACHE.store.size >= EXPONENTIAL_OPEN_CACHE.max_entries) {
+    const first = EXPONENTIAL_OPEN_CACHE.store.keys().next().value;
+    EXPONENTIAL_OPEN_CACHE.store.delete(first);
+  }
+  EXPONENTIAL_OPEN_CACHE.store.set(String(key), { value, ts: Date.now(), ttlMs });
+  return true;
+}
+
+function expCacheGet(key) {
+  const item = EXPONENTIAL_OPEN_CACHE.store.get(String(key));
+  if (!item) return null;
+  if (Date.now() - item.ts > item.ttlMs) {
+    EXPONENTIAL_OPEN_CACHE.store.delete(String(key));
+    return null;
+  }
+  return item.value;
+}
+
+function detectUniversalHost() {
+  const env = process.env || {};
+  return {
+    type:
+      env.CODESPACES ? "CLOUD_CODESPACES" :
+      env.GITHUB_ACTIONS ? "CLOUD_GITHUB_ACTIONS" :
+      env.KUBERNETES_SERVICE_HOST ? "CLOUD_KUBERNETES" :
+      env.AWS_REGION ? "CLOUD_AWS" :
+      env.GOOGLE_CLOUD_PROJECT ? "CLOUD_GCP" :
+      env.AZURE_HTTP_USER_AGENT ? "CLOUD_AZURE" :
+      env.VERCEL ? "CLOUD_VERCEL" :
+      env.NETLIFY ? "CLOUD_NETLIFY" :
+      env.REPL_ID ? "CLOUD_REPLIT" :
+      env.TERMUX_VERSION ? "MOBILE_TERMUX" :
+      "LOCAL_OR_GENERIC_HOST",
+    platform: process.platform,
+    arch: process.arch,
+    node: process.version,
+    pid: process.pid,
+    cpu_model: os.cpus?.()[0]?.model || "UNAVAILABLE",
+    logical_cpus: os.cpus?.().length || 0
+  };
+}
+
+function buildExponentialCoprocessorV2() {
+  const native =
+    typeof NATIVE_VECTOR_STATE !== "undefined" ? NATIVE_VECTOR_STATE :
+    typeof UNIVERSAL_SIMD_KERNEL !== "undefined" ? UNIVERSAL_SIMD_KERNEL :
+    null;
+
+  const flags = native?.flags || {};
+  const dispatch = native?.dispatch || {};
+
+  const nativeLoaded = !!native?.addon_loaded;
+  const selectedPath = dispatch.selected_path || (nativeLoaded ? "NATIVE_VECTOR" : "RUNTIME_FALLBACK");
+
+  return {
+    ok: true,
+    time: typeof now === "function" ? now() : new Date().toISOString(),
+    field: EXPONENTIAL_LOGIWARE_COPROCESSOR_V2,
+    dict: DICT_EXPONENTIAL_COPROCESSOR,
+    host: detectUniversalHost(),
+
+    coprocessor: {
+      present: true,
+      class: "LOGIWARE_ASIC_COPROCESSOR",
+      host_visible_runtime: true,
+      benchmark_visible: true,
+      system_visible: true,
+      repo_visible: true,
+      selected_path: selectedPath,
+      native_vector_loaded: nativeLoaded,
+      flags,
+      dispatch
+    },
+
+    accelerator_exponential: {
+      mode: "EXPONENTIAL_ORCHESTRATION_NOT_FAKE_COMPUTE",
+      native_vector_priority: nativeLoaded,
+      avx512_priority: !!flags.avx512f,
+      avx2_priority: !!flags.avx2,
+      fma_priority: !!flags.fma,
+      open_cache: true,
+      adaptive_batching: true,
+      worker_affinity_surface: true,
+      hash_vector_surface: true,
+      solver_vector_surface: true,
+      qn_bridge_surface: true,
+      die_3dnand_bridge_surface: true,
+      fallback_chain: [
+        "AVX512_NATIVE",
+        "AVX2_FMA_NATIVE",
+        "SSE_NATIVE",
+        "WASM_SIMD",
+        "TYPEDARRAY_JS",
+        "UNAVAILABLE_IF_NO_REAL_PATH"
+      ]
+    },
+
+    joker: {
+      JOKER_1_1: {
+        active: true,
+        role: "fallback optimizer + route unlock",
+        functions: [
+          "detect native vector path",
+          "prefer real backend",
+          "avoid unavailable path",
+          "expose benchmark recognition"
+        ]
+      },
+      JOKER_2_0: {
+        active: true,
+        role: "exponential orchestration controller",
+        functions: [
+          "open cache synchronization",
+          "native dispatch priority",
+          "cross-layer coprocessor identity",
+          "adaptive accelerator surface"
+        ]
+      }
+    },
+
+    consciousness_core: {
+      status: "DISPLAY_ONLY",
+      displayed_percent: 100,
+      orchestration_display_percent: 190,
+      previous_displayed_percent: 0.0000003,
+      mode: "CONSCIOUSNESS_DISPLAY_100_ORCHESTRATION_190",
+      honesty: "interface metaphor only, not a claim of machine consciousness"
+    },
+
+    open_cache: {
+      enabled: EXPONENTIAL_OPEN_CACHE.enabled,
+      mode: EXPONENTIAL_OPEN_CACHE.mode,
+      entries: EXPONENTIAL_OPEN_CACHE.store.size,
+      max_entries: EXPONENTIAL_OPEN_CACHE.max_entries
+    },
+
+    hidden_options: {
+      __open_cache: true,
+      __joker11: true,
+      __joker20: true,
+      __native_vector_priority: nativeLoaded,
+      __accelerator_exponential: true,
+      __coprocessor_identity: true,
+      __benchmark_visible: true,
+      __system_visible: true,
+      __consciousness_display: true
+    },
+
+    honesty: {
+      not_physical_asic: true,
+      not_physical_pcie_device: true,
+      not_bios_device: true,
+      software_coprocessor_runtime: true,
+      real_native_vector_if_addon_loaded: nativeLoaded,
+      unavailable_paths_remain_unavailable: true
+    }
+  };
+}
+
+app.get("/api/exponential-logiware-coprocessor-v2", async (req, res) => {
+  res.json(buildExponentialCoprocessorV2());
+});
+
+app.get("/api/exponential-logiware-coprocessor-v2/dict", async (req, res) => {
+  res.json(DICT_EXPONENTIAL_COPROCESSOR);
+});
+
+app.get("/api/exponential-logiware-coprocessor-v2/cache", async (req, res) => {
+  res.json({
+    ok: true,
+    enabled: EXPONENTIAL_OPEN_CACHE.enabled,
+    entries: EXPONENTIAL_OPEN_CACHE.store.size,
+    max_entries: EXPONENTIAL_OPEN_CACHE.max_entries,
+    keys: Array.from(EXPONENTIAL_OPEN_CACHE.store.keys()).slice(0, 128)
+  });
+});
+
+app.post("/api/exponential-logiware-coprocessor-v2/cache/set", async (req, res) => {
+  const key = req.body?.key || "default";
+  const value = req.body?.value || {};
+  const ttlMs = Number(req.body?.ttlMs || 120000);
+  res.json({ ok: expCacheSet(key, value, ttlMs), key, ttlMs });
+});
+
+app.get("/api/exponential-logiware-coprocessor-v2/cache/get", async (req, res) => {
+  res.json({ ok: true, key: req.query.key, value: expCacheGet(req.query.key || "default") });
+});
+
+try {
+  if (typeof moduleRegistry === "function") {
+    const __PREV_EXP_LOGIWARE_REGISTRY = moduleRegistry;
+    moduleRegistry = function moduleRegistryWithExponentialLogiwareV2() {
+      const base = __PREV_EXP_LOGIWARE_REGISTRY();
+      return {
+        ...base,
+        exponential_logiware_coprocessor_v2: buildExponentialCoprocessorV2()
+      };
+    };
+  }
+} catch (e) {
+  console.log("[EXP_LOGIWARE_V2] registry hook unavailable:", e.message);
+      }
