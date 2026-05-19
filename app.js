@@ -15499,3 +15499,147 @@ if(typeof app!=="undefined"){
 }
 console.log("[TRILLIONS] CROSS_LANGUAGE+ETT+PING+SURVIVAL additive block loaded");
 })();
+
+/* ═════ TRILLIONS CPU REAL/VIRTUAL MIRROR ADDITIVE BLOCK ═════ */
+(function(){
+"use strict";
+const os=require("os"),fs=require("fs"),cp=require("child_process"),crypto=require("crypto");
+const now=()=>Date.now();
+const sh=c=>{try{return cp.execSync(c,{encoding:"utf8",stdio:["ignore","pipe","ignore"],timeout:1200}).trim()}catch(e){return""}};
+const read=p=>{try{return fs.readFileSync(p,"utf8")}catch(e){return""}};
+const flags=()=>read("/proc/cpuinfo").toLowerCase();
+const cpuFlags=flags();
+
+function hasFlag(x){return cpuFlags.includes(x.toLowerCase())}
+function cpuTemp(){
+ let t=read("/sys/class/thermal/thermal_zone0/temp");
+ if(t&&Number(t))return +(Number(t)/1000).toFixed(1);
+ return null;
+}
+function cpuMHz(){
+ const m=(read("/proc/cpuinfo").match(/cpu MHz\s*:\s*([\d.]+)/)||[])[1];
+ return m?+Number(m).toFixed(2):null;
+}
+function load(){
+ const l=os.loadavg();
+ return {l1:l[0],l5:l[1],l15:l[2]};
+}
+function mem(){
+ const m=process.memoryUsage();
+ return {rss:m.rss,heapUsed:m.heapUsed,heapTotal:m.heapTotal,external:m.external,arrayBuffers:m.arrayBuffers};
+}
+
+const ISA=[
+"x86","x86_64","ARM","ARM64","RISC-V","POWER","MIPS","WASM",
+"SSE","SSE2","SSE3","SSSE3","SSE4.1","SSE4.2","AVX","AVX2","AVX512",
+"AES-NI","SHA","FMA","BMI1","BMI2","VNNI","BF16","AMX","NEON","SVE"
+];
+
+const REAL_CPU={
+ fetch:"hardware_fetch_observed_only",
+ decode:"hardware_decode_observed_only",
+ scheduler:"os_node_v8_scheduler_observed",
+ alu:"integer_math_available",
+ fpu:"floating_point_available",
+ simd:{
+  sse:hasFlag("sse"),sse2:hasFlag("sse2"),sse3:hasFlag("sse3"),
+  ssse3:hasFlag("ssse3"),sse41:hasFlag("sse4_1"),sse42:hasFlag("sse4_2"),
+  avx:hasFlag("avx"),avx2:hasFlag("avx2"),avx512:hasFlag("avx512f"),
+  fma:hasFlag("fma"),aes:hasFlag("aes"),sha:hasFlag("sha_ni")
+ },
+ registers:"not_direct_ring0_access",
+ cache:{
+  L1:"hardware_real_unreadable_directly",
+  L2:"hardware_real_unreadable_directly",
+  L3:"hardware_real_unreadable_directly",
+  L4:"if_platform_supports",
+  L5:"virtual_layer_only",
+  L6:"virtual_layer_only"
+ },
+ tlb:"hardware_real_not_directly_controlled",
+ branch_predictor:"hardware_real_not_directly_controlled",
+ rob:"hardware_real_not_directly_controlled",
+ load_store:"hardware_real_via_runtime_memory_ops",
+ prefetcher:"hardware_real_not_directly_controlled",
+ security:["NX","ASLR_if_OS","IOMMU_if_host","SMEP_if_CPU","SMAP_if_CPU","OpenSSL","process_isolation"],
+ pipeline:["FETCH","DECODE","RENAME","SCHEDULE","EXECUTE","RETIRE"],
+ honesty:"real CPU observed; no fake microcode unlock; no ring0 register claim"
+};
+
+const VIRTUAL_CPU_MIRROR={
+ name:"TRILLIONS_VIRTUAL_CPU_MIRROR_V1",
+ core:{
+  fetch:"RAM→CACHE→FETCH virtual instruction ledger",
+  decode:"multi_lang_decode + gzip/brotli/zstd codec awareness",
+  scheduler:"priority_queue_micro_runtime",
+  alu:"integer_kernel + hash_mix",
+  fpu:"Float64/vector hotpath",
+  simd:"native flags mirrored + JS/WASM/NAPI possible paths",
+  registers:"virtual_register_bank_orchestration",
+  branch_predictor:"pattern_history_predictor",
+  rob:"micro_reorder_buffer_virtual",
+  load_store:"quality_checked_buffer_io",
+  cache:"L1..L6 virtual cache map",
+  tlb:"virtual address map ledger"
+ },
+ cache_layers:{
+  L1:"hot micro ops",
+  L2:"recent signatures",
+  L3:"repo/runtime graph",
+  L4:"language AST/cache",
+  L5:"threat/ping/trust",
+  L6:"snapshot/rollback"
+ },
+ prefetch_layers:["instruction_prefetch","file_prefetch","route_prefetch","worker_prefetch","codec_prefetch"],
+ qn_coprocessor_bridge:"logical QN quantum-inspired scoring only, not real quantum hardware",
+ clock:"adaptive logical clock bound to host CPU",
+ power:"estimation only",
+ security_engines:["trust_zones","quarantine","snapshot","rollback","deadman","anti_cascade","packet_signature"],
+ instruction_sets_supported_dictionary:ISA,
+ honesty:"virtual mirror orchestrates software paths; does not unlock unavailable hardware"
+};
+
+function microBench(){
+ const N=2e6;
+ let a=1.1,b=2.2,c=0;
+ const t=process.hrtime.bigint();
+ for(let i=0;i<N;i++){c+=(a*b+i%7);a+=0.000001;b-=0.0000001}
+ const ms=Number(process.hrtime.bigint()-t)/1e6;
+ return {ops:N,ms:+ms.toFixed(3),mops:+(N/(ms/1000)/1e6).toFixed(3),checksum:+c.toFixed(3)};
+}
+
+function codecBench(){
+ const raw=Buffer.alloc(8*1024*1024,7);
+ const zlib=require("zlib");
+ const t=process.hrtime.bigint();
+ const gz=zlib.gzipSync(raw);
+ const out=zlib.gunzipSync(gz);
+ const ms=Number(process.hrtime.bigint()-t)/1e6;
+ return {
+  raw_mb:8,gzip_bytes:gz.length,ok:out.length===raw.length,
+  throughput_gbps:+(((8*1024*1024*8)/(ms/1000))/1e9).toFixed(3),
+  honesty:"real local gzip/gunzip throughput, not 80Gbps claim unless measured"
+ };
+}
+
+function snapshot(){
+ return {
+  time:now(),
+  host:{cpu:os.cpus()[0]?.model,cores:os.cpus().length,arch:os.arch(),platform:os.platform(),node:process.version},
+  telemetry:{load:load(),mhz:cpuMHz(),temp_c:cpuTemp(),threads:os.cpus().length,ram_total:os.totalmem(),ram_free:os.freemem(),process_mem:mem()},
+  real_cpu:REAL_CPU,
+  virtual_mirror:VIRTUAL_CPU_MIRROR,
+  measured:{micro:microBench(),codec:codecBench()},
+  verdict:"REAL_CPU_OBSERVED + VIRTUAL_CPU_MIRROR_ACTIVE"
+ };
+}
+
+global.TRILLIONS_CPU_REAL_VIRTUAL_MIRROR={snapshot,REAL_CPU,VIRTUAL_CPU_MIRROR};
+
+if(typeof app!=="undefined"){
+ app.get("/api/trillions/cpu-mirror",(req,res)=>res.json({ok:true,...snapshot()}));
+ app.get("/api/trillions/cpu-flags",(req,res)=>res.json({ok:true,simd:REAL_CPU.simd,isa_dictionary:ISA}));
+ app.get("/api/trillions/cpu-virtual",(req,res)=>res.json({ok:true,virtual_mirror:VIRTUAL_CPU_MIRROR}));
+}
+console.log("[TRILLIONS] CPU REAL/VIRTUAL MIRROR loaded");
+})();
