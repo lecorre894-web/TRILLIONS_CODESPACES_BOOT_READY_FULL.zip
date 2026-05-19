@@ -14296,3 +14296,137 @@ try {
 } catch (e) {
   console.log("[EXP_LOGIWARE_V2] registry hook unavailable:", e.message);
       }
+
+/* ============================================================
+   ADDITIVE HOT NATIVE SIMD / SMID VECTOR CONTROL
+   AVX / AVX2 / AVX512 / AUTO / GENERIC
+   No restart required.
+============================================================ */
+
+global.HOT_NATIVE_SIMD_SMID = global.HOT_NATIVE_SIMD_SMID || {
+  active_mode: "AUTO",
+  alias: ["SIMD", "SMID"],
+  last_switch: Date.now(),
+  doctrine: [
+    "NATIVE_IF_ADDON_LOADED",
+    "HOT_RUNTIME_SWITCH",
+    "SIMD_SMID_VECTOR_CONTROL",
+    "AVX_AVX2_AVX512_VISIBLE",
+    "REAL_OR_UNAVAILABLE"
+  ]
+};
+
+function getNativeSimdAddon() {
+  if (typeof NATIVE_VECTOR_ADDON !== "undefined" && NATIVE_VECTOR_ADDON) return NATIVE_VECTOR_ADDON;
+  if (typeof SIMD_ADDON !== "undefined" && SIMD_ADDON) return SIMD_ADDON;
+  if (typeof NATIVE_VECTOR_STATE !== "undefined" && NATIVE_VECTOR_STATE?.addon_loaded) return true;
+  return null;
+}
+
+function nativeSimdFlags() {
+  try {
+    const addon = getNativeSimdAddon();
+    if (addon && addon.cpuFlags) return addon.cpuFlags();
+  } catch(e) {}
+  if (typeof NATIVE_VECTOR_STATE !== "undefined") return NATIVE_VECTOR_STATE.flags || {};
+  return {};
+}
+
+function nativeSimdDispatch() {
+  try {
+    const addon = getNativeSimdAddon();
+    if (addon && addon.dispatchPlan) return addon.dispatchPlan();
+  } catch(e) {}
+  if (typeof NATIVE_VECTOR_STATE !== "undefined") return NATIVE_VECTOR_STATE.dispatch || {};
+  return {};
+}
+
+function setHotNativeSimdMode(mode) {
+  const m = String(mode || "").toUpperCase().replace("SMID", "SIMD").trim();
+
+  const allowed = [
+    "AUTO",
+    "SIMD",
+    "AVX",
+    "AVX2",
+    "AVX512",
+    "GENERIC"
+  ];
+
+  if (!allowed.includes(m)) {
+    return { ok:false, error:"INVALID_SIMD_MODE", allowed };
+  }
+
+  const flags = nativeSimdFlags();
+
+  if (m === "AVX" && !flags.avx) return { ok:false, mode:m, error:"AVX_UNAVAILABLE" };
+  if (m === "AVX2" && !flags.avx2) return { ok:false, mode:m, error:"AVX2_UNAVAILABLE" };
+  if (m === "AVX512" && !flags.avx512f) return { ok:false, mode:m, error:"AVX512_UNAVAILABLE" };
+
+  global.HOT_NATIVE_SIMD_SMID.active_mode = m;
+  global.HOT_NATIVE_SIMD_SMID.last_switch = Date.now();
+
+  return {
+    ok:true,
+    active_mode:m,
+    native_addon_loaded: !!getNativeSimdAddon(),
+    flags,
+    dispatch: nativeSimdDispatch(),
+    last_switch: global.HOT_NATIVE_SIMD_SMID.last_switch
+  };
+}
+
+function hotNativeSimdStatus() {
+  const flags = nativeSimdFlags();
+  const dispatch = nativeSimdDispatch();
+
+  return {
+    ok:true,
+    field: "HOT_NATIVE_SIMD_SMID_VECTOR_CONTROL",
+    active_mode: global.HOT_NATIVE_SIMD_SMID.active_mode,
+    alias: global.HOT_NATIVE_SIMD_SMID.alias,
+    native_addon_loaded: !!getNativeSimdAddon(),
+    flags,
+    dispatch,
+    available_modes: {
+      AUTO: true,
+      SIMD: true,
+      AVX: !!flags.avx,
+      AVX2: !!flags.avx2,
+      AVX512: !!flags.avx512f,
+      GENERIC: true
+    },
+    native_reading: {
+      selected_path: dispatch.selected_path || "UNAVAILABLE_OR_AUTO",
+      lanes_f32: dispatch.lanes_f32 || null,
+      native_dispatch: !!dispatch.native_dispatch,
+      vector_lane_scheduler: !!dispatch.vector_lane_scheduler,
+      aligned_memory: !!dispatch.aligned_memory
+    },
+    hidden_options: {
+      __hot_simd_switch: true,
+      __smid_alias_enabled: true,
+      __native_vector_control: true,
+      __avx_hot_mode: !!flags.avx,
+      __avx2_hot_mode: !!flags.avx2,
+      __avx512_hot_mode: !!flags.avx512f
+    }
+  };
+}
+
+app.get("/api/hot-native-simd", async (req,res) => {
+  res.json(hotNativeSimdStatus());
+});
+
+app.post("/api/hot-native-simd/:mode", async (req,res) => {
+  res.json(setHotNativeSimdMode(req.params.mode));
+});
+
+app.get("/api/hot-native-simd/flags", async (req,res) => {
+  res.json({
+    ok:true,
+    flags: nativeSimdFlags(),
+    dispatch: nativeSimdDispatch(),
+    active_mode: global.HOT_NATIVE_SIMD_SMID.active_mode
+  });
+});
