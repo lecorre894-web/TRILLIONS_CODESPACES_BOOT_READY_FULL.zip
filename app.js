@@ -17028,3 +17028,85 @@ console.log("[TRILLIONS_V12] runtime core additive loaded");
 
   console.log("TRILLIONS V12 STANDARD PLUS BENCH routes: /api/trillions/v12/standard-plus");
 })();
+
+/* === TRILLIONS V12.1 REAL ACCELERATORS ADDITIVE === */
+(() => {
+  const fs=require("fs"), os=require("os"), cp=require("child_process"), crypto=require("crypto"), {performance}=require("perf_hooks");
+  const sh=(c)=>{try{return cp.execSync(c,{stdio:["ignore","pipe","pipe"],timeout:8000}).toString().trim()}catch(e){return "UNAVAILABLE:"+String(e.message).slice(0,180)}};
+  const has=(c)=>!String(sh(`command -v ${c} >/dev/null 2>&1 && echo OK`)).startsWith("UNAVAILABLE") && sh(`command -v ${c} >/dev/null 2>&1 && echo OK`)==="OK";
+  const appRef=global.app||app;
+
+  const TRILLIONS_ACCEL_DICT={
+    SIMD_REAL:["CPU flags","AVX","AVX2","AVX512","SSE4","FMA","AES","SHA","NEON/SVE if ARM"],
+    OPENBLAS:["libopenblas probe","pkg-config","ldconfig","python numpy BLAS if present"],
+    WASM_NATIVE:["WebAssembly.validate","WASM i32 loop","portable SIMD unavailable unless runtime exposes it"],
+    GPU_CUDA_REAL:["nvidia-smi","nvcc","CUDA_VISIBLE_DEVICES","real only or unavailable"],
+    NUMA_SCHEDULER:["lscpu","numactl","taskset","CPU topology","NUMA node map"],
+    HYBRID_CPP_NODE:["g++ compile","native C++ bench","Node orchestration","real elapsed ms"],
+    CLEAN_SPLIT:["/api/trillions/v12/accelerators/*","bench-only route","runtime-only route"]
+  };
+
+  function cpuFlags(){
+    const txt=fs.existsSync("/proc/cpuinfo")?fs.readFileSync("/proc/cpuinfo","utf8"):"";
+    const flags=(txt.match(/flags\s*:\s*(.*)/)||txt.match(/Features\s*:\s*(.*)/)||[])[1]||"";
+    const list=["sse","sse2","sse3","ssse3","sse4_1","sse4_2","avx","avx2","avx512f","fma","aes","sha_ni","neon","sve"];
+    return Object.fromEntries(list.map(x=>[x,flags.includes(x)]));
+  }
+
+  async function wasmBench(){
+    const bytes=new Uint8Array([0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,3,2,1,0,7,7,1,3,97,100,100,0,0,10,9,1,7,0,32,0,32,1,106,11]);
+    const ok=WebAssembly.validate(bytes); let sum=0,t0=performance.now();
+    if(ok){const m=await WebAssembly.instantiate(bytes); for(let i=0;i<1e6;i++) sum=m.instance.exports.add(sum,i)|0;}
+    return {available:ok, ms:+(performance.now()-t0).toFixed(3), checksum:sum, mode:"WASM_NATIVE_REAL"};
+  }
+
+  function openblasProbe(){
+    return {
+      pkg_config:sh("pkg-config --libs openblas 2>&1 || true"),
+      ldconfig:sh("ldconfig -p 2>/dev/null | grep -i openblas | head -5 || true"),
+      numpy_blas:sh(`python3 - <<'PY'\ntry:\n import numpy as np\n np.show_config()\nexcept Exception as e: print("UNAVAILABLE:"+str(e))\nPY`)
+    };
+  }
+
+  function numaProbe(){
+    return {
+      lscpu:sh("lscpu | egrep 'CPU\\(s\\)|Thread|Core|Socket|NUMA|Model name|MHz'"),
+      numactl:sh("numactl --hardware 2>&1 || true"),
+      taskset:sh("taskset -pc $$ 2>&1 || true"),
+      topology:{cpus:os.cpus().length, arch:os.arch(), platform:os.platform()}
+    };
+  }
+
+  function gpuCudaProbe(){
+    return {
+      nvidia_smi:sh("command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-gpu=name,driver_version,memory.total,utilization.gpu --format=csv,noheader"),
+      nvcc:sh("command -v nvcc >/dev/null 2>&1 && nvcc --version"),
+      visible:process.env.CUDA_VISIBLE_DEVICES||"UNSET",
+      honesty:{real_only_or_unavailable:true,no_fake_cuda:true}
+    };
+  }
+
+  function cppHybridBench(){
+    const src=`#include <bits/stdc++.h>
+using namespace std;int main(){auto t=chrono::high_resolution_clock::now(); volatile double x=0; for(long long i=1;i<25000000;i++) x+=sin(i)*cos(i); auto e=chrono::high_resolution_clock::now(); cout<<"{\\\"cpp_checksum\\\":"<<(long long)x<<",\\\"cpp_ms\\\":"<<chrono::duration<double,milli>(e-t).count()<<"}\\n";}`;
+    fs.writeFileSync("/tmp/trillions_hybrid.cpp",src);
+    const comp=sh("g++ -O3 -march=native /tmp/trillions_hybrid.cpp -o /tmp/trillions_hybrid 2>&1");
+    const run=fs.existsSync("/tmp/trillions_hybrid")?sh("/tmp/trillions_hybrid"):"UNAVAILABLE:g++ compile failed";
+    return {gpp:has("g++"), compile:comp||"OK", run};
+  }
+
+  appRef.get("/api/trillions/v12/accelerators/dict",(req,res)=>res.json({ok:true,dict:TRILLIONS_ACCEL_DICT,honesty:"REAL_ONLY_OR_UNAVAILABLE"}));
+  appRef.get("/api/trillions/v12/accelerators/simd",(req,res)=>res.json({ok:true,layer:"SIMD_REAL_PROBE",flags:cpuFlags()}));
+  appRef.get("/api/trillions/v12/accelerators/openblas",(req,res)=>res.json({ok:true,layer:"OPENBLAS_REAL_PROBE",openblas:openblasProbe()}));
+  appRef.get("/api/trillions/v12/accelerators/wasm",async(req,res)=>res.json({ok:true,layer:"WASM_NATIVE_BENCH",wasm:await wasmBench()}));
+  appRef.get("/api/trillions/v12/accelerators/cuda",(req,res)=>res.json({ok:true,layer:"GPU_CUDA_REAL_PROBE",cuda:gpuCudaProbe()}));
+  appRef.get("/api/trillions/v12/accelerators/numa",(req,res)=>res.json({ok:true,layer:"NUMA_SCHEDULER_PROBE",numa:numaProbe()}));
+  appRef.get("/api/trillions/v12/accelerators/hybrid-cpp-node",(req,res)=>res.json({ok:true,layer:"HYBRID_CPP_NODE_BENCH",hybrid:cppHybridBench()}));
+  appRef.get("/api/trillions/v12/accelerators/all",async(req,res)=>res.json({
+    ok:true,version:"V12.1_REAL_ACCELERATORS",
+    simd:cpuFlags(), openblas:openblasProbe(), wasm:await wasmBench(),
+    cuda:gpuCudaProbe(), numa:numaProbe(), hybrid_cpp_node:cppHybridBench(),
+    split:{runtime:"app.js routes",bench:"isolated endpoint calls",clean:true},
+    honesty:["REAL_ONLY_OR_UNAVAILABLE","NO_FAKE_GPU","NO_FAKE_BLAS","NO_FAKE_NUMA","NO_SIMULATED_HARDWARE"]
+  }));
+})();
