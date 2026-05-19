@@ -16899,3 +16899,132 @@ setInterval(()=>{V12.events++; pressure(); if(V12.pressure.cpu>95||V12.pressure.
 
 console.log("[TRILLIONS_V12] runtime core additive loaded");
 })();
+
+/* === TRILLIONS V12 ADDITIVE: MATRIX/FFT/TENSOR/WASM/BLAS/MEM/IPC/CACHE/FS BENCH === */
+(()=> {
+  "use strict";
+  const os=require("os"), fs=require("fs"), crypto=require("crypto");
+  const {performance}=require("perf_hooks");
+  const {Worker,isMainThread,parentPort,workerData}=require("worker_threads");
+
+  if(typeof app==="undefined") return console.error("TRILLIONS_ADDON: express app introuvable");
+
+  const now=()=>performance.now();
+  const round=x=>Math.round(x*100)/100;
+  const safe=(fn)=>{try{return fn()}catch(e){return "UNAVAILABLE:"+e.message}};
+
+  function matrixBench(n=192){
+    const A=new Float64Array(n*n),B=new Float64Array(n*n),C=new Float64Array(n*n);
+    for(let i=0;i<A.length;i++){A[i]=(i%97)/97;B[i]=(i%89)/89}
+    const t0=now();
+    for(let i=0;i<n;i++)for(let k=0;k<n;k++){const a=A[i*n+k];for(let j=0;j<n;j++)C[i*n+j]+=a*B[k*n+j]}
+    const ms=now()-t0, ops=2*n*n*n;
+    return {n,ms:round(ms),gflops:round(ops/ms/1e6),checksum:round(C[0]+C[C.length-1])};
+  }
+
+  function fftBench(N=1<<15){
+    const re=new Float64Array(N), im=new Float64Array(N);
+    for(let i=0;i<N;i++) re[i]=Math.sin(i);
+    const t0=now();
+    for(let size=2;size<=N;size<<=1){
+      const half=size>>1, step=Math.PI*2/size;
+      for(let i=0;i<N;i+=size)for(let j=0;j<half;j++){
+        const k=i+j, l=k+half, ang=-j*step;
+        const cr=Math.cos(ang), si=Math.sin(ang);
+        const tr=re[l]*cr-im[l]*si, ti=re[l]*si+im[l]*cr;
+        re[l]=re[k]-tr; im[l]=im[k]-ti; re[k]+=tr; im[k]+=ti;
+      }
+    }
+    const ms=now()-t0;
+    return {N,ms:round(ms),mops:round((N*Math.log2(N))/ms/1000),checksum:round(re[1]+im[1])};
+  }
+
+  function tensorBench(n=128){
+    const A=new Float32Array(n*n),B=new Float32Array(n*n),C=new Float32Array(n*n);
+    for(let i=0;i<A.length;i++){A[i]=(i&255)/255;B[i]=((i*7)&255)/255}
+    const t0=now();
+    for(let i=0;i<n;i++)for(let j=0;j<n;j++){let s=0;for(let k=0;k<n;k++)s+=A[i*n+k]*B[k*n+j];C[i*n+j]=Math.tanh(s)}
+    const ms=now()-t0;
+    return {n,ms:round(ms),tensor_ops_s:Math.round((2*n*n*n)/(ms/1000)),checksum:round(C[0]+C[n*n-1])};
+  }
+
+  function memoryBandwidth(mb=128){
+    const b=Buffer.allocUnsafe(mb*1024*1024);
+    let t0=now(); b.fill(7); let w=now()-t0;
+    t0=now(); let s=0; for(let i=0;i<b.length;i+=64)s+=b[i]; let r=now()-t0;
+    return {mb,write_MB_s:round(mb/(w/1000)),read_scan_MB_s:round(mb/(r/1000)),checksum:s};
+  }
+
+  function cacheHierarchy(){
+    const sizes=[32,256,1024,8192,32768].map(k=>k*1024);
+    return sizes.map(sz=>{
+      const a=new Uint8Array(sz); let s=0,t0=now();
+      for(let r=0;r<64;r++)for(let i=0;i<sz;i+=64){a[i]++;s+=a[i]}
+      const ms=now()-t0;
+      return {size_kb:sz/1024,ms:round(ms),touches:Math.floor(sz/64)*64,score:Math.round((sz/ms)/1024),checksum:s};
+    });
+  }
+
+  function fsThroughput(mb=64){
+    const f="/tmp/trillions_fs_real.bin", data=crypto.randomBytes(mb*1024*1024);
+    let t0=now(); fs.writeFileSync(f,data); let w=now()-t0;
+    t0=now(); const r=fs.readFileSync(f); let rr=now()-t0;
+    try{fs.unlinkSync(f)}catch{}
+    return {mb,write_MB_s:round(mb/(w/1000)),read_MB_s:round(mb/(rr/1000)),sha256:crypto.createHash("sha256").update(r).digest("hex").slice(0,16)};
+  }
+
+  async function ipcLatency(samples=2000){
+    const code=`const{parentPort}=require("worker_threads");parentPort.on("message",m=>parentPort.postMessage(m));`;
+    const w=new Worker(code,{eval:true});
+    const lat=[];
+    await new Promise(res=>{
+      let i=0,t=0;
+      w.on("message",()=>{lat.push(performance.now()-t); if(++i>=samples){w.terminate();res()}else{t=performance.now();w.postMessage(i)}});
+      t=performance.now(); w.postMessage(0);
+    });
+    lat.sort((a,b)=>a-b);
+    return {samples,p50_ms:round(lat[Math.floor(samples*.5)]),p95_ms:round(lat[Math.floor(samples*.95)]),p99_ms:round(lat[Math.floor(samples*.99)])};
+  }
+
+  function wasmProbe(){
+    const ok=typeof WebAssembly!=="undefined";
+    return {available:ok,simd:"UNAVAILABLE_SAFE_PROBE_ONLY_IN_NODE",honesty:"WASM SIMD needs real compiled SIMD module"};
+  }
+
+  function blasProbe(){
+    return {
+      native_blas:"UNAVAILABLE_UNLESS_OPENBLAS_MKL_ADDON_INSTALLED",
+      js_matrix_fallback:true,
+      honesty:"no fake BLAS score"
+    };
+  }
+
+  app.get("/api/trillions/v12/standard-plus", async(req,res)=>{
+    const t0=now();
+    const report={
+      ok:true,
+      layer:"TRILLIONS_STANDARD_PLUS_REAL_BENCH",
+      system:{host:os.hostname(),platform:os.platform(),arch:os.arch(),threads:os.cpus().length,node:process.version},
+      matrix:safe(()=>matrixBench(Number(req.query.matrix||192))),
+      fft:safe(()=>fftBench(1<<Number(req.query.fftPow||15))),
+      tensor:safe(()=>tensorBench(Number(req.query.tensor||128))),
+      wasm:wasmProbe(),
+      blas:blasProbe(),
+      memory_bandwidth:safe(()=>memoryBandwidth(Number(req.query.mem||128))),
+      ipc_latency:await ipcLatency(Number(req.query.ipc||2000)),
+      cache_hierarchy:safe(()=>cacheHierarchy()),
+      filesystem_throughput:safe(()=>fsThroughput(Number(req.query.fs||64))),
+      honesty:{real_only_or_unavailable:true,no_fake_gpu:true,no_fake_blas:true,no_fake_wasm_simd:true}
+    };
+    report.total_ms=round(now()-t0);
+    report.performance_score=Math.round(
+      (report.matrix.gflops||0)*10000+
+      (report.fft.mops||0)*1000+
+      (report.memory_bandwidth.read_scan_MB_s||0)+
+      (report.filesystem_throughput.read_MB_s||0)
+    );
+    res.json(report);
+  });
+
+  console.log("TRILLIONS V12 STANDARD PLUS BENCH routes: /api/trillions/v12/standard-plus");
+})();
