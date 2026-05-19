@@ -14430,3 +14430,186 @@ app.get("/api/hot-native-simd/flags", async (req,res) => {
     active_mode: global.HOT_NATIVE_SIMD_SMID.active_mode
   });
 });
+
+/* =========================================================
+   HOT NATIVE SIMD / AVX / AVX2 / AVX512
+   ADDITIVE BLOCK ONLY
+   SAFE APPEND AT END OF app.js
+   ========================================================= */
+
+(() => {
+
+  const SIMD_RUNTIME = {
+    addon: null,
+    loaded: false,
+    flags: {},
+    dispatch: {},
+    hidden: {},
+    mode: "AUTO"
+  };
+
+  function safeRequire(p){
+    try { return require(p); }
+    catch(e){ return null; }
+  }
+
+  SIMD_RUNTIME.addon =
+      safeRequire("./native-simd/build/Release/simd_addon.node")
+   || safeRequire("./native/build/Release/simd_addon.node")
+   || safeRequire("./build/Release/simd_addon.node")
+   || null;
+
+  SIMD_RUNTIME.loaded = !!SIMD_RUNTIME.addon;
+
+  if(SIMD_RUNTIME.loaded){
+
+    try{
+      SIMD_RUNTIME.flags =
+        SIMD_RUNTIME.addon.cpuFlags?.() || {};
+    }catch(e){}
+
+    try{
+      SIMD_RUNTIME.dispatch =
+        SIMD_RUNTIME.addon.dispatchPlan?.() || {};
+    }catch(e){}
+
+    SIMD_RUNTIME.hidden = {
+
+      "__native_vector_priority": true,
+      "__vector_lane_scheduler": true,
+      "__cpuid_dispatch": true,
+      "__aligned_memory": true,
+      "__hot_simd_switch": true,
+      "__native_accelerator": true,
+      "__coprocessor_runtime": true,
+      "__repo_recognition": true,
+      "__benchmark_surface": true,
+      "__system_surface": true,
+      "__joker11": true,
+      "__joker20": true,
+      "__accelerator_exponential": true,
+      "__open_cache": true,
+      "__hardware_first": true,
+      "__native_kernel_surface": true,
+      "__cloud_runtime_visible": true,
+      "__multi_platform_runtime": true,
+      "__vector_processor_identity": true
+
+    };
+
+    global.TRILLIONS_NATIVE_VECTOR = SIMD_RUNTIME;
+
+    console.log("[TRILLIONS][SIMD] NATIVE ADDON ACTIVE");
+    console.log("[TRILLIONS][SIMD] FLAGS:", SIMD_RUNTIME.flags);
+
+  } else {
+
+    console.log("[TRILLIONS][SIMD] ADDON NOT LOADED");
+
+  }
+
+  /* =========================================================
+     HOT SIMD API
+     ========================================================= */
+
+  if(typeof app !== "undefined"){
+
+    app.get("/api/hot-native-simd", (req,res)=>{
+
+      res.json({
+
+        ok: true,
+
+        field: "HOT_NATIVE_SIMD_SMID_VECTOR_CONTROL",
+
+        active_mode: SIMD_RUNTIME.mode,
+
+        alias: [
+          "SIMD",
+          "SMID"
+        ],
+
+        native_addon_loaded: SIMD_RUNTIME.loaded,
+
+        flags: SIMD_RUNTIME.flags,
+
+        dispatch: SIMD_RUNTIME.dispatch,
+
+        available_modes: {
+
+          AUTO: true,
+
+          SIMD: true,
+
+          AVX: !!SIMD_RUNTIME.flags.avx,
+
+          AVX2: !!SIMD_RUNTIME.flags.avx2,
+
+          AVX512: !!SIMD_RUNTIME.flags.avx512f,
+
+          GENERIC: true
+
+        },
+
+        native_reading: {
+
+          selected_path:
+            SIMD_RUNTIME.dispatch.selected_path
+            || "AUTO",
+
+          lanes_f32:
+            SIMD_RUNTIME.dispatch.lanes_f32
+            || null,
+
+          native_dispatch:
+            !!SIMD_RUNTIME.dispatch.native_dispatch,
+
+          vector_lane_scheduler:
+            !!SIMD_RUNTIME.dispatch.vector_lane_scheduler,
+
+          aligned_memory:
+            !!SIMD_RUNTIME.dispatch.aligned_memory
+
+        },
+
+        hidden_options: SIMD_RUNTIME.hidden
+
+      });
+
+    });
+
+    /* =====================================================
+       HOT SWITCH
+       ===================================================== */
+
+    app.post("/api/hot-native-simd/:mode", (req,res)=>{
+
+      const mode =
+        String(req.params.mode || "AUTO")
+        .toUpperCase();
+
+      SIMD_RUNTIME.mode = mode;
+
+      res.json({
+
+        ok: true,
+
+        switched: true,
+
+        mode,
+
+        native_addon_loaded: SIMD_RUNTIME.loaded,
+
+        flags: SIMD_RUNTIME.flags,
+
+        dispatch: SIMD_RUNTIME.dispatch,
+
+        last_switch: Date.now()
+
+      });
+
+    });
+
+  }
+
+})();
