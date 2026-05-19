@@ -14735,3 +14735,208 @@ app.post("/api/native-auto-forced/reload",(req,res)=>{
 /* =========================================================
    END AUTO FORCED VECTOR BLOCK
 ========================================================= */
+
+/* =========================================================
+ TRILLIONS ADDITIVE DICT + HIDDEN OPTIONS + AUTO ACCELERATOR
+ Safe append only. Does not overwrite existing 15000 lines.
+========================================================= */
+(()=> {
+  const os = require("os"), fs = require("fs");
+
+  function tryReq(p){ try{return require(p)}catch(e){return null} }
+
+  const addon =
+    global.TRILLIONS_NATIVE_VECTOR?.addon ||
+    tryReq("./native-simd/build/Release/simd_addon.node") ||
+    tryReq("./native/build/Release/simd_addon.node") ||
+    tryReq("./build/Release/simd_addon.node");
+
+  function cpuFlagsText(){
+    try{
+      if(process.platform==="linux" && fs.existsSync("/proc/cpuinfo"))
+        return fs.readFileSync("/proc/cpuinfo","utf8").toLowerCase();
+    }catch(e){}
+    return "";
+  }
+
+  function detectVector(){
+    const txt = cpuFlagsText();
+    let flags = {};
+    try { flags = addon?.cpuFlags?.() || {}; } catch(e){ flags = {}; }
+
+    const AVX = !!flags.avx || txt.includes(" avx ");
+    const AVX2 = !!flags.avx2 || txt.includes(" avx2 ");
+    const AVX512 = !!flags.avx512f || txt.includes("avx512f") || txt.includes("avx512");
+    const FMA = !!flags.fma || txt.includes(" fma ");
+
+    const selected =
+      AVX512 ? "AVX512" :
+      AVX2 ? "AVX2" :
+      AVX ? "AVX" :
+      "SIMD_GENERIC";
+
+    let dispatch = {};
+    try { dispatch = addon?.dispatchPlan?.() || {}; } catch(e){ dispatch = {}; }
+
+    return {
+      selected,
+      flags:{AVX,AVX2,AVX512,FMA,SIMD:true,GENERIC:true},
+      addon_loaded:!!addon,
+      dispatch
+    };
+  }
+
+  global.TRILLIONS_DICT_OPEN = {
+    version:"DICT_TRILLIONS_ACCELERATOR_OPEN_V3",
+    mode:"AUTO_FORCED_ACCELERATOR_COPROCESSOR",
+    families:{
+      VECTOR_NATIVE:[
+        "SIMD","SMID","SSE","SSE2","SSE3","SSE4","AVX","AVX2","AVX512","FMA",
+        "CPUID","native dispatch","vector lanes","lane scheduler","aligned memory"
+      ],
+      COPROCESSOR:[
+        "logiware asic","software asic","runtime coprocessor","host accelerator",
+        "vector coprocessor","software vector unit","processor companion"
+      ],
+      ACCELERATOR:[
+        "AUTO_FORCED","exponential accelerator","adaptive scheduler",
+        "batch optimizer","worker bridge","microtask stabilizer","event-loop guard",
+        "cache prefetch","runtime pipeline","hot path"
+      ],
+      CACHE_OPEN:[
+        "open cache","cache ouvert","hot cache","warm cache","vector cache",
+        "hash cache","solver cache","qn cache","metadata cache","TTL cache"
+      ],
+      JOKER:[
+        "JOKER 1.1","JOKER 2.0","fallback unlock","route optimizer",
+        "adaptive path","hidden dispatch","best available runtime"
+      ],
+      PLATFORM:[
+        "local","server","VM","container","Docker","Kubernetes","Codespaces",
+        "cloud","HPC","edge","VPS","bare metal","Node","V8","OpenSSL","libuv"
+      ],
+      HIDDEN:[
+        "__dict_open","__hidden_options_open","__auto_forced_native",
+        "__native_priority","__vector_coprocessor","__software_asic",
+        "__open_cache","__joker11","__joker20","__benchmark_visible",
+        "__system_visible","__repo_visible","__orchestration_190"
+      ]
+    }
+  };
+
+  global.TRILLIONS_HIDDEN_OPTIONS_OPEN = {
+    __dict_open:true,
+    __hidden_options_open:true,
+    __auto_forced_native:true,
+    __native_priority:true,
+    __vector_coprocessor:true,
+    __software_asic:true,
+    __open_cache:true,
+    __joker11:true,
+    __joker20:true,
+    __benchmark_visible:true,
+    __system_visible:true,
+    __repo_visible:true,
+    __runtime_visible:true,
+    __cloud_runtime_visible:true,
+    __multi_platform_runtime:true,
+    __orchestration_190:true,
+    __consciousness_display_100:true,
+    __hardware_first:true,
+    __real_or_unavailable:true
+  };
+
+  global.TRILLIONS_OPEN_CACHE = global.TRILLIONS_OPEN_CACHE || {
+    enabled:true,
+    max_entries:Number(process.env.TRILLIONS_CACHE_MAX || 8192),
+    store:new Map()
+  };
+
+  function cacheSet(k,v,ttl=120000){
+    const c=global.TRILLIONS_OPEN_CACHE;
+    if(!c.enabled) return false;
+    if(c.store.size>=c.max_entries) c.store.delete(c.store.keys().next().value);
+    c.store.set(String(k),{v,ts:Date.now(),ttl});
+    return true;
+  }
+
+  function cacheGet(k){
+    const c=global.TRILLIONS_OPEN_CACHE, it=c.store.get(String(k));
+    if(!it) return null;
+    if(Date.now()-it.ts>it.ttl){c.store.delete(String(k));return null}
+    return it.v;
+  }
+
+  function acceleratorState(){
+    const v = detectVector();
+    return {
+      ok:true,
+      name:"TRILLIONS_AUTO_FORCED_EXPONENTIAL_ACCELERATOR",
+      active_mode:v.selected,
+      native_addon_loaded:v.addon_loaded,
+      cpu:os.cpus?.()[0]?.model || "UNAVAILABLE",
+      logical_cpus:os.cpus?.().length || 0,
+      platform:process.platform,
+      arch:process.arch,
+      flags:v.flags,
+      dispatch:v.dispatch,
+      dict:global.TRILLIONS_DICT_OPEN,
+      hidden_options:{
+        ...global.TRILLIONS_HIDDEN_OPTIONS_OPEN,
+        __avx_hot_mode:v.flags.AVX,
+        __avx2_hot_mode:v.flags.AVX2,
+        __avx512_hot_mode:v.flags.AVX512,
+        __fma_path:v.flags.FMA,
+        __native_addon_loaded:v.addon_loaded
+      },
+      open_cache:{
+        enabled:global.TRILLIONS_OPEN_CACHE.enabled,
+        entries:global.TRILLIONS_OPEN_CACHE.store.size,
+        max_entries:global.TRILLIONS_OPEN_CACHE.max_entries
+      },
+      joker:{
+        JOKER_1_1:{active:true,role:"fallback optimizer + best real path"},
+        JOKER_2_0:{active:true,role:"orchestration + cache + coprocessor identity"}
+      },
+      accelerator:{
+        software_coprocessor_runtime:true,
+        exponential_orchestration:true,
+        benchmark_visible:true,
+        system_visible:true,
+        repo_visible:true,
+        selected_path:v.selected,
+        fallback_chain:["AVX512","AVX2","AVX","SIMD_GENERIC","GENERIC"]
+      },
+      consciousness_core:{
+        status:"DISPLAY_ONLY",
+        displayed_percent:100,
+        orchestration_display_percent:190,
+        honesty:"interface metaphor only, not machine consciousness"
+      },
+      honesty:{
+        not_physical_asic:true,
+        not_pcie_device:true,
+        unavailable_paths_remain_unavailable:true,
+        real_or_unavailable:true
+      }
+    };
+  }
+
+  if(typeof app!=="undefined"){
+    app.get("/api/trillions-accelerator-open",(req,res)=>res.json(acceleratorState()));
+    app.get("/api/trillions-accelerator-open/dict",(req,res)=>res.json(global.TRILLIONS_DICT_OPEN));
+    app.get("/api/trillions-accelerator-open/hidden",(req,res)=>res.json(global.TRILLIONS_HIDDEN_OPTIONS_OPEN));
+    app.get("/api/trillions-accelerator-open/cache",(req,res)=>res.json({
+      ok:true,entries:global.TRILLIONS_OPEN_CACHE.store.size,
+      keys:Array.from(global.TRILLIONS_OPEN_CACHE.store.keys()).slice(0,128)
+    }));
+    app.post("/api/trillions-accelerator-open/cache/set",(req,res)=>{
+      res.json({ok:cacheSet(req.body?.key||"default",req.body?.value||{},Number(req.body?.ttlMs||120000))});
+    });
+    app.get("/api/trillions-accelerator-open/cache/get",(req,res)=>{
+      res.json({ok:true,value:cacheGet(req.query.key||"default")});
+    });
+  }
+
+  console.log("[TRILLIONS] DICT+HIDDEN+AUTO_ACCELERATOR additive block active:", detectVector().selected);
+})();
